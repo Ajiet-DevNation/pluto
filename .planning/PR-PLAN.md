@@ -1,0 +1,206 @@
+# Pluto — PR Plan Per Person (Final Team Collaboration & Integration Workflow)
+
+Git workflow and branch strategy for the Pluto v1 release. All nine capabilities ship in v1. Hosting is heavencloud plan. Each person has exactly one feature branch and three work packages (PRs), opened as a single PR targeting `main` when all three are complete. Unresolved items are marked pending; nothing is assumed decided.
+
+## Team and Branch Ownership
+
+| Person | Role | Branch | Responsible For |
+|--------|------|--------|-----------------|
+| Khushi | Project Lead | `feat/khushi` | K1, K2, K3 |
+| Pragathi | Bot Development | `feat/pragathi` | P1, P2, P3 |
+| Likhith | Bot Development | `feat/likhith` | L1, L2, L3 |
+| UI Member 1 | UI & Showcase | TBD (joins after bot complete) | — |
+| UI Member 2 | UI & Showcase | TBD (joins after bot complete) | — |
+
+**Rule:** Each person maintains their own feature branch and completes all three assigned work packages on that branch. Once all three are complete and verified, they open one PR targeting `main`.
+
+---
+
+## PR Rules (Approval and Merging)
+
+1. **No direct pushes or unapproved merges into `main`.**
+2. **Khushi** is the project lead and has final approval authority over all three PRs (K, P, L).
+3. The branch owner must review and address all feedback from Khushi before approval.
+4. Only after Khushi approves can the branch owner merge their own PR into `main`.
+   - Khushi does **not** merge everyone else's PRs. The respective branch owner performs the merge after approval.
+5. Each person must sync their feature branch with the latest `main` and run relevant tests before merging.
+6. Each PR must include an update to `STATE.md` reflecting phase progress and completed requirements.
+7. PRs are not mergeable until `STATE.md` is updated and acceptance criteria are verified.
+
+---
+
+## Khushi — Project Lead (`feat/khushi`)
+
+| PR | Content | Files | Acceptance | Depends on | Target hour |
+|----|---------|-------|------------|------------|-------------|
+| K1 | Initialize TypeScript/Express backend scaffold on heavencloud plan; configure Node.js 22 runtime; set up read-only GitHub App via Ganju MCP + Octokit for Ajiet-DevNation public repos | `src/cmd/pluto/**`, `scripts/build.sh`, `src/github/app.go` | Backend builds and runs on heavencloud plan; GitHub App is read-only verified; no write operations on GitHub | — | 4 |
+| K2 | Enforce read-only boundary and no-unsupported-knowledge guard rail; verify citations link to original sources; verify opted-out content does not appear in search or answers | `src/cmd/pluto/**`, `src/guardrails/**`, `src/citations/**`, `tests/guardrails/` | No GitHub writes; no Discord history edits; no private repo/channel indexing; no unsupported general knowledge in answers; every answer cites a source link | K1 | 6 |
+| K3 | v1 release hardening; full acceptance verification across all nine requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All nine v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
+
+**Cross-cutting responsibilities (Khushi):**
+- Owns overall architecture, integration, shared interfaces, and final technical decisions
+- Reviews and approves all three PRs (K, P, L) before merge
+- Resolves disagreements on shared contracts
+- Approves changes to shared contracts
+- Updates `STATE.md` at phase transitions
+- Maintains `.planning/` source of truth
+- Handles release tagging
+
+---
+
+## Pragathi — Bot Development (`feat/pragathi`)
+
+| PR | Content | Files | Acceptance | Depends on | Target hour |
+|----|---------|-------|------------|------------|-------------|
+| P1 | Connect Discord bot via discord.js v14; join DevNation server; index selected Discord channels; implement /optout command to exclude member messages from indexing | `src/cmd/pluto/**`, `src/discord/**`, `src/optout/**`, `tests/discord/` | Discord bot connected and joined; admin-selected channels indexed; non-selected channels excluded; opted-out members' messages excluded from search and answers | K1 | 5 |
+| P2 | Implement /ask Q&A command; ground answers in indexed content; handle no-evidence responses; cite links to original sources | `src/cmd/pluto/**`, `src/ask/**`, `src/retrieval/**`, `tests/ask/` | /ask returns answers grounded in indexed content; each answer cites GitHub commit/PR URL, Discord message link, or meeting transcript; when no evidence exists, /ask explicitly states so | P1, L1 | 7 |
+| P3 | Generate /digest weekly summaries; generate meeting summaries; extract action items with owners and due dates; implement /meeting actions command with mark-complete | `src/cmd/pluto/**`, `src/digest/**`, `src/meetings/**`, `tests/digest/**, tests/meetings/` | Weekly digest summarizes indexed GitHub/Discord/decisions and delivers to Discord; meeting transcripts summarized; action items extracted with owners and due dates; /meeting actions lists pending tasks; action items can be marked complete | P2, L2 | 6 |
+
+**Contract ownership (Pragathi):**
+- Proposes and implements Discord and bot-command contracts
+- Reviews shared interfaces before dependent implementation begins
+
+---
+
+## Likhith — Bot Development (`feat/likhith`)
+
+| PR | Content | Files | Acceptance | Depends on | Target hour |
+|----|---------|-------|------------|------------|-------------|
+| L1 | Provision Neon Postgres with pgvector and tsvector; connect via Drizzle ORM; configure pg-boss job queue; index GitHub issues from Ajiet-DevNation public repos | `src/db/**`, `src/jobs/**`, `scripts/migrate/**`, `tests/db/` | Neon Postgres provisioned and connected; pg-boss configured for background indexing jobs; GitHub issues indexed and searchable | K1 | 5 |
+| L2 | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts/audio in Cloudflare R2 (temporary); index meeting transcript content in Neon | `src/upload/**`, `src/transcription/**`, `src/r2/**`, `tests/upload/**, tests/transcription/` | Users can upload meeting transcripts and audio; audio transcribed via Whisper; transcripts stored and indexed in Neon alongside GitHub and Discord content | L1 | 6 |
+| L3 | Implement /decisions searchable project decisions; send automatic GitHub PR notifications; extract action items with owners and due dates; verify no Discord history edits; verify no private repo/channel indexing | `src/cmd/pluto/**`, `src/decisions/**`, `src/notifications/**`, `src/actions/**`, `tests/decisions/**, tests/notifications/` | /decisions returns searchable decisions with source citations; new PRs trigger Discord notifications with PR and repo links; action items have owners and due dates; no Discord history edits; no private indexing | L2, P2 | 7 |
+
+**Contract ownership (Likhith):**
+- Proposes and implements database and job-queue contracts
+- Reviews shared interfaces before dependent implementation begins
+
+---
+
+## UI & Showcase Members (2)
+
+**Status:** Joining after the bot is completed (after K3, P3, L3). No v1 PRs assigned yet.
+
+**Branches:** None assigned for v1. Upon joining, each member will receive:
+- `ui-member-1/phase4-ui-showcase` — TBD
+- `ui-member-2/phase4-ui-showcase` — TBD
+
+**PR targets:** To be determined when they join.
+
+---
+
+## Shared Technical Contracts (Document Before Implementation)
+
+The following contracts must be documented and agreed by all three bot members before dependent implementation begins. Khushi owns final technical decisions and resolves disagreements.
+
+| # | Contract | Owner | Must Include | Status |
+|---|----------|-------|--------------|--------|
+| 1 | Database schema | Likhith proposes; Khushi approves | Tables, columns, relationships, indexes, migrations, naming conventions | Pending validation |
+| 2 | API contracts | Khushi owns | Endpoints, request/response formats, validation, errors | Pending validation |
+| 3 | Discord contracts | Pragathi proposes; Khushi approves | Bot command interfaces, channel configuration, permissions | Pending validation |
+| 4 | GitHub contracts | Khushi owns | GitHub App access, webhook/event payloads, repository allowlist | Pending validation |
+| 5 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Pending validation |
+| 6 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling | Pending validation |
+| 7 | Meeting contracts | Pragathi proposes; Khushi approves | Upload, transcription, summary, action-item formats | Pending validation |
+| 8 | Security contracts | Khushi owns | Read-only boundaries, visibility enforcement, opt-out behavior | Pending validation |
+
+**Contract review rule:** All three must review shared interfaces before dependent implementation begins. Khushi resolves disagreements and approves changes to shared contracts.
+
+---
+
+## Dependency and Integration Sequence
+
+### Phase A — Before Any Coding (Contracts First)
+All shared contracts (1–8 above) must be drafted and reviewed by all three members before anyone begins dependent implementation. Khushi approves final versions.
+
+Prerequisite order:
+1. Database schema (Likhith proposes, Khushi approves) — must be done before L1, P2, L2 depend on it
+2. API contracts (Khushi owns) — must be done before K1, P1, L1 build against them
+3. Discord contracts (Pragathi proposes, Khushi approves) — must be done before P1
+4. GitHub contracts (Khushi owns) — must be done before K1
+5. Search contracts (Khushi owns) — must be done before P2, L2
+6. Background jobs (Likhith proposes, Khushi approves) — must be done before L1, P3
+7. Meeting contracts (Pragathi proposes, Khushi approves) — must be done before L2, P3
+8. Security contracts (Khushi owns) — must be done before K2, all PRs
+
+### Phase B — Implementation Order with Dependencies
+
+| Step | PR | Owner | Depends On | Integration Checkpoint |
+|------|-----|-------|------------|----------------------|
+| 1 | K1 | Khushi | GitHub contract, API contract, DB schema | Backend scaffold builds on heavencloud plan; read-only GitHub access verified |
+| 2 | L1 | Likhith | K1, DB schema, background jobs contract | Neon + pg-boss connected; issues indexed |
+| 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; /optout working |
+| 4 | L2 | Likhith | L1, meeting contract, search contract | Audio uploaded, transcribed, indexed in Neon |
+| 5 | P2 | Pragathi | P1, L1, search contract | /ask returns cited answers |
+| 6 | L3 | Likhith | L2, P2 | /decisions searchable; PR notifications sent |
+| 7 | P3 | Pragathi | P2, L2 | /digest delivered; /meeting actions working |
+| 8 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
+| 9 | K3 | Khushi | K2, P3, L3 | All 9 capabilities tested; v1 deployed to heavencloud plan |
+
+### Phase C — Integration Checkpoints (Catch Incompatible Implementations Early)
+
+| Checkpoint | When | Participants | What Is Verified |
+|------------|------|--------------|------------------|
+| CP1: Contract sign-off | Before step 1 | Khushi, Pragathi, Likhith | All 8 shared contracts documented and approved |
+| CP2: DB + backend integration | After L1, before P2 | Khushi, Likhith | Neon schema matches API expectations; migrations apply cleanly |
+| CP3: Discord + backend integration | After P1, before P2 | Khushi, Pragathi | Discord commands route through backend; /optout enforced in retrieval |
+| CP4: Search + retrieval integration | After L2, before P2 | Khushi, Pragathi, Likhith | Embeddings stored correctly; /ask citations resolve to indexed chunks |
+| CP5: Jobs + digest integration | After L1, before P3 | Khushi, Pragathi, Likhith | pg-boss jobs schedule and run; /digest produced on cadence |
+| CP6: Pre-release integration | Before K3 | All three | All 9 capabilities work together; read-only boundary holds end-to-end |
+
+### Phase D — Final Integration and Release Verification Checklist (K3)
+
+- [ ] All nine v1 requirements implemented and mapped to phases
+- [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no private indexing, no unsupported answers
+- [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, meeting transcript)
+- [ ] All acceptance criteria for K1–K3, P1–P3, L1–L3 verified and marked in REQUIREMENTS.md traceability
+- [ ] `STATE.md` updated with final phase progress
+- [ ] v1 release deployed to heavencloud plan
+- [ ] Smoke test on heavencloud plan: /ask, /decisions, /digest, /meeting actions, /optout all functional
+- [ ] Rollback plan documented if deployment fails
+
+---
+
+## PR Lifecycle
+
+1. Person creates their feature branch from `main` (`feat/khushi`, `feat/pragathi`, or `feat/likhith`)
+2. Person completes all three work packages on their branch, updates `STATE.md`, commits
+3. Person syncs branch with latest `main` and runs relevant tests
+4. Person opens one PR targeting `main` (K, P, or L) with linked requirements (REQ-IDs), updated `STATE.md`, and verification notes
+5. Khushi reviews and approves (or requests changes)
+6. Branch owner addresses feedback
+7. After Khushi approves, the branch owner merges their own PR into `main`
+8. Branch owner deletes the feature branch
+9. `STATE.md` reflects merged phase progress before the next person merges
+
+---
+
+## Conflicts and Risks in Current Ownership Distribution
+
+| Risk | Description | Mitigation |
+|------|-------------|------------|
+| **Khushi bottleneck** | Khushi has final approval on all three PRs plus cross-cutting architecture duties. If Khushi is unavailable, P and L PRs cannot merge. | Khushi should review PRs in a timely window; branch owners can prepare feedback responses in advance. |
+| **K3 depends on P3 and L3** | Khushi's final release PR (K3) cannot complete until both Pragathi and Likhith finish their last work packages. Any delay in P3 or L3 blocks the v1 release. | Integration checkpoint CP6 before K3; early warning if P3/L3 slip. |
+| **P2 depends on L1** | Pragathi's /ask work package (P2) needs Likhith's database + job queue (L1) first. If L1 slips, P2 is blocked. | CP2 checkpoint; Likhith prioritizes L1 early. |
+| **L3 depends on P2** | Likhith's final work package (L3) needs Pragathi's /ask (P2) for citation grounding. Circular-ish dependency between P2 and L3 via search contract. | Search contract (CP1) must be frozen early so both can implement against it independently. |
+| **Shared contract disagreements** | Disagreements on database schema, API formats, or search contracts could cause rework. | All three review contracts at CP1; Khushi has final decision authority. |
+| **Unresolved providers** | Discord indexing method (webhooks vs polling) and audio storage (R2) are pending. These could change P1 and L2 scope mid-implementation. | Marked as pending validation; do not assume provider capabilities; revisit at CP1. |
+| **Beginner onboarding** | All three members need clear responsibility documentation to avoid stepping on each other's work. | This PR-PLAN.md plus STATE.md handoff requirements; branch-per-person isolation. |
+
+---
+
+## Unresolved / Pending
+
+- Discord indexing method (webhooks vs polling): pending — does not affect branch naming
+- Audio storage final decision (Cloudflare R2): pending — L2 branch assumes R2 but may be revisited
+- UI & showcase member names: pending — branches to be created when they join
+- All 8 shared contracts: pending validation before implementation begins
+
+**Constraints confirmed:**
+- All nine agreed capabilities remain in v1. None removed, postponed, or reduced.
+- Hosting is heavencloud plan. Kerit Cloud is not referenced anywhere.
+- Unresolved technical decisions are explicitly marked as pending validation.
+- No confirmed provider capabilities are invented.
+
+---
+
+*Last updated: 2026-11-12 after initialization*
