@@ -1,12 +1,12 @@
 # Pluto — PR Plan Per Person (Final Team Collaboration & Integration Workflow)
 
-Git workflow and branch strategy for the Pluto v1 release. All nine capabilities ship in v1. Hosting is heavencloud plan. Each person has exactly one feature branch and three work packages (PRs), opened as a single PR targeting `main` when all three are complete. Unresolved items are marked pending; nothing is assumed decided.
+Git workflow and branch strategy for the Pluto v1 release. All ten capabilities ship in v1. Hosting is heavencloud plan. Each person has exactly one feature branch and three work packages (PRs), opened as a single PR targeting `main` when all three are complete. Unresolved items are marked pending; nothing is assumed decided.
 
 ## Team and Branch Ownership
 
 | Person | Role | Branch | Responsible For |
 |--------|------|--------|-----------------|
-| Khushi | Project Lead | `feat/khushi` | K1, K2, K3 |
+| Khushi | Project Lead | `feat/khushi` | K1, K2, K3 (includes Miro MCP read-only access) |
 | Pragathi | Bot Development | `feat/pragathi` | P1, P2, P3 |
 | Likhith | Bot Development | `feat/likhith` | L1, L2, L3 |
 | UI Member 1 | UI & Showcase | TBD (joins after bot complete) | — |
@@ -33,12 +33,12 @@ Git workflow and branch strategy for the Pluto v1 release. All nine capabilities
 
 | PR | Content | Files | Acceptance | Depends on | Target hour |
 |----|---------|-------|------------|------------|-------------|
-| K1 | Initialize TypeScript/Express backend scaffold on heavencloud plan; configure Node.js 22 runtime; set up read-only GitHub App via Ganju MCP + Octokit for Ajiet-DevNation public repos | `src/cmd/pluto/**`, `scripts/build.sh`, `src/github/app.go` | Backend builds and runs on heavencloud plan; GitHub App is read-only verified; no write operations on GitHub | — | 4 |
+| K1 | Initialize TypeScript/Express backend scaffold on heavencloud plan; configure Node.js 22 runtime; set up read-only GitHub App via Ganju MCP + Octokit; set up read-only Miro access via MCP for boards, comments, texts, diagrams | `src/cmd/pluto/**`, `scripts/build.sh`, `src/github/app.go`, `src/miro/mcp.ts` | Backend builds and runs on heavencloud plan; GitHub App is read-only verified; Miro MCP read-only access verified; no write operations on GitHub or Miro | — | 5 |
 | K2 | Enforce read-only boundary and no-unsupported-knowledge guard rail; verify citations link to original sources; verify opted-out content does not appear in search or answers | `src/cmd/pluto/**`, `src/guardrails/**`, `src/citations/**`, `tests/guardrails/` | No GitHub writes; no Discord history edits; no private repo/channel indexing; no unsupported general knowledge in answers; every answer cites a source link | K1 | 6 |
-| K3 | v1 release hardening; full acceptance verification across all nine requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All nine v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
+| K3 | v1 release hardening; full acceptance verification across all ten requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All ten v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
 
 **Cross-cutting responsibilities (Khushi):**
-- Owns overall architecture, integration, shared interfaces, and final technical decisions
+- Owns overall architecture, integration, shared interfaces, Miro MCP setup, and final technical decisions
 - Reviews and approves all three PRs (K, P, L) before merge
 - Resolves disagreements on shared contracts
 - Approves changes to shared contracts
@@ -98,10 +98,11 @@ The following contracts must be documented and agreed by all three bot members b
 | 2 | API contracts | Khushi owns | Endpoints, request/response formats, validation, errors | Pending validation |
 | 3 | Discord contracts | Pragathi proposes; Khushi approves | Bot command interfaces, channel configuration, permissions | Pending validation |
 | 4 | GitHub contracts | Khushi owns | GitHub App access, webhook/event payloads, repository allowlist | Pending validation |
-| 5 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Pending validation |
-| 6 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling | Pending validation |
-| 7 | Meeting contracts | Pragathi proposes; Khushi approves | Upload, transcription, summary, action-item formats | Pending validation |
-| 8 | Security contracts | Khushi owns | Read-only boundaries, visibility enforcement, opt-out behavior | Pending validation |
+| 5 | Miro MCP contracts | Khushi proposes; Khushi approves | Miro MCP server connection, board allowlist, read-only enforcement, board/comment/text/diagram access | Pending validation |
+| 6 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Pending validation |
+| 7 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling | Pending validation |
+| 8 | Meeting contracts | Pragathi proposes; Khushi approves | Upload, transcription, summary, action-item formats | Pending validation |
+| 9 | Security contracts | Khushi owns | Read-only boundaries, visibility enforcement, opt-out behavior | Pending validation |
 
 **Contract review rule:** All three must review shared interfaces before dependent implementation begins. Khushi resolves disagreements and approves changes to shared contracts.
 
@@ -117,16 +118,17 @@ Prerequisite order:
 2. API contracts (Khushi owns) — must be done before K1, P1, L1 build against them
 3. Discord contracts (Pragathi proposes, Khushi approves) — must be done before P1
 4. GitHub contracts (Khushi owns) — must be done before K1
-5. Search contracts (Khushi owns) — must be done before P2, L2
-6. Background jobs (Likhith proposes, Khushi approves) — must be done before L1, P3
-7. Meeting contracts (Pragathi proposes, Khushi approves) — must be done before L2, P3
-8. Security contracts (Khushi owns) — must be done before K2, all PRs
+5. Miro MCP contracts (Khushi proposes, Khushi approves) — must be done before K1
+6. Search contracts (Khushi owns) — must be done before P2, L2
+7. Background jobs (Likhith proposes, Khushi approves) — must be done before L1, P3
+8. Meeting contracts (Pragathi proposes, Khushi approves) — must be done before L2, P3
+9. Security contracts (Khushi owns) — must be done before K2, all PRs
 
 ### Phase B — Implementation Order with Dependencies
 
 | Step | PR | Owner | Depends On | Integration Checkpoint |
 |------|-----|-------|------------|----------------------|
-| 1 | K1 | Khushi | GitHub contract, API contract, DB schema | Backend scaffold builds on heavencloud plan; read-only GitHub access verified |
+| 1 | K1 | Khushi | GitHub contract, API contract, DB schema, Miro MCP contract | Backend scaffold builds on heavencloud plan; read-only GitHub access verified; Miro MCP read-only access verified |
 | 2 | L1 | Likhith | K1, DB schema, background jobs contract | Neon + pg-boss connected; issues indexed |
 | 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; /optout working |
 | 4 | L2 | Likhith | L1, meeting contract, search contract | Audio uploaded, transcribed, indexed in Neon |
@@ -140,7 +142,7 @@ Prerequisite order:
 
 | Checkpoint | When | Participants | What Is Verified |
 |------------|------|--------------|------------------|
-| CP1: Contract sign-off | Before step 1 | Khushi, Pragathi, Likhith | All 8 shared contracts documented and approved |
+| CP1: Contract sign-off | Before step 1 | Khushi, Pragathi, Likhith | All 9 shared contracts documented and approved |
 | CP2: DB + backend integration | After L1, before P2 | Khushi, Likhith | Neon schema matches API expectations; migrations apply cleanly |
 | CP3: Discord + backend integration | After P1, before P2 | Khushi, Pragathi | Discord commands route through backend; /optout enforced in retrieval |
 | CP4: Search + retrieval integration | After L2, before P2 | Khushi, Pragathi, Likhith | Embeddings stored correctly; /ask citations resolve to indexed chunks |
@@ -149,13 +151,13 @@ Prerequisite order:
 
 ### Phase D — Final Integration and Release Verification Checklist (K3)
 
-- [ ] All nine v1 requirements implemented and mapped to phases
-- [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no private indexing, no unsupported answers
-- [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, meeting transcript)
+- [ ] All ten v1 requirements implemented and mapped to phases
+- [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no Miro writes, no private indexing, no unsupported answers
+- [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, Miro board URL, meeting transcript)
 - [ ] All acceptance criteria for K1–K3, P1–P3, L1–L3 verified and marked in REQUIREMENTS.md traceability
 - [ ] `STATE.md` updated with final phase progress
 - [ ] v1 release deployed to heavencloud plan
-- [ ] Smoke test on heavencloud plan: /ask, /decisions, /digest, /meeting actions, /optout all functional
+- [ ] Smoke test on heavencloud plan: /ask, /decisions, /digest, /meeting actions, /optout, Miro board search all functional
 - [ ] Rollback plan documented if deployment fails
 
 ---
@@ -196,7 +198,7 @@ Prerequisite order:
 - All 8 shared contracts: pending validation before implementation begins
 
 **Constraints confirmed:**
-- All nine agreed capabilities remain in v1. None removed, postponed, or reduced.
+- All ten agreed capabilities remain in v1. None removed, postponed, or reduced.
 - Hosting is heavencloud plan. Kerit Cloud is not referenced anywhere.
 - Unresolved technical decisions are explicitly marked as pending validation.
 - No confirmed provider capabilities are invented.

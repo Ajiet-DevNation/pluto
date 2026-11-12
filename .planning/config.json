@@ -41,7 +41,7 @@
   "planning": {
     "project_name": "Pluto",
     "project_code": "PLUTO",
-    "core_value": "Make community information easier to find, understand, and manage — with answers based only on actual project records, always cited to their original source, and never generated from unsupported general knowledge.",
+    "core_value": "Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.",
     "team": {
       "lead": "Khushi",
       "bot_development": ["Pragathi", "Likhith"],
@@ -59,13 +59,14 @@
     "timeline": {
       "original_target": "end of week",
       "approach": "prioritize quality, extend beyond end-of-week",
-      "all_nine_capabilities_in_v1": true
+      "all_ten_capabilities_in_v1": true
     },
     "unresolved": {
       "discord_indexing_method": "pending — webhooks vs polling not decided",
       "audio_storage": "pending — Cloudflare R2 under consideration",
       "citation_format": "link to original source",
-      "opt_out_scope": "opt out of message indexing"
+      "opt_out_scope": "opt out of message indexing",
+      "miro_mcp_access": "pending — Miro MCP server connection details and board allowlist not finalized"
     }
   }
 }

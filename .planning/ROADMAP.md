@@ -1,6 +1,6 @@
 # Roadmap: Pluto
 
-All nine v1 capabilities are covered across eight phases. Each phase uses vertical MVP-style delivery — independently testable, end-to-end user value per phase — with **Mode: mvp** set on every phase.
+All ten v1 capabilities are covered across eight phases. Each phase uses vertical MVP-style delivery — independently testable, end-to-end user value per phase — with **Mode: mvp** set on every phase.
 
 ## Phase 1: Foundation & GitHub Repository Indexing
 **Goal:** Set up the Pluto backend scaffold and index the first public Ajiet-DevNation GitHub repository (read-only).
@@ -10,9 +10,11 @@ All nine v1 capabilities are covered across eight phases. Each phase uses vertic
 2. Neon Postgres (pgvector, tsvector, Drizzle) database is provisioned and connected
 3. pg-boss job queue is configured for background indexing jobs
 4. Read-only GitHub App via Ganju MCP + Octokit can access Ajiet-DevNation public repos
-5. First public repository's commits, PRs, and issues are indexed and searchable
-6. No write operations are performed on GitHub (read-only verified)
-**Requirements:** INDEX-01
+5. Read-only Miro access via MCP can access boards, comments, texts, diagrams, and other board content
+6. First public repository's commits, PRs, and issues are indexed and searchable
+7. Miro board content is indexed and searchable alongside GitHub content
+8. No write operations are performed on GitHub or Miro (read-only verified)
+**Requirements:** INDEX-01, INDEX-03
 
 ## Phase 2: Discord Channel Indexing & Opt-Out
 **Goal:** Connect Discord, index selected channels, and implement /optout.
@@ -73,10 +75,10 @@ All nine v1 capabilities are covered across eight phases. Each phase uses vertic
 **Requirements:** MEET-01
 
 ## Phase 8: Hardening, Quality Verification & v1 Release
-**Goal:** Verify all nine capabilities, enforce the read-only boundary, and release v1.
+**Goal:** Verify all ten capabilities, enforce the read-only boundary, and release v1.
 **Mode:** mvp
 **Success Criteria:**
-1. All nine v1 requirements are implemented and tested
+1. All ten v1 requirements are implemented and tested
 2. Read-only boundary verified: no GitHub writes, no Discord history edits, no private indexing, no unsupported answers
 3. Citations consistently link to original sources
 4. All acceptance criteria across phases pass verification
@@ -87,7 +89,7 @@ All nine v1 capabilities are covered across eight phases. Each phase uses vertic
 
 | # | Phase | Requirements | Success Criteria |
 |---|-------|--------------|------------------|
-| 1 | Foundation & GitHub Repository Indexing | INDEX-01 | 6 |
+| 1 | Foundation & GitHub Repository Indexing & Miro MCP Indexing | INDEX-01, INDEX-03 | 8 |
 | 2 | Discord Channel Indexing & Opt-Out | INDEX-02, OPTO-01 | 4 |
 | 3 | Meeting Transcript & Audio Ingestion | INDEX-03 | 4 |
 | 4 | /ask Q&A with Citations | ASK-01 | 4 |
@@ -96,4 +98,4 @@ All nine v1 capabilities are covered across eight phases. Each phase uses vertic
 | 7 | Meeting Summaries & Action Items | MEET-01 | 4 |
 | 8 | Hardening, Quality Verification & v1 Release | All | 5 |
 
-**Total:** 8 phases | 9 requirements | All v1 requirements covered ✓
+**Total:** 8 phases | 10 requirements | All v1 requirements covered ✓

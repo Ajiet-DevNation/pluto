@@ -3,7 +3,7 @@
 ## Project Reference
 See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
-**Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records, always cited to their original source, and never generated from unsupported general knowledge.
+**Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
 **Current focus:** Phase 1 — Foundation & GitHub Repository Indexing
 
@@ -17,6 +17,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 - Database: Neon PostgreSQL (pgvector, tsvector, Drizzle ORM)
 - Job Queue: pg-boss
 - GitHub Integration: Read-only GitHub App via Ganju MCP + Octokit
+- Miro Integration: Read-only Miro access via MCP (boards, comments, texts, diagrams)
 - AI & Embeddings: Cloudflare Workers AI (bge-base-en-v1.5, instruct model, Whisper)
 - Audio Storage: Cloudflare R2 (temporary, under consideration)
 
@@ -30,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 ## Progress
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
-| Phase 1: Foundation & GitHub Indexing | ○ Pending | INDEX-01 | 0/6 |
+| Phase 1: Foundation & GitHub & Miro Indexing | ○ Pending | INDEX-01, INDEX-03 | 0/8 |
 | Phase 2: Discord Indexing & Opt-Out | ○ Pending | INDEX-02, OPTO-01 | 0/4 |
 | Phase 3: Meeting Transcript & Audio Ingestion | ○ Pending | INDEX-03 | 0/4 |
 | Phase 4: /ask Q&A with Citations | ○ Pending | ASK-01 | 0/4 |

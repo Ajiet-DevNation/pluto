@@ -3,7 +3,7 @@
 **Defined:** 2026-11-12
 **Core Value:** Make community information easier to find, understand, and manage — with answers based only on actual project records, always cited to their original source, and never generated from unsupported general knowledge.
 
-All nine Pluto capabilities belong to the first official release (v1). None are deferred to v2.
+All ten Pluto capabilities belong to the first official release (v1). None are deferred to v2.
 
 ## v1 Requirements
 
@@ -21,11 +21,17 @@ All nine Pluto capabilities belong to the first official release (v1). None are 
     2. Messages from selected channels are indexed
     3. Messages from non-selected channels are not indexed
 
-- [ ] **INDEX-03**: Accept uploaded meeting transcripts and audio
+- [ ] **INDEX-03**: Index Miro boards via MCP (read-only)
+  - Acceptance Criteria:
+    1. Bot connects to Miro via MCP with read-only access
+    2. Miro boards, comments, texts, diagrams, and other board content are indexed and searchable
+    3. No write operations are performed on Miro (read-only verified)
+
+- [ ] **INDEX-04**: Accept uploaded meeting transcripts and audio
   - Acceptance Criteria:
     1. Users can upload meeting transcript text or audio files
     2. Audio is transcribed via Whisper
-    3. Transcripts are stored and indexed alongside GitHub and Discord content
+    3. Transcripts are stored and indexed alongside GitHub, Discord, and Miro content
 
 ### Q&A
 
@@ -97,6 +103,7 @@ All nine Pluto capabilities belong to the first official release (v1). None are 
 | INDEX-01 | Phase 1 | Pending |
 | INDEX-02 | Phase 2 | Pending |
 | INDEX-03 | Phase 3 | Pending |
+| INDEX-04 | Phase 1 | Pending |
 | ASK-01 | Phase 4 | Pending |
 | DECI-01 | Phase 5 | Pending |
 | PRNT-01 | Phase 5 | Pending |
@@ -105,8 +112,8 @@ All nine Pluto capabilities belong to the first official release (v1). None are 
 | OPTO-01 | Phase 2 | Pending |
 
 **Coverage:**
-- v1 requirements: 9 total
-- Mapped to phases: 9
+- v1 requirements: 10 total
+- Mapped to phases: 10
 - Unmapped: 0 ✓
 
 ---

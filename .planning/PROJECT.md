@@ -18,6 +18,7 @@ Make community information easier to find, understand, and manage — with answe
 
 - [ ] Index public GitHub repositories belonging to Ajiet-DevNation (read-only)
 - [ ] Index selected Discord channels
+- [ ] Index Miro boards via MCP (read-only) — boards, comments, texts, diagrams, and other board content
 - [ ] Accept uploaded meeting transcripts and audio
 - [ ] `/ask` — answer questions with citations to original sources
 - [ ] `/decisions` — searchable project decisions
@@ -29,7 +30,7 @@ Make community information easier to find, understand, and manage — with answe
 
 ### Out of Scope
 
-- Modifying GitHub repositories or Discord history — Pluto is strictly read-only
+- Modifying GitHub repositories, Discord history, or Miro boards — Pluto is strictly read-only
 - Indexing private repositories or private Discord channels
 - Generating answers from unsupported general knowledge (if no relevant evidence exists, Pluto must explicitly say so)
 - Real-time chat, video posts, OAuth login, mobile app — not core to Pluto's knowledge-assistant value
@@ -48,16 +49,17 @@ Make community information easier to find, understand, and manage — with answe
 - **[Database]**: Neon PostgreSQL with pgvector and tsvector, Drizzle ORM — vector + full-text search required
 - **[Job queue]**: pg-boss — background jobs for indexing and digests
 - **[GitHub integration]**: Read-only GitHub App via Ganju MCP endpoint and Octokit — no write access to GitHub
+- **[Miro integration]**: Read-only Miro access via MCP — boards, comments, texts, diagrams, and other board content; no write operations on Miro
 - **[AI & embeddings]**: Cloudflare Workers AI (bge-base-en-v1.5 embeddings, instruct model, Whisper transcription) — AI provider fixed
 - **[Audio storage]**: Cloudflare R2 (temporary, under consideration) — audio storage pending final decision
 - **[Read-only]**: No writes to GitHub repos or Discord history; no private repo/channel indexing; no unsupported general knowledge — hard compliance boundary
-- **[Timeline]**: Prioritize quality over the original end-of-week target; all nine capabilities must ship in v1
+- **[Timeline]**: Prioritize quality over the original end-of-week target; all ten capabilities must ship in v1
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| All nine capabilities in v1 | User requirement — no features excluded from first release | — Pending |
+| All ten capabilities in v1 | User requirement — no features excluded from first release | — Pending |
 | Prioritize quality, extend timeline | Avoid sacrificing correctness for an aggressive deadline | — Pending |
 | Read-only with new-message posting permitted | Protects source data integrity while allowing bot to respond in Discord | — Pending |
 | Opt-out = exclude messages from indexing | Respects member privacy without over-engineering granular controls | — Pending |
