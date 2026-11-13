@@ -102,8 +102,8 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 |-------------|-------|--------|
 | INDEX-01 | Phase 1 | Pending |
 | INDEX-02 | Phase 2 | Pending |
-| INDEX-03 | Phase 3 | Pending |
-| INDEX-04 | Phase 1 | Pending |
+| INDEX-03 | Phase 1 | Pending |
+| INDEX-04 | Phase 3 | Pending |
 | ASK-01 | Phase 4 | Pending |
 | DECI-01 | Phase 5 | Pending |
 | PRNT-01 | Phase 5 | Pending |
