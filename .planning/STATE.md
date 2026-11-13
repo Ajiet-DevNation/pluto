@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 ## Progress
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
-| Phase 1: Foundation & GitHub & Miro Indexing | ○ Pending | INDEX-01, INDEX-03 | 0/8 |
+| Phase 1: Foundation & GitHub & Miro Indexing | ○ In Progress (L1 code complete, pending live-DB verification) | INDEX-01, INDEX-03 | 4/8 |
 | Phase 2: Discord Indexing & Opt-Out | ○ Pending | INDEX-02, OPTO-01 | 0/4 |
 | Phase 3: Meeting Transcript & Audio Ingestion | ○ Pending | INDEX-03 | 0/4 |
 | Phase 4: /ask Q&A with Citations | ○ Pending | ASK-01 | 0/4 |
