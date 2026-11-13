@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** K2 — read-only enforcement, citation layer, Miro read client
+**Current focus:** Contracts first — search contract written; background-jobs contract written; P1 (Pragathi) starting; L1 follow-ups pending with Likhith
 
 ## Team
 - Project Lead: Khushi
@@ -45,9 +45,9 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | Package | Owner | Status | Notes |
 |---------|-------|--------|-------|
 | K1 | Khushi | ✅ Merged (PR #1, #2) | Scaffold, Node 22, working `npm start`, README. GitHub App not created — org role is `member`; interim read-only fine-grained PAT verified (`GET` 200 / write attempt 403). |
-| K2 | Khushi | 🟡 In progress | Security contract, read-only guard, GitHub/Miro read clients, citation layer, tests. Miro live verification **pending** — no token, no MCP server, no board allowlist. |
+| K2 | Khushi | ✅ Merged (PR #3, `b3761d9`) | Security contract, read-only guard, GitHub/Miro read clients, citation layer, evidence gate, live citation check, 40 tests. Deferred: Miro live verification (`pending`, last in sequence); opt-out verification moved to CP3 (needs P1 `/optout` and L1 retrieval). |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
-| L1 | Likhith | ✅ Complete | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. |
+| L1 | Likhith | ✅ Merged (PR #4, `73b06b7`) | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. **Open follow-ups:** no worker/scheduler (indexing runs manually), migrations do not create `vector`/`tsvector`, migrate runner is not idempotent, indexer has no tests. |
 | L2 | Likhith | ⬜ Pending | Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
 | P1 | Pragathi | ⬜ Not started | Depends on K1 only — unblocked. Discord contract must be approved first. |
@@ -65,7 +65,7 @@ Values are never recorded here — only existence, owner, scope and expiry.
 | GitHub PAT (interim) | ✅ Active | Khushi | Fine-grained, public repos, Contents/Issues/Metadata read | 90 days |
 | Neon `DATABASE_URL` | ✅ Active | Likhith | Dev database, pgvector | — |
 | Miro access token | ❌ Missing | — | Board read | — |
-| Cloudflare Workers AI | ❌ Not provisioned | — | Embeddings, instruct, Whisper | — |
+| Cloudflare Workers AI | ✅ Active | Khushi | Workers AI: Read (account-wide); bge-base-en-v1.5 (768), llama-3.1-8b-instruct, whisper-large-v3-turbo | Token has no TTL — roll quarterly |
 | Cloudflare R2 | ❌ Pending decision | — | Audio storage | — |
 
 ## Discord Channel Policy
@@ -103,13 +103,33 @@ At the start of each development session:
 - `#meeting-plans` channel — not visible to the bot; replacement not chosen — pending
 - GitHub App creation — blocked on Ajiet-DevNation org owner — pending
 - Miro access token, MCP server and board allowlist — pending
-- Cloudflare Workers AI account/API token — no owner assigned in `PR-PLAN.md` — pending
-- Discord indexing method (webhooks vs polling) — pending
+- Background jobs worker/scheduler — contract written at `.planning/contracts/background-jobs.md`; code not started — pending (Likhith)
+- Migrations do not create `vector`/`tsvector` extension or columns; Neon has pgvector enabled out-of-band, so a fresh database is not reproducible — pending (Likhith)
+- `scripts/migrate/index.ts` replays every `.sql` and ignores drizzle's journal, so a second run fails — pending (Likhith)
+- `index-github-issues.ts` has no test coverage — pending (Likhith)
+- Discord indexing method (webhooks vs polling) — pending (Pragathi, P1)
 - Audio storage final decision (Cloudflare R2) — pending
-- Citation format — link to original source (decided)
-- Opt-out scope — opt out of message indexing (decided)
 - UI & showcase team members — joining after bot completion (pending)
+
+## Decisions (2026-11-13)
+
+| Decision | Value | Recorded in |
+|----------|-------|-------------|
+| Background job worker placement | Same process as the Discord bot | `contracts/background-jobs.md` |
+| GitHub indexing cadence | On startup + every 30 minutes | `contracts/background-jobs.md` |
+| pg-boss mode | Polling (`useListenNotify: false`) — deliberate, because `DATABASE_URL` uses the Neon pooler | `contracts/background-jobs.md` |
+| Retry policy | 3 attempts, exponential backoff | `contracts/background-jobs.md` |
+| Job idempotency | Upsert on `github_id`; singleton jobs, no overlapping runs | `contracts/background-jobs.md` |
+| Embedding model + dimension | `@cf/baai/bge-base-en-v1.5`, **768** (verified live) | `contracts/search.md` |
+| Evidence threshold | `EVIDENCE_MIN_SCORE = 0.4` (v1 starting value, tuned after P2) | `contracts/search.md` |
+| `#pluto-bot` | Logs-only for v1; never indexed. Revisit post-v1 with a bot-author filter | `config.json` channel policy |
+| Cloudflare credential | Provisioned by Khushi; Workers AI Read token | `config.json` credentials |
+
+## Citation and channel safety rules
+- `#pluto` is never indexed: the bot must not cite its own answers.
+- The self-citation rule is about **bot-authored messages in any channel**, not only `#pluto`.
+- `#pluto-bot` is excluded from v1 retrieval: operational noise, not project knowledge.
 
 ---
 
-*Last updated: 2026-11-13 after Likhith L1 completion*
+*Last updated: 2026-11-13 — Cloudflare Workers AI provisioned, search contract written, background-jobs contract written*
