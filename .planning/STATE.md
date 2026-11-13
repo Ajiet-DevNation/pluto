@@ -45,7 +45,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | Package | Owner | Status | Notes |
 |---------|-------|--------|-------|
 | K1 | Khushi | ✅ Merged (PR #1, #2) | Scaffold, Node 22, working `npm start`, README. GitHub App not created — org role is `member`; interim read-only fine-grained PAT verified (`GET` 200 / write attempt 403). |
-| K2 | Khushi | 🟡 In progress | Security contract, read-only guard, GitHub/Miro read clients, citation layer, tests. Miro live verification **pending** — no token, no MCP server, no board allowlist. |
+| K2 | Khushi | 🟡 In review (PR #3) | Security contract, read-only guard, GitHub/Miro read clients, citation layer, evidence gate, live citation check, 40 tests. Deferred: Miro live verification (`pending`, last in sequence); opt-out verification moved to CP3 (needs P1 `/optout` and L1 retrieval). |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
 | L1 | Likhith | 🟡 In progress | Neon provisioned and connected (PostgreSQL 18.7). Drizzle schema, pg-boss queue and issue-indexing code written. pg-boss hangs (under investigation) and GitHub issue indexing needs a real credential. |
 | L2 | Likhith | ⬜ Pending | Depends on L1. |
