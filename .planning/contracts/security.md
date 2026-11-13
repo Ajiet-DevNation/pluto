@@ -75,6 +75,8 @@ Standard no-evidence message:
   - Miro: board URL
   - Meeting: link to the stored transcript
 - The bot's own output channel (`#pluto`) and prior bot answers are never used as citations. This is enforced in code by `CitationPolicy.blockedChannelIds`, not by convention.
+- **Bot-authored messages are never indexed or cited, in any channel.** The rule is about authorship, not location. `#pluto` is blocked because it contains only bot output; other channels are filtered by `author.bot` at index time.
+- `#pluto-bot` is excluded from v1 retrieval as an operational log channel. Revisit post-v1 with a bot-author filter if its human discussion proves worth searching.
 
 ## 6. Secrets
 
@@ -104,5 +106,5 @@ Standard no-evidence message:
 | Miro access | `pending` — no token, no MCP server, no board allowlist. Client implemented against the read-only REST API with mocked tests; live verification deferred. |
 | GitHub App | `pending` — requires Ajiet-DevNation org owner. Interim read-only fine-grained PAT in use. |
 | Discord indexing method (webhooks vs polling) | `pending` |
-| Cloudflare Workers AI credential owner | `pending` — not assigned in `PR-PLAN.md` |
+| Cloudflare Workers AI credential owner | **resolved** — provisioned by Khushi, 2026-11-13. Workers AI: Read token, verified against live API. Details in `config.json`. |
 | Cloudflare R2 audio storage | `pending` |

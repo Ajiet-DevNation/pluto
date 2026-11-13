@@ -125,7 +125,19 @@
         "database_url": "active — owner Likhith, dev database"
       },
       "miro": "pending — no token, no MCP server, no board allowlist",
-      "cloudflare_workers_ai": "pending — account and API token unassigned in PR-PLAN.md",
+      "cloudflare_workers_ai": {
+        "status": "active",
+        "owner": "Khushi",
+        "scope": "Workers AI: Read (account-wide)",
+        "models": [
+          "@cf/baai/bge-base-en-v1.5",
+          "@cf/meta/llama-3.1-8b-instruct",
+          "@cf/openai/whisper-large-v3-turbo"
+        ],
+        "embedding_dimension": 768,
+        "verified": "2026-11-13 — live API check",
+        "expiry": "not set on token — recommend adding a TTL and rolling quarterly"
+      },
       "cloudflare_r2": "pending decision — audio storage"
     }
   }
