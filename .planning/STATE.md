@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 ## Progress
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
-| Phase 1: Foundation & GitHub & Miro Indexing | ○ In Progress (L1 code complete, pending live-DB verification) | INDEX-01, INDEX-03 | 4/8 |
+| Phase 1: Foundation & GitHub & Miro Indexing | ○ In Progress (L1 code complete, pending live-DB + credential verification) | INDEX-01, INDEX-03 | 4/8 |
 | Phase 2: Discord Indexing & Opt-Out | ○ Pending | INDEX-02, OPTO-01 | 0/4 |
 | Phase 3: Meeting Transcript & Audio Ingestion | ○ Pending | INDEX-04 | 0/4 |
 | Phase 4: /ask Q&A with Citations | ○ Pending | ASK-01 | 0/4 |
@@ -47,7 +47,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | K1 | Khushi | ✅ Merged (PR #1, #2) | Scaffold, Node 22, working `npm start`, README. GitHub App not created — org role is `member`; interim read-only fine-grained PAT verified (`GET` 200 / write attempt 403). |
 | K2 | Khushi | 🟡 In progress | Security contract, read-only guard, GitHub/Miro read clients, citation layer, tests. Miro live verification **pending** — no token, no MCP server, no board allowlist. |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
-| L1 | Likhith | 🟡 In progress | Neon provisioned and connected (PostgreSQL 18.7). Drizzle schema, pg-boss queue and issue-indexing code written. pg-boss hangs (under investigation) and GitHub issue indexing needs a real credential. |
+| L1 | Likhith | 🟡 In progress | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon) and issue-indexing code written. pg-boss verified working. GitHub issue indexing ready — needs `GITHUB_TOKEN` in `.env` to run live. |
 | L2 | Likhith | ⬜ Pending | Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
 | P1 | Pragathi | ⬜ Not started | Depends on K1 only — unblocked. Discord contract must be approved first. |
@@ -112,4 +112,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-13 after K2 implementation*
+*Last updated: 2026-11-13 after Likhith L1 sync with main*

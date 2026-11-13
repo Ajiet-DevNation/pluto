@@ -25,6 +25,7 @@
   "homepage": "https://github.com/Ajiet-DevNation/pluto#readme",
   "dependencies": {
     "@octokit/app": "^16.1.4",
+    "@octokit/rest": "^22.0.1",
     "discord.js": "^14.28.1",
     "dotenv": "^18.0.10",
     "drizzle-orm": "^0.45.4",
