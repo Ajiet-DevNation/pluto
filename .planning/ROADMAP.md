@@ -6,11 +6,11 @@ All ten v1 capabilities are covered across eight phases. Each phase uses vertica
 **Goal:** Set up the Pluto backend scaffold and index the first public Ajiet-DevNation GitHub repository (read-only).
 **Mode:** mvp
 **Success Criteria:**
-1. TypeScript/Express/Discord.js backend scaffold runs on heavencloud plan (Node 22)
+1. TypeScript/Express/Discord.js backend scaffold runs locally (Node 22); deployment to heavencloud plan is Phase 8
 2. Neon Postgres (pgvector, tsvector, Drizzle) database is provisioned and connected
 3. pg-boss job queue is configured for background indexing jobs
-4. Read-only GitHub App via Ganju MCP + Octokit can access Ajiet-DevNation public repos
-5. Read-only Miro access via MCP can access boards, comments, texts, diagrams, and other board content
+4. Read-only GitHub credential can access Ajiet-DevNation public repos (App pending org owner; read-only PAT verified)
+5. Read-only Miro access can read boards, comments, texts, diagrams (MCP server pending; read-only REST client in place)
 6. First public repository's commits, PRs, and issues are indexed and searchable
 7. Miro board content is indexed and searchable alongside GitHub content
 8. No write operations are performed on GitHub or Miro (read-only verified)
@@ -34,7 +34,7 @@ All ten v1 capabilities are covered across eight phases. Each phase uses vertica
 2. Audio is transcribed via Cloudflare Workers AI Whisper
 3. Transcripts are stored (Cloudflare R2 temporary, pending) and indexed in Neon
 4. Meeting content is searchable alongside GitHub and Discord content
-**Requirements:** INDEX-03
+**Requirements:** INDEX-04
 
 ## Phase 4: /ask Q&A with Citations
 **Goal:** Answer questions through /ask with citations to original sources.
@@ -91,7 +91,7 @@ All ten v1 capabilities are covered across eight phases. Each phase uses vertica
 |---|-------|--------------|------------------|
 | 1 | Foundation & GitHub Repository Indexing & Miro MCP Indexing | INDEX-01, INDEX-03 | 8 |
 | 2 | Discord Channel Indexing & Opt-Out | INDEX-02, OPTO-01 | 4 |
-| 3 | Meeting Transcript & Audio Ingestion | INDEX-03 | 4 |
+| 3 | Meeting Transcript & Audio Ingestion | INDEX-04 | 4 |
 | 4 | /ask Q&A with Citations | ASK-01 | 4 |
 | 5 | /decisions & GitHub PR Notifications | DECI-01, PRNT-01 | 3 |
 | 6 | /digest Weekly Summaries | DIGE-01 | 3 |

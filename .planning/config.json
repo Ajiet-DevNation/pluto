@@ -44,8 +44,13 @@
     "core_value": "Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.",
     "team": {
       "lead": "Khushi",
-      "bot_development": ["Pragathi", "Likhith"],
-      "ui_showcase": ["Two additional members — joining after the bot is completed"],
+      "bot_development": [
+        "Pragathi",
+        "Likhith"
+      ],
+      "ui_showcase": [
+        "Two additional members — joining after the bot is completed"
+      ],
       "ui_showcase_status": "pending"
     },
     "hosting": "heavencloud plan",
@@ -66,7 +71,61 @@
       "audio_storage": "pending — Cloudflare R2 under consideration",
       "citation_format": "link to original source",
       "opt_out_scope": "opt out of message indexing",
-      "miro_mcp_access": "pending — Miro MCP server connection details and board allowlist not finalized"
+      "miro_mcp_access": "pending — no token, no MCP server, no board allowlist; read-only REST client implemented, live verification deferred",
+      "github_app": "pending — requires Ajiet-DevNation org owner; interim read-only fine-grained PAT verified"
+    },
+    "discord": {
+      "application_id": "1570482371298467860",
+      "guild_id": "1422593925658579036",
+      "output_channel_id": "1570721649538502686",
+      "output_channel_name": "#pluto",
+      "index_own_output_channel": false,
+      "indexed_channels": {
+        "#project-stack": "1423323863093088407",
+        "#resources": "1422593926367547487",
+        "#announcements": "1422593926367547486"
+      },
+      "excluded_channels": [
+        "#pluto",
+        "#pluto-bot",
+        "#general (text)",
+        "#general (media)",
+        "#off-topic",
+        "#assets",
+        "#welcome-and-rules",
+        "#takoyaki",
+        "all voice channels"
+      ],
+      "unresolved": {
+        "#meeting-plans": "pending — channel not visible to the bot; candidate replacement #event-ideation (1471543039326683329)"
+      }
+    },
+    "credentials": {
+      "github": {
+        "app": "pending — requires Ajiet-DevNation org owner",
+        "interim": {
+          "type": "fine-grained PAT",
+          "owner": "Khushi",
+          "scopes": [
+            "Contents:read",
+            "Issues:read",
+            "Metadata:read"
+          ],
+          "repo_access": "public repositories",
+          "expires": "2027-02-11"
+        }
+      },
+      "discord": {
+        "bot_token": "active",
+        "application_id": "1570482371298467860",
+        "message_content_intent": "enabled"
+      },
+      "neon": {
+        "database_url": "active — owner Likhith, dev database"
+      },
+      "miro": "pending — no token, no MCP server, no board allowlist",
+      "cloudflare_workers_ai": "pending — account and API token unassigned in PR-PLAN.md",
+      "cloudflare_r2": "pending decision — audio storage"
     }
   }
 }

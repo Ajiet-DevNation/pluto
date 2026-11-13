@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "bash scripts/test.sh",
     "build": "tsc",
     "start": "node dist/cmd/pluto/index.js",
     "dev": "tsx watch src/cmd/pluto/index.ts"
