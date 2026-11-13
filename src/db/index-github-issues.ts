@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
 import { resolveGitHubToken } from '../github/app.js';
@@ -103,3 +106,21 @@ export async function indexGitHubIssues(
 
   return results;
 }
+
+async function main() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error('DATABASE_URL is not set');
+    process.exit(1);
+  }
+
+  try {
+    const results = await indexGitHubIssues(connectionString);
+    console.log(`Indexed ${results.length} issues from Ajiet-DevNation public repos`);
+  } catch (error) {
+    console.error('Indexing failed:', error);
+    process.exit(1);
+  }
+}
+
+main();

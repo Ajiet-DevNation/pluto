@@ -1,8 +1,8 @@
-import { pgTable, serial, varchar, text, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, integer, bigint, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const repositories = pgTable('repositories', {
   id: serial('id').primaryKey(),
-  githubId: integer('github_id').notNull().unique(),
+  githubId: bigint('github_id', { mode: 'number' }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   fullName: varchar('full_name', { length: 255 }).notNull(),
   owner: varchar('owner', { length: 255 }).notNull(),
@@ -12,7 +12,7 @@ export const repositories = pgTable('repositories', {
 
 export const issues = pgTable('issues', {
   id: serial('id').primaryKey(),
-  githubId: integer('github_id').notNull().unique(),
+  githubId: bigint('github_id', { mode: 'number' }).notNull().unique(),
   repositoryId: integer('repository_id').references(() => repositories.id, { onDelete: 'cascade' }).notNull(),
   number: integer('number').notNull(),
   title: varchar('title', { length: 500 }).notNull(),
