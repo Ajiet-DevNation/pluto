@@ -83,8 +83,11 @@
       "indexed_channels": {
         "#project-stack": "1423323863093088407",
         "#resources": "1422593926367547487",
-        "#announcements": "1422593926367547486"
+        "#announcements": "1422593926367547486",
+        "#meeting-plans": "1570872485933752502"
       },
+      "indexing_mode": "allowlist",
+      "indexing_rule": "Index ONLY the channels in indexed_channels. Never infer from excluded_channels — that list is documentation and is not exhaustive. Verified against the live channel list on 2026-11-14: the bot sees 29 channels, of which only these 4 are indexed.",
       "excluded_channels": [
         "#pluto",
         "#pluto-bot",
@@ -96,8 +99,21 @@
         "#takoyaki",
         "all voice channels"
       ],
-      "unresolved": {
-        "#meeting-plans": "pending — channel not visible to the bot; candidate replacement #event-ideation (1471543039326683329)"
+      "unresolved": {},
+      "resolved": {
+        "#meeting-plans": "2026-11-14 — channel created under the Projects category (id 1570872485933752502) and added to indexed_channels. Replaces the earlier 'not visible to the bot' state; #event-ideation was not used."
+      },
+      "not_in_policy": {
+        "note": "Channels the bot can see that are in neither list. They are NOT indexed — allowlist indexing covers only indexed_channels. Listed so nobody assumes they are included.",
+        "channels": [
+          "#core-general",
+          "#code-wars",
+          "#event-ideation",
+          "#core-secrets",
+          "#dn-orbit-website",
+          "#server-hub",
+          "#bumblebee"
+        ]
       }
     },
     "credentials": {
