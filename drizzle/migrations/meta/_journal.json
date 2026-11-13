@@ -8,6 +8,13 @@
       "when": 1794567409322,
       "tag": "0000_nifty_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794582122079,
+      "tag": "0001_dear_cerise",
+      "breakpoints": true
     }
   ]
 }
