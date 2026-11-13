@@ -1,6 +1,6 @@
 # Pluto — PR Plan Per Person (Final Team Collaboration & Integration Workflow)
 
-Git workflow and branch strategy for the Pluto v1 release. All ten capabilities ship in v1. Hosting is heavencloud plan. Each person has exactly one feature branch and three work packages (PRs), opened as a single PR targeting `main` when all three are complete. Unresolved items are marked pending; nothing is assumed decided.
+Git workflow and branch strategy for the Pluto v1 release. All ten capabilities ship in v1. Hosting is heavencloud plan. Each person has exactly one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided.
 
 ## Team and Branch Ownership
 
@@ -12,7 +12,7 @@ Git workflow and branch strategy for the Pluto v1 release. All ten capabilities 
 | UI Member 1 | UI & Showcase | TBD (joins after bot complete) | — |
 | UI Member 2 | UI & Showcase | TBD (joins after bot complete) | — |
 
-**Rule:** Each person maintains their own feature branch and completes all three assigned work packages on that branch. Once all three are complete and verified, they open one PR targeting `main`.
+**Rule:** Each person maintains their own feature branch and completes their assigned work packages on that branch. Work packages may be opened as separate PRs targeting `main`, or as one PR once the set is complete and verified. A defect discovered after a package merges is fixed in a small follow-up PR on the same branch — it does not reopen the merged package.
 
 ---
 
@@ -33,8 +33,8 @@ Git workflow and branch strategy for the Pluto v1 release. All ten capabilities 
 
 | PR | Content | Files | Acceptance | Depends on | Target hour |
 |----|---------|-------|------------|------------|-------------|
-| K1 | Initialize TypeScript/Express backend scaffold on heavencloud plan; configure Node.js 22 runtime; set up read-only GitHub App via Ganju MCP + Octokit; set up read-only Miro access via MCP for boards, comments, texts, diagrams | `src/cmd/pluto/**`, `scripts/build.sh`, `src/github/app.go`, `src/miro/mcp.ts` | Backend builds and runs on heavencloud plan; GitHub App is read-only verified; Miro MCP read-only access verified; no write operations on GitHub or Miro | — | 5 |
-| K2 | Enforce read-only boundary and no-unsupported-knowledge guard rail; verify citations link to original sources; verify opted-out content does not appear in search or answers | `src/cmd/pluto/**`, `src/guardrails/**`, `src/citations/**`, `tests/guardrails/` | No GitHub writes; no Discord history edits; no private repo/channel indexing; no unsupported general knowledge in answers; every answer cites a source link | K1 | 6 |
+| K1 | Initialize TypeScript/Express backend scaffold; configure Node.js 22 runtime; establish read-only GitHub access | `src/cmd/pluto/**`, `tsconfig.json`, `.nvmrc`, `scripts/build.sh`, `src/github/app.ts` | Backend builds and runs locally; Node.js 22 pinned; read-only GitHub credential verified (`GET` 200, write attempt 403) | — | 5 |
+| K2 | Enforce the read-only boundary in code: guard the GitHub and Miro clients, prove no write operation is reachable, build the citation layer, verify Miro read access | `src/guardrails/**`, `src/citations/**`, `src/github/**`, `src/miro/**`, `tests/**`, `.planning/contracts/security.md` | Write operations impossible by guard and by credential; static scan finds no write verbs in client modules; citation URLs correct and self-citation blocked; Miro live verification pending (no token) | K1 | 7 |
 | K3 | v1 release hardening; full acceptance verification across all ten requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All ten v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
 
 **Cross-cutting responsibilities (Khushi):**
@@ -128,7 +128,7 @@ Prerequisite order:
 
 | Step | PR | Owner | Depends On | Integration Checkpoint |
 |------|-----|-------|------------|----------------------|
-| 1 | K1 | Khushi | GitHub contract, API contract, DB schema, Miro MCP contract | Backend scaffold builds on heavencloud plan; read-only GitHub access verified; Miro MCP read-only access verified |
+| 1 | K1 | Khushi | GitHub contract, API contract, DB schema | Backend scaffold builds locally; Node.js 22 pinned; read-only GitHub credential verified |
 | 2 | L1 | Likhith | K1, DB schema, background jobs contract | Neon + pg-boss connected; issues indexed |
 | 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; /optout working |
 | 4 | L2 | Likhith | L1, meeting contract, search contract | Audio uploaded, transcribed, indexed in Neon |
@@ -136,7 +136,7 @@ Prerequisite order:
 | 6 | L3 | Likhith | L2, P2 | /decisions searchable; PR notifications sent |
 | 7 | P3 | Pragathi | P2, L2 | /digest delivered; /meeting actions working |
 | 8 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
-| 9 | K3 | Khushi | K2, P3, L3 | All 9 capabilities tested; v1 deployed to heavencloud plan |
+| 9 | K3 | Khushi | K2, P3, L3 | All ten capabilities tested; v1 deployed to heavencloud plan |
 
 ### Phase C — Integration Checkpoints (Catch Incompatible Implementations Early)
 
@@ -147,7 +147,7 @@ Prerequisite order:
 | CP3: Discord + backend integration | After P1, before P2 | Khushi, Pragathi | Discord commands route through backend; /optout enforced in retrieval |
 | CP4: Search + retrieval integration | After L2, before P2 | Khushi, Pragathi, Likhith | Embeddings stored correctly; /ask citations resolve to indexed chunks |
 | CP5: Jobs + digest integration | After L1, before P3 | Khushi, Pragathi, Likhith | pg-boss jobs schedule and run; /digest produced on cadence |
-| CP6: Pre-release integration | Before K3 | All three | All 9 capabilities work together; read-only boundary holds end-to-end |
+| CP6: Pre-release integration | Before K3 | All three | All ten capabilities work together; read-only boundary holds end-to-end |
 
 ### Phase D — Final Integration and Release Verification Checklist (K3)
 
