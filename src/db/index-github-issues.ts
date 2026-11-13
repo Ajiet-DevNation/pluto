@@ -1,13 +1,12 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { Octokit } from '@octokit/rest';
 import { eq } from 'drizzle-orm';
 import { resolveGitHubToken } from '../github/app.js';
 import { createDb } from '../db/index.js';
+import { createGitHubReader } from '../github/reader.js';
+import { getGitHubOrg } from '../config.js';
 import { issues, repositories } from '../db/schema.js';
-
-const GITHUB_ORG = 'Ajiet-DevNation';
 
 export interface IndexedIssue {
   repositoryFullName: string;
@@ -18,21 +17,20 @@ export interface IndexedIssue {
   htmlUrl: string;
 }
 
+const GITHUB_ORG = getGitHubOrg();
+
 export async function indexGitHubIssues(
   connectionString: string
 ): Promise<IndexedIssue[]> {
   const token = resolveGitHubToken();
-  const octokit = new Octokit({ auth: token });
+  const reader = createGitHubReader({ token });
   const db = createDb(connectionString);
   const results: IndexedIssue[] = [];
 
-  const repos = await octokit.paginate(octokit.rest.repos.listForOrg, {
-    org: GITHUB_ORG,
-    type: 'public',
-    per_page: 100,
-  });
+  const repos = await reader.listRepos(GITHUB_ORG);
+  const publicRepos = repos.filter((r) => !r.private);
 
-  for (const repo of repos) {
+  for (const repo of publicRepos) {
     let existingRepo = await db
       .select()
       .from(repositories)
@@ -45,9 +43,9 @@ export async function indexGitHubIssues(
         .values({
           githubId: repo.id,
           name: repo.name,
-          fullName: repo.full_name,
-          owner: repo.owner.login,
-          htmlUrl: repo.html_url,
+          fullName: repo.fullName,
+          owner: repo.fullName.split('/')[0],
+          htmlUrl: repo.htmlUrl,
         })
         .returning();
       existingRepo = [inserted];
@@ -55,14 +53,11 @@ export async function indexGitHubIssues(
 
     const repoRow = existingRepo[0];
 
-    const repoIssues = await octokit.paginate(octokit.rest.issues.listForRepo, {
-      owner: repo.owner.login,
-      repo: repo.name,
-      state: 'all',
-      per_page: 100,
-    });
+    const repoIssues = await reader.listIssues(repo.fullName.split('/')[0], repo.name);
 
     for (const issue of repoIssues) {
+      if (issue.pullRequest) continue;
+
       const existing = await db
         .select()
         .from(issues)
@@ -74,9 +69,9 @@ export async function indexGitHubIssues(
           .update(issues)
           .set({
             title: issue.title,
-            body: issue.body ?? null,
+            body: issue.body,
             state: issue.state,
-            updatedAt: new Date(issue.updated_at),
+            updatedAt: new Date(issue.updatedAt),
           })
           .where(eq(issues.githubId, issue.id));
       } else {
@@ -85,21 +80,21 @@ export async function indexGitHubIssues(
           repositoryId: repoRow.id,
           number: issue.number,
           title: issue.title,
-          body: issue.body ?? null,
+          body: issue.body,
           state: issue.state,
-          htmlUrl: issue.html_url,
-          createdAt: new Date(issue.created_at),
-          updatedAt: new Date(issue.updated_at),
+          htmlUrl: issue.htmlUrl,
+          createdAt: new Date(issue.createdAt),
+          updatedAt: new Date(issue.updatedAt),
         });
       }
 
       results.push({
-        repositoryFullName: repo.full_name,
+        repositoryFullName: repo.fullName,
         issueNumber: issue.number,
         title: issue.title,
-        body: issue.body ?? null,
+        body: issue.body,
         state: issue.state,
-        htmlUrl: issue.html_url,
+        htmlUrl: issue.htmlUrl,
       });
     }
   }
@@ -116,7 +111,7 @@ async function main() {
 
   try {
     const results = await indexGitHubIssues(connectionString);
-    console.log(`Indexed ${results.length} issues from Ajiet-DevNation public repos`);
+    console.log(`Indexed ${results.length} issues from ${GITHUB_ORG} public repos`);
   } catch (error) {
     console.error('Indexing failed:', error);
     process.exit(1);

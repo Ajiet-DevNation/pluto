@@ -102,6 +102,7 @@
     },
     "credentials": {
       "github": {
+        "org": "Ajiet-DevNation",
         "app": "pending — requires Ajiet-DevNation org owner",
         "interim": {
           "type": "fine-grained PAT",

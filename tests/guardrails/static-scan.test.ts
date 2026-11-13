@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 /**
@@ -10,7 +10,7 @@ import { join, relative, resolve } from 'node:path';
  * This scan proves no write path was written into the client modules at all.
  */
 
-const SCANNED_DIRECTORIES = ['src/github', 'src/miro'];
+const SCANNED_DIRECTORIES = ['src/github', 'src/miro', 'src/citations', 'src/discord', 'src/guardrails'];
 
 const FORBIDDEN: ReadonlyArray<{ name: string; pattern: RegExp }> = [
   {
@@ -28,6 +28,9 @@ const FORBIDDEN: ReadonlyArray<{ name: string; pattern: RegExp }> = [
 ];
 
 function walk(dir: string): string[] {
+  if (!existsSync(dir)) {
+    return [];
+  }
   const found: string[] = [];
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);

@@ -7,11 +7,12 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "NODE_OPTIONS='--import tsx' node --test tests/db/schema.test.ts tests/db/db-connection.test.ts tests/db/job-queue.test.ts",
+    "test": "bash scripts/test.sh",
     "build": "tsc",
-    "start": "ts-node src/cmd/pluto/index.ts",
-    "dev": "ts-node-dev --respawn --transpile-only src/cmd/pluto/index.ts",
-    "migrate": "tsx scripts/migrate/index.ts"
+    "start": "node dist/cmd/pluto/index.js",
+    "dev": "tsx watch src/cmd/pluto/index.ts",
+    "migrate": "tsx scripts/migrate/index.ts",
+    "index:github": "tsx src/db/index-github-issues.ts"
   },
   "repository": {
     "type": "git",
