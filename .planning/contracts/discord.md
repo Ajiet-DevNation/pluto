@@ -347,14 +347,18 @@ Pass criteria: **≥ 44 tests pass, 0 fail**, `npm run build` clean. P1 currentl
 
 ### 11.3 Live verification (recorded in the PR)
 
-- Bot online in DevNation (`1422593925658579036`).
-- `/optout` in the guild command list, not global.
-- Backfill logs exactly four channels; no `#core-secrets` or other non-allowlisted channel.
-- Human message in an allowlisted channel indexes once; a bot message there indexes zero times.
-- `/optout` returns ephemeral confirmation; later messages are skipped; existing records are purged.
-- No `.env` in `git status` or the PR diff.
+Verified live on **2026-11-14** in DevNation (`1422593925658579036`) as `pluto#6497` (application/member `1570482371298467860`):
 
-Live guild checks remain manual because the test suite must not require credentials.
+- Bot online and joined the guild.
+- Backfill completed for exactly four channels: `#project-stack` 57 records, `#resources` 11, `#announcements` 5, `#meeting-plans` 0 (empty at test time); 73 total.
+- `#core-secrets` (`1494992020224348230`) has **0 records**; **0** records exist for any non-allowlisted channel.
+- **0** bot-authored records and **0** records in `#pluto`.
+- Guild commands: `["optout"]`; global commands: `[]`.
+- Live member test: member `1417062345112420352` sent two messages in `#project-stack` → 2 records; `/optout` returned the ephemeral confirmation, recorded the opt-out and purged both records (2 → 0); a later message from the same member produced **0** new records.
+- The pre-test state snapshot was restored after verification (73 records, 0 opt-outs) and the three Discord test messages were deleted manually.
+- No `.env` appeared in `git status` or the PR diff.
+
+Live guild checks remain manual because the test suite must not require credentials; the evidence above is recorded in PR #9.
 
 ---
 
@@ -362,11 +366,11 @@ Live guild checks remain manual because the test suite must not require credenti
 
 | P1 criterion | Contract | Verification |
 |--------------|----------|--------------|
-| Bot connected and joined | §3.5, §4 | Startup log + guild fetch; live check |
-| Allowlisted channels indexed | §3.2, §5, §6 | Policy/intake/backfill tests; live counts |
-| Non-selected channels excluded (incl. `#core-secrets`) | D1/D2, §3.2, §5.2 | Negative tests; static scan |
-| Bot-authored never indexed/cited | D3, §7.1 | Intake tests + `authorIsBot` invariant |
-| `/optout` excludes member messages | §7.2, §8.2 | Handler/store tests; live check |
+| Bot connected and joined | §3.5, §4 | Startup log + guild fetch; live verified 2026-11-14 |
+| Allowlisted channels indexed | §3.2, §5, §6 | Policy/intake/backfill tests; live counts 57/11/5/0 |
+| Non-selected channels excluded (incl. `#core-secrets`) | D1/D2, §3.2, §5.2 | Negative tests; static scan; live 0 non-allowlisted records |
+| Bot-authored never indexed/cited | D3, §7.1 | Intake tests + `authorIsBot` invariant; live 0 bot-authored records |
+| `/optout` excludes member messages | §7.2, §8.2 | Handler/store tests; live purge + block verified |
 | Opted-out excluded from search/answers | §6.1, §7.2 | P1 exposes `isOptedOut`; P2 enforces retrieval (CP3) |
 | Guild-scope registration | §8.1 | Command tests + static scan |
 | Tests/build clean | §11.2 | 114 pass, 0 fail; build clean |
@@ -385,7 +389,8 @@ Live guild checks remain manual because the test suite must not require credenti
 | 6 | Attachments/embeds | Text only; skipped when empty. | Proposed |
 | 7 | Job queue | P1 intake is in-process; pg-boss queue deferred. | Proposed |
 | 8 | `MessageContent` disabled | Failed closed + startup warning. | Proposed |
-| 9 | Live guild verification | Manual; requires `.env` credentials and the real guild. | Pending |
+
+Live guild verification is no longer open: it was completed on 2026-11-14 and is recorded in §11.3 and PR #9.
 
 ---
 
