@@ -27,8 +27,8 @@ export async function indexGitHubIssues(
   connectionString: string,
   options: IndexGitHubIssuesOptions = {}
 ): Promise<IndexedIssue[]> {
-  const token = resolveGitHubToken();
-  const reader = options.reader ?? createGitHubReader({ token });
+  const reader =
+    options.reader ?? createGitHubReader({ token: resolveGitHubToken() });
   const db = options.db ?? createDb(connectionString);
   const GITHUB_ORG = options.org ?? getGitHubOrg();
   const results: IndexedIssue[] = [];

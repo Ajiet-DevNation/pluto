@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** Contracts first — search contract written; background-jobs contract written; P1 (Pragathi) starting; L1 follow-ups pending with Likhith
+**Current focus:** P1 (Pragathi) implemented and **live-verified** on `feat/pragathi` — Discord allowlist intake, startup backfill, bot-author exclusion and guild-scoped `/optout`. 114 tests pass, build clean; PR #9 open for review. Discord contract still pending Khushi approval. P2 pending.
 
 ## Team
 - Project Lead: Khushi
@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
 | Phase 1: Foundation & GitHub & Miro Indexing | ● Complete (L1 done) | INDEX-01, INDEX-03 | 6/8 |
-| Phase 2: Discord Indexing & Opt-Out | ○ Pending | INDEX-02, OPTO-01 | 0/4 |
+| Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 live-verified; PR #9 open) | INDEX-02, OPTO-01 | 4/4 |
 | Phase 3: Meeting Transcript & Audio Ingestion | ○ Pending | INDEX-04 | 0/4 |
 | Phase 4: /ask Q&A with Citations | ○ Pending | ASK-01 | 0/4 |
 | Phase 5: /decisions & PR Notifications | ○ Pending | DECI-01, PRNT-01 | 0/3 |
@@ -50,7 +50,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | L1 | Likhith | ✅ Merged (PR #4, `73b06b7`) | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. **Open follow-ups:** no worker/scheduler (indexing runs manually), migrations do not create `vector`/`tsvector` columns. **Completed follow-ups:** migrate runner is now idempotent (schema_migrations tracking table), indexer has test coverage (tests/db/index-github-issues.test.ts), database contract drafted at .planning/contracts/database.md (pending Khushi approval). |
 | L2 | Likhith | ⬜ Pending | Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
-| P1 | Pragathi | ⬜ Not started | Depends on K1 only — unblocked. Discord contract must be approved first. |
+| P1 | Pragathi | ✅ Verified — PR #9 open | Branch `feat/pragathi`. discord.js v14 client, allowlist intake for the 4 configured channels, one startup backfill, bot-author exclusion, guild-scoped `/optout`, JSON state. 114 tests pass, build clean. Live verification 2026-11-14: `pluto#6497` online in DevNation; backfill 57/11/5/0; 0 records in `#core-secrets`/other non-allowlisted channels; guild commands `["optout"]`, global `[]`; member opt-out purged 2 records and blocked a later message. Pre-test state restored afterward. |
 | P2 | Pragathi | ⬜ Pending | Depends on P1, L1. |
 | P3 | Pragathi | ⬜ Pending | Depends on P2, L2. |
 
@@ -107,7 +107,8 @@ At the start of each development session:
 - Miro access token, MCP server and board allowlist — pending
 - Background jobs worker/scheduler — contract written at `.planning/contracts/background-jobs.md`; code not started — pending (Likhith, task 2 — waiting on database contract approval)
 - Migrations do not create `vector`/`tsvector` extension or columns; Neon has pgvector enabled out-of-band, so a fresh database is not reproducible — pending (Likhith, Phase 2 task 5)
-- Discord indexing method (webhooks vs polling) — pending (Pragathi, P1)
+- Discord contract (#3) — draft at `.planning/contracts/discord.md`; Khushi approval pending
+- P1 PR #9 — open, live-verified, awaiting review/merge
 - Audio storage final decision (Cloudflare R2) — pending
 - UI & showcase team members — joining after bot completion (pending)
 - Database contract `.planning/contracts/database.md` — drafted by Likhith, pending Khushi approval
@@ -127,6 +128,11 @@ At the start of each development session:
 | Cloudflare credential | Provisioned by Khushi; Workers AI Read token | `config.json` credentials |
 | `#meeting-plans` | Created 2026-11-14 under Projects, `1570872485933752502`, **indexed** — replaces the unresolved state; `#event-ideation` not used | `config.json` discord.resolved |
 | Channel indexing mode | **allowlist only** — never derive indexing from the exclusion list | `config.json` discord.indexing_mode |
+| Discord indexing method | Gateway `MessageCreate` + one startup backfill per allowlisted channel (`after=<last_id>`); no webhooks | `contracts/discord.md` |
+| Discord command scope | Guild-scoped `guild.commands.set`; global registration forbidden | `contracts/discord.md` |
+| Bot-authored messages | Rejected at intake; stored records carry `author_is_bot=false` and are never retrieved or cited | `contracts/discord.md` |
+| P1 persistence | Atomic JSON at `PLUTO_DATA_DIR` (default `~/.pluto`); Neon swap at P2 | `contracts/discord.md` |
+| `/optout` reversibility | One-way in v1; `/optin` deferred to a later contract change | `contracts/discord.md` |
 
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
@@ -135,4 +141,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-14 — Likhith L1 follow-ups complete: database contract drafted, migrate runner made idempotent, indexer tests added (47/47 pass). Waiting on contract approval before task 2 (worker/scheduler).*
+*Last updated: 2026-11-14 — P1 Discord indexing + `/optout` implemented and live-verified on `feat/pragathi` (114 tests pass, build clean; PR #9 open); L1 follow-ups complete: database contract drafted, migrate runner made idempotent, indexer tests added. Waiting on contract approval before task 2 (worker/scheduler).*
