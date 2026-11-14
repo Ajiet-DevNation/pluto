@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** P2 — index all public Ajiet-DevNation repositories and support `/ask`. P1, L1, and L2 are merged. P2 PR #10 remains open; `fix/p2-github-indexing` is a local, unpushed takeover/fix branch. Build and 193 tests pass locally. App-backed full-corpus reindex and live Discord `/ask` acceptance remain pending.
+**Current focus:** P2 — index all public Ajiet-DevNation repositories and support `/ask`. P1, L1, and L2 are merged. P2 PR #10 remains open; `fix/p2-github-indexing` is a local, unpushed takeover/fix branch. Build and 193 tests pass locally. App authentication can read all 21 public organization repositories; full reindex and live Discord `/ask` acceptance are in progress/pending.
 
 ## Team
 - Project Lead: Khushi

@@ -18,6 +18,7 @@ export interface GitHubSourceIndexResult {
 }
 
 export const MAX_INDEXABLE_GITHUB_FILE_BYTES = 128 * 1024;
+const GITHUB_FILE_FETCH_BATCH = 8;
 
 const TEXT_EXTENSIONS = new Set([
   '.md', '.mdx', '.markdown', '.rst', '.txt', '.adoc', '.asciidoc',
@@ -104,7 +105,7 @@ export async function indexGithubSearchSources(
     'listPullRequests' | 'listCommits'>,
   org: string,
   indexer: Pick<SourceIndexer,
-    'indexGitHubReadme' | 'indexGitHubFile' | 'indexGitHubPullRequest' | 'indexGitHubCommit'>,
+    'indexGitHubReadme' | 'indexGitHubFiles' | 'indexGitHubPullRequest' | 'indexGitHubCommit'>,
 ): Promise<GitHubSourceIndexResult> {
   const repos = (await reader.listRepos(org)).filter((repo) => !repo.private);
   let readmes = 0;
@@ -132,17 +133,23 @@ export async function indexGithubSearchSources(
 
     if (repo.defaultBranch) {
       const tree = await reader.listRepositoryFiles(owner, name, repo.defaultBranch);
-      for (const file of tree) {
-        if (!isIndexableGitHubFile(file.path, file.size)) continue;
-        const content = await reader.getFileContent(owner, name, file.sha);
-        if (!looksLikeText(content) || looksLikeSensitiveContent(content)) continue;
-        await indexer.indexGitHubFile({
-          repositoryFullName: repo.fullName,
-          path: file.path,
-          content,
-          htmlUrl: githubFileUrl(repo.fullName, repo.defaultBranch, file.path),
-        });
-        repositoryFiles += 1;
+      const eligibleFiles = tree.filter((file) => isIndexableGitHubFile(file.path, file.size));
+      for (let start = 0; start < eligibleFiles.length; start += GITHUB_FILE_FETCH_BATCH) {
+        const batch = eligibleFiles.slice(start, start + GITHUB_FILE_FETCH_BATCH);
+        const indexedFiles = (await Promise.all(batch.map(async (file) => {
+          const content = await reader.getFileContent(owner, name, file.sha);
+          if (!looksLikeText(content) || looksLikeSensitiveContent(content)) return null;
+          return {
+            repositoryFullName: repo.fullName,
+            path: file.path,
+            content,
+            htmlUrl: githubFileUrl(repo.fullName, repo.defaultBranch as string, file.path),
+          };
+        }))).filter((file): file is NonNullable<typeof file> => file !== null);
+        if (indexedFiles.length > 0) {
+          await indexer.indexGitHubFiles(indexedFiles);
+          repositoryFiles += indexedFiles.length;
+        }
       }
     }
 

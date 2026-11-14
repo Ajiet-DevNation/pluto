@@ -13,6 +13,7 @@ import type { AnswerGenerator, ScoredSearchChunk } from './types';
 export interface AskSource {
   label: string;
   url: string;
+  references: number[];
 }
 
 export type AskResult =
@@ -30,8 +31,13 @@ export type AskResult =
 export interface AskDependencies {
   retrieval: Pick<RetrievalService, 'retrieve'>;
   generator: AnswerGenerator;
+  githubOrg?: string;
   blockedChannelIds?: readonly string[];
 }
+
+export const MAX_ANSWER_SOURCES = 3;
+export const MAX_ANSWER_CHUNKS = 6;
+const MAX_CHUNKS_PER_SOURCE = 2;
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -54,12 +60,13 @@ function channelFromUrl(url: string): string | null {
 export function sourcesFromChunks(
   chunks: readonly ScoredSearchChunk[],
   blockedChannelIds: readonly string[] = [],
+  maxSources: number = MAX_ANSWER_SOURCES,
 ): AskSource[] {
   const blocked = new Set(blockedChannelIds);
-  const seen = new Set<string>();
   const sources: AskSource[] = [];
+  const byUrl = new Map<string, AskSource>();
 
-  for (const chunk of chunks) {
+  for (const [index, chunk] of chunks.entries()) {
     if (!isHttpUrl(chunk.sourceUrl)) {
       continue;
     }
@@ -67,17 +74,78 @@ export function sourcesFromChunks(
     if (channelId && blocked.has(channelId)) {
       continue;
     }
-    if (seen.has(chunk.sourceUrl)) {
+    const existing = byUrl.get(chunk.sourceUrl);
+    if (existing) {
+      existing.references.push(index + 1);
       continue;
     }
-    seen.add(chunk.sourceUrl);
-    sources.push({
-      label: chunkSourceLabel(chunk.sourceType),
+    if (sources.length >= maxSources) continue;
+    const source = {
+      label: sourceLabel(chunk.sourceType, chunk.sourceUrl),
       url: chunk.sourceUrl,
-    });
+      references: [index + 1],
+    };
+    byUrl.set(chunk.sourceUrl, source);
+    sources.push(source);
   }
 
   return sources;
+}
+
+function sourceLabel(sourceType: ScoredSearchChunk['sourceType'], sourceUrl: string): string {
+  if (sourceType !== 'github') return chunkSourceLabel(sourceType);
+  try {
+    const parts = new URL(sourceUrl).pathname.split('/').filter(Boolean);
+    if (parts.length < 2) return 'GitHub source';
+    const repository = `${parts[0]}/${parts[1]}`;
+    if (parts[2] === 'blob' && parts.length > 4) {
+      return `${repository}: ${decodeURIComponent(parts.slice(4).join('/'))}`;
+    }
+    if (parts[2] === 'issues' || parts[2] === 'pull') {
+      return `${repository} #${parts[3]}`;
+    }
+    if (parts[2] === 'commit') return `${repository} @${parts[3]?.slice(0, 7) ?? ''}`;
+    return repository;
+  } catch {
+    return 'GitHub source';
+  }
+}
+
+export function selectAnswerChunks(
+  chunks: readonly ScoredSearchChunk[],
+  blockedChannelIds: readonly string[] = [],
+  maxSources: number = MAX_ANSWER_SOURCES,
+  maxChunks: number = MAX_ANSWER_CHUNKS,
+): ScoredSearchChunk[] {
+  const blocked = new Set(blockedChannelIds);
+  const sourceCounts = new Map<string, number>();
+  const selected: ScoredSearchChunk[] = [];
+
+  for (const chunk of chunks) {
+    if (!isHttpUrl(chunk.sourceUrl)) continue;
+    const channelId = chunk.channelId ?? channelFromUrl(chunk.sourceUrl);
+    if (channelId && blocked.has(channelId)) continue;
+
+    const sourceCount = sourceCounts.get(chunk.sourceUrl) ?? 0;
+    if (sourceCount === 0 && sourceCounts.size >= maxSources) continue;
+    if (sourceCount >= MAX_CHUNKS_PER_SOURCE) continue;
+
+    selected.push(chunk);
+    sourceCounts.set(chunk.sourceUrl, sourceCount + 1);
+    if (selected.length >= maxChunks) break;
+  }
+
+  return selected;
+}
+
+export function repositoryScopeFromQuestion(
+  question: string,
+  githubOrg?: string,
+): string | undefined {
+  if (!githubOrg) return undefined;
+  const escapedOrg = githubOrg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = question.match(new RegExp(`${escapedOrg}\\/([A-Za-z0-9._-]+)`, 'i'));
+  return match ? `${githubOrg}/${match[1]}` : undefined;
 }
 
 export function buildAskPrompt(
@@ -138,7 +206,7 @@ export function renderAnswer(answer: string, sources: readonly AskSource[]): str
     return trimmed;
   }
   const links = sources
-    .map((source) => `- [${source.label}](${source.url})`)
+    .map((source) => `- ${source.references.map((reference) => `[${reference}]`).join(', ')} [${source.label}](${source.url})`)
     .join('\n');
   return `${trimmed}\n\nSources:\n${links}`;
 }
@@ -153,28 +221,29 @@ export class AskService {
     }
 
     const evidence: EvidenceResult<ScoredSearchChunk> =
-      await this.dependencies.retrieval.retrieve(query);
+      await this.dependencies.retrieval.retrieve(
+        query,
+        repositoryScopeFromQuestion(query, this.dependencies.githubOrg),
+      );
     if (!evidence.ok) {
       return evidence;
     }
 
-    const sources = sourcesFromChunks(
-      evidence.chunks,
-      this.dependencies.blockedChannelIds,
-    );
+    const answerChunks = selectAnswerChunks(evidence.chunks, this.dependencies.blockedChannelIds);
+    const sources = sourcesFromChunks(answerChunks, this.dependencies.blockedChannelIds);
     const generated = await this.dependencies.generator.generate(
-      buildAskPrompt(query, evidence.chunks),
+      buildAskPrompt(query, answerChunks),
     );
     const answer = stripUnverifiedCitationMarkers(
       generated,
-      evidence.chunks.length,
+      answerChunks.length,
     );
 
     return {
       ok: true,
       answer: renderAnswer(answer, sources),
       sources,
-      chunks: evidence.chunks,
+      chunks: answerChunks,
     };
   }
 }

@@ -93,8 +93,8 @@ test('indexes PRs and commits from public repositories only', async () => {
     async indexGitHubReadme(readme: { repositoryFullName: string }) {
       calls.push({ kind: 'readme', repo: readme.repositoryFullName });
     },
-    async indexGitHubFile(file: { repositoryFullName: string }) {
-      calls.push({ kind: 'file', repo: file.repositoryFullName });
+    async indexGitHubFiles(files: readonly { repositoryFullName: string }[]) {
+      for (const file of files) calls.push({ kind: 'file', repo: file.repositoryFullName });
     },
     async indexGitHubPullRequest(pullRequest: { repositoryFullName: string }) {
       calls.push({ kind: 'pr', repo: pullRequest.repositoryFullName });
@@ -154,7 +154,9 @@ test('indexes eligible text files but skips credential-like file paths and conte
   };
   const indexer = {
     async indexGitHubReadme() {},
-    async indexGitHubFile(file: { path: string }) { indexed.push(file.path); },
+    async indexGitHubFiles(files: readonly { path: string }[]) {
+      indexed.push(...files.map((file) => file.path));
+    },
     async indexGitHubPullRequest() {},
     async indexGitHubCommit() {},
   };

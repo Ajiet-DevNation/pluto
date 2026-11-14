@@ -88,6 +88,20 @@ function vectorLiteral(embedding: readonly number[]): string {
   return `[${embedding.join(',')}]`;
 }
 
+function githubRepositoryFilter(repositoryFullName?: string) {
+  if (!repositoryFullName) return sql``;
+  const lower = repositoryFullName.toLowerCase();
+  const hashPrefix = `${lower}#`;
+  const commitPrefix = `${lower}@`;
+  return sql`
+    AND source_type = 'github'
+    AND (
+      left(lower(source_id), ${hashPrefix.length}) = ${hashPrefix}
+      OR left(lower(source_id), ${commitPrefix.length}) = ${commitPrefix}
+    )
+  `;
+}
+
 export class PostgresSearchStore implements SearchStore {
   constructor(private readonly db: Db) {}
 
@@ -131,6 +145,7 @@ export class PostgresSearchStore implements SearchStore {
   async vectorSearch(
     embedding: readonly number[],
     limit: number,
+    repositoryFullName?: string,
   ): Promise<ScoredSearchChunk[]> {
     if (embedding.length === 0) {
       return [];
@@ -150,6 +165,7 @@ export class PostgresSearchStore implements SearchStore {
         1 - (embedding <=> ${literal}::vector) AS score
       FROM search_chunks
       WHERE embedding IS NOT NULL
+      ${githubRepositoryFilter(repositoryFullName)}
       ORDER BY embedding <=> ${literal}::vector
       LIMIT ${limit}
     `);
@@ -159,7 +175,11 @@ export class PostgresSearchStore implements SearchStore {
       .filter((row): row is ScoredSearchChunk => row !== null);
   }
 
-  async fullTextSearch(query: string, limit: number): Promise<ScoredSearchChunk[]> {
+  async fullTextSearch(
+    query: string,
+    limit: number,
+    repositoryFullName?: string,
+  ): Promise<ScoredSearchChunk[]> {
     if (!query.trim()) {
       return [];
     }
@@ -178,6 +198,7 @@ export class PostgresSearchStore implements SearchStore {
         ts_rank_cd(search_vector, q.query) AS score
       FROM search_chunks, q
       WHERE search_vector @@ q.query
+      ${githubRepositoryFilter(repositoryFullName)}
       ORDER BY score DESC
       LIMIT ${limit}
     `);

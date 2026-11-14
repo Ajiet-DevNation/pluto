@@ -4,7 +4,9 @@ import { NO_EVIDENCE_MESSAGE } from '../../src/guardrails/evidence';
 import {
   AskService,
   buildAskPrompt,
+  repositoryScopeFromQuestion,
   renderAnswer,
+  selectAnswerChunks,
   sourcesFromChunks,
   stripUnverifiedCitationMarkers,
 } from '../../src/search/ask';
@@ -80,7 +82,7 @@ test('a grounded answer includes the evidence and source links', async () => {
   if (result.ok) {
     assert.match(result.answer, /The stack is TypeScript and Postgres \[1\]\./);
     assert.match(result.answer, /Sources:/);
-    assert.match(result.answer, /\[Discord message\]\(https:\/\/discord\.com\/channels\//);
+    assert.match(result.answer, /\[1\] \[Discord message\]\(https:\/\/discord\.com\/channels\//);
     assert.equal(result.sources.length, 1);
   }
   assert.equal(generator.prompts.length, 1);
@@ -92,6 +94,49 @@ test('a grounded answer includes the evidence and source links', async () => {
 test('source links are de-duplicated by URL', async () => {
   const sources = sourcesFromChunks([chunk(), chunk({ chunkIndex: 1 })]);
   assert.equal(sources.length, 1);
+  assert.deepEqual(sources[0].references, [1, 2]);
+});
+
+test('answer evidence is limited to three unique URLs and two chunks per URL', () => {
+  const chunks = [
+    chunk({ sourceUrl: 'https://github.com/Ajiet-DevNation/repo-a/blob/main/a.ts' }),
+    chunk({ sourceUrl: 'https://github.com/Ajiet-DevNation/repo-a/blob/main/a.ts', chunkIndex: 1 }),
+    chunk({ sourceUrl: 'https://github.com/Ajiet-DevNation/repo-a/blob/main/b.ts', chunkIndex: 0 }),
+    chunk({ sourceUrl: 'https://github.com/Ajiet-DevNation/repo-b/blob/main/c.ts' }),
+    chunk({ sourceUrl: 'https://github.com/Ajiet-DevNation/repo-c/blob/main/d.ts' }),
+  ];
+  const selected = selectAnswerChunks(chunks);
+  assert.equal(selected.length, 4);
+  assert.equal(new Set(selected.map((item) => item.sourceUrl)).size, 3);
+  assert.equal(sourcesFromChunks(selected).length, 3);
+});
+
+test('extracts an explicit repository qualifier for scoped retrieval', () => {
+  assert.equal(
+    repositoryScopeFromQuestion(
+      'According to Ajiet-DevNation/DevNation-CMS, what is the project for?',
+      'Ajiet-DevNation',
+    ),
+    'Ajiet-DevNation/DevNation-CMS',
+  );
+  assert.equal(repositoryScopeFromQuestion('What is Pluto?', 'Ajiet-DevNation'), undefined);
+});
+
+test('/ask passes an explicit repository qualifier to retrieval', async () => {
+  let requestedRepository: string | undefined;
+  const ask = new AskService({
+    retrieval: {
+      async retrieve(_question, repositoryFullName) {
+        requestedRepository = repositoryFullName;
+        return { ok: true, chunks: [chunk()] };
+      },
+    },
+    generator: new FakeGenerator(),
+    githubOrg: 'Ajiet-DevNation',
+  });
+
+  await ask.ask('Tell me about Ajiet-DevNation/DevNation-CMS');
+  assert.equal(requestedRepository, 'Ajiet-DevNation/DevNation-CMS');
 });
 
 test('blocked channels never become citations', () => {

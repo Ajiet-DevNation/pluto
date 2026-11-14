@@ -21,7 +21,7 @@ export type GitHubCredential =
 type Env = Record<string, string | undefined>;
 
 export interface InstallationOctokit {
-  auth(...args: unknown[]): Promise<unknown>;
+  auth(options: { type: 'installation' }): Promise<unknown>;
 }
 
 export interface GitHubAppClient {
@@ -146,7 +146,7 @@ export function createGitHubTokenProvider(
       }),
     ).then((app) => app.getInstallationOctokit(credential.installationId));
     const octokit = await installationClient;
-    const auth = await octokit.auth();
+    const auth = await octokit.auth({ type: 'installation' });
     if (!auth || typeof auth !== 'object' || !('token' in auth)) {
       throw new GitHubCredentialError('GitHub App did not return an installation token');
     }

@@ -8,7 +8,7 @@
  */
 
 import { createDb, type Db } from '../db/index';
-import { getDiscordGuildId, getDiscordOutputChannelId } from '../config';
+import { getDiscordGuildId, getDiscordOutputChannelId, getGitHubOrg } from '../config';
 import type { DiscordIndexRecord } from '../discord/types';
 import {
   createDefaultStore,
@@ -82,6 +82,7 @@ export function createSearchRuntimeFromEnv(
   const askService = new AskService({
     retrieval,
     generator,
+    githubOrg: getGitHubOrg(),
     blockedChannelIds: [outputChannelId],
   });
 

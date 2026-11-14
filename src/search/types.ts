@@ -30,8 +30,16 @@ export interface ScoredSearchChunk extends SearchChunkInput {
 
 export interface SearchStore {
   upsertChunks(chunks: readonly SearchChunkInput[]): Promise<void>;
-  vectorSearch(embedding: readonly number[], limit: number): Promise<ScoredSearchChunk[]>;
-  fullTextSearch(query: string, limit: number): Promise<ScoredSearchChunk[]>;
+  vectorSearch(
+    embedding: readonly number[],
+    limit: number,
+    repositoryFullName?: string,
+  ): Promise<ScoredSearchChunk[]>;
+  fullTextSearch(
+    query: string,
+    limit: number,
+    repositoryFullName?: string,
+  ): Promise<ScoredSearchChunk[]>;
   /** Remove every indexed chunk for a Discord author. Returns rows affected. */
   deleteDiscordAuthor(authorId: string): Promise<number>;
 }
@@ -96,4 +104,5 @@ export interface SourceIndexer {
   indexGitHubCommit(commit: IndexGitHubCommit): Promise<void>;
   indexGitHubReadme(readme: IndexGitHubReadme): Promise<void>;
   indexGitHubFile(file: IndexGitHubFile): Promise<void>;
+  indexGitHubFiles(files: readonly IndexGitHubFile[]): Promise<void>;
 }

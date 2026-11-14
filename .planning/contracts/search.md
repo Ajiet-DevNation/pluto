@@ -39,6 +39,9 @@ embedding re-index of every stored chunk.
   reject any repository marked private.
 - P2 indexes repository READMEs, issues, pull requests, commit messages, and
   eligible text/source files from each public repository's default branch.
+- Issue/PR comment threads, PR review comments, and historical commit patches
+  are not included in this first corpus pass; indexed issue/PR title and body,
+  commit messages, and the current default-branch files are searchable.
 - Paginate repository, issue, pull-request, and commit list endpoints so a
   result set larger than one API page is not silently truncated.
 - Source-file ingestion uses an explicit text/source extension allowlist, a

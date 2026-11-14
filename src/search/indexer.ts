@@ -88,7 +88,12 @@ export class SearchIndexer implements SourceIndexer {
   }
 
   async indexGitHubFile(file: IndexGitHubFile): Promise<void> {
-    await this.upsertEmbedded(buildGithubFileChunks(file));
+    await this.indexGitHubFiles([file]);
+  }
+
+  async indexGitHubFiles(files: readonly IndexGitHubFile[]): Promise<void> {
+    if (files.length === 0) return;
+    await this.upsertEmbedded(files.flatMap(buildGithubFileChunks));
   }
 
   private async upsertEmbedded(chunks: SearchChunkInput[]): Promise<void> {

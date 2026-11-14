@@ -170,6 +170,33 @@ test('retrieval runs vector and full-text search, then passes the gate', async (
   assert.equal(store.textCalls[0].query, 'what is the project stack?');
 });
 
+test('retrieval passes an explicit repository scope to both search methods', async () => {
+  const calls: Array<{ kind: string; repository?: string }> = [];
+  const retrieval = new RetrievalService({
+    embeddingClient: { async embed() { return [[0.1, 0.2]]; } },
+    searchStore: {
+      async upsertChunks() {},
+      async vectorSearch(_embedding, _limit, repository) {
+        calls.push({ kind: 'vector', repository });
+        return [];
+      },
+      async fullTextSearch(_query, _limit, repository) {
+        calls.push({ kind: 'text', repository });
+        return [];
+      },
+      async deleteDiscordAuthor() { return 0; },
+    },
+    guildId: GUILD,
+    minScore: 0.4,
+  });
+
+  await retrieval.retrieve('CMS setup', 'Ajiet-DevNation/DevNation-CMS');
+  assert.deepEqual(calls, [
+    { kind: 'vector', repository: 'Ajiet-DevNation/DevNation-CMS' },
+    { kind: 'text', repository: 'Ajiet-DevNation/DevNation-CMS' },
+  ]);
+});
+
 test('retrieval returns the standard no-evidence result below the threshold', async () => {
   const service = new RetrievalService({
     embeddingClient: new FakeEmbeddings(),

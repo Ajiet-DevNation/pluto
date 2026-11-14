@@ -123,7 +123,10 @@ export async function filterRetrievedChunks(
 export class RetrievalService {
   constructor(private readonly dependencies: RetrievalDependencies) {}
 
-  async retrieve(question: string): Promise<EvidenceResult<ScoredSearchChunk>> {
+  async retrieve(
+    question: string,
+    repositoryFullName?: string,
+  ): Promise<EvidenceResult<ScoredSearchChunk>> {
     const query = question.trim();
     if (!query) {
       return gateEvidence([], this.dependencies.minScore);
@@ -136,8 +139,8 @@ export class RetrievalService {
 
     const limit = this.dependencies.candidateLimit ?? DEFAULT_CANDIDATE_LIMIT;
     const [vectorCandidates, fullTextCandidates] = await Promise.all([
-      this.dependencies.searchStore.vectorSearch(embedding, limit),
-      this.dependencies.searchStore.fullTextSearch(query, limit),
+      this.dependencies.searchStore.vectorSearch(embedding, limit, repositoryFullName),
+      this.dependencies.searchStore.fullTextSearch(query, limit, repositoryFullName),
     ]);
 
     const merged = mergeCandidates(vectorCandidates, fullTextCandidates).slice(0, limit);
