@@ -12,12 +12,12 @@ CREATE TABLE "search_chunks" (
     "source_type" varchar(50) NOT NULL,
     "source_id" varchar(255) NOT NULL,
     "chunk_index" integer NOT NULL,
-    "source_url" text NOT NULL,
+    "source_url" text,
     "channel_id" varchar(255),
     "author_id" varchar(255),
     "content" text NOT NULL,
     "embedding" vector(768),
-    "search_vector" text NOT NULL,
+    "search_vector" tsvector GENERATED ALWAYS AS (to_tsvector('english', "content")) STORED,
     "indexed_at" timestamptz NOT NULL DEFAULT now()
 );
 
