@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   buildDiscordSearchChunk,
   buildGithubCommitChunks,
+  buildGithubFileChunks,
   buildGithubIssueChunks,
   buildGithubPullRequestChunks,
+  buildGithubReadmeChunks,
   chunkText,
 } from '../../src/search/chunk';
 import { makeRecord } from '../discord/helpers';
@@ -95,4 +97,34 @@ test('GitHub pull requests and commits produce citable chunks', () => {
   assert.match(pullRequest[0].content, /Merged: 2026-11-14/);
   assert.equal(commit[0].sourceId, 'Ajiet-DevNation/pluto@823d07c1a3e');
   assert.match(commit[0].content, /feat\(p2\)/);
+});
+
+test('GitHub README content is chunked and cited to its repository URL', () => {
+  const chunks = buildGithubReadmeChunks({
+    repositoryFullName: 'Ajiet-DevNation/pluto',
+    path: 'README.md',
+    content: '# Pluto\nA read-only knowledge assistant.',
+    htmlUrl: 'https://github.com/Ajiet-DevNation/pluto/blob/main/README.md',
+    description: 'Knowledge assistant',
+  });
+  assert.equal(chunks.length, 1);
+  assert.equal(chunks[0].sourceType, 'github');
+  assert.equal(chunks[0].sourceId, 'Ajiet-DevNation/pluto#readme');
+  assert.equal(chunks[0].sourceUrl, 'https://github.com/Ajiet-DevNation/pluto/blob/main/README.md');
+  assert.match(chunks[0].content, /read-only knowledge assistant/);
+  assert.match(chunks[0].content, /Repository description: Knowledge assistant/);
+});
+
+test('GitHub source files get stable ids and real blob citations', () => {
+  const chunks = buildGithubFileChunks({
+    repositoryFullName: 'Ajiet-DevNation/pluto',
+    path: 'src/search.ts',
+    content: 'export const answer = 42;',
+    htmlUrl: 'https://github.com/Ajiet-DevNation/pluto/blob/main/src/search.ts',
+  });
+  assert.equal(chunks.length, 1);
+  assert.equal(chunks[0].sourceId.length < 255, true);
+  assert.equal(chunks[0].sourceUrl, 'https://github.com/Ajiet-DevNation/pluto/blob/main/src/search.ts');
+  assert.match(chunks[0].content, /src\/search.ts/);
+  assert.match(chunks[0].content, /export const answer = 42/);
 });

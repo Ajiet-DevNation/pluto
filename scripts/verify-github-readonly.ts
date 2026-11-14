@@ -12,7 +12,7 @@
  *   npx tsx scripts/verify-github-readonly.ts --probe-write
  */
 import 'dotenv/config';
-import { resolveGitHubToken } from '../src/github/app';
+import { createGitHubTokenProvider } from '../src/github/app';
 import { createGitHubReader } from '../src/github/reader';
 
 const OWNER = process.env.VERIFY_GITHUB_OWNER ?? 'Ajiet-DevNation';
@@ -20,8 +20,8 @@ const REPO = process.env.VERIFY_GITHUB_REPO ?? 'pluto';
 const BASE = 'https://api.github.com';
 
 async function main(): Promise<void> {
-  const token = resolveGitHubToken();
-  const reader = createGitHubReader({ token });
+  const tokenProvider = createGitHubTokenProvider();
+  const reader = createGitHubReader({ tokenProvider });
 
   const repo = await reader.getRepo(OWNER, REPO);
   console.log(`read: 200 — ${repo.fullName} (private=${repo.private})`);
@@ -34,6 +34,7 @@ async function main(): Promise<void> {
     return;
   }
 
+  const token = await tokenProvider();
   console.log(`write probe: POST ${BASE}/repos/${OWNER}/${REPO}/issues`);
   const response = await fetch(`${BASE}/repos/${OWNER}/${REPO}/issues`, {
     method: 'POST',

@@ -20,9 +20,6 @@ app.use(express.json());
 app.use('/upload', uploadRouter);
 
 const DATABASE_URL = process.env.DATABASE_URL;
-if (DATABASE_URL) {
-  void startBackgroundJobs(DATABASE_URL);
-}
 
 const server = app.listen(PORT, () => {
   console.log(`Pluto backend running on port ${PORT}`);
@@ -33,6 +30,10 @@ let shutdownBot: (() => Promise<void>) | undefined;
 async function start(): Promise<void> {
   const baseStore = createDefaultStore();
   const search = createSearchRuntimeFromEnv();
+
+  if (DATABASE_URL) {
+    await startBackgroundJobs(DATABASE_URL, search?.indexer);
+  }
 
   if (search) {
     // P1 records predate search_chunks; bring them over once before intake

@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** L2 — Meeting transcript upload, Whisper transcription, Neon storage, pg-boss indexing jobs. P1 (Pragathi) implemented and live-verified on feat/pragathi — Discord allowlist intake, startup backfill, bot-author exclusion and guild-scoped /optout. 114 tests pass, build clean; PR #9 open for review. Discord contract still pending Khushi approval. P2 pending.
+**Current focus:** P2 — index all public Ajiet-DevNation repositories and support `/ask`. P1, L1, and L2 are merged. P2 PR #10 remains open; `fix/p2-github-indexing` is a local, unpushed takeover/fix branch. Build and 193 tests pass locally. App-backed full-corpus reindex and live Discord `/ask` acceptance remain pending.
 
 ## Team
 - Project Lead: Khushi
@@ -16,10 +16,10 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 - Backend: TypeScript, Node.js 22, Express.js, Discord.js v14
 - Database: Neon PostgreSQL (pgvector, tsvector, Drizzle ORM)
 - Job Queue: pg-boss
-- GitHub Integration: Read-only GitHub App via Ganju MCP + Octokit
+- GitHub Integration: Read-only GitHub App via Octokit App auth (implementation/live verification pending)
 - Miro Integration: Read-only Miro access via MCP (boards, comments, texts, diagrams)
 - AI & Embeddings: Cloudflare Workers AI (bge-base-en-v1.5, instruct model, Whisper)
-- Audio Storage: Cloudflare R2 (temporary, under consideration)
+- Audio Storage: None in v1; transcript-only ingestion
 
 ## Read-Only Boundary
 - No writes to GitHub repositories
@@ -31,10 +31,10 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 ## Progress
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
-| Phase 1: Foundation & GitHub & Miro Indexing | ● Complete (L1 done) | INDEX-01, INDEX-03 | 6/8 |
-| Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 live-verified; PR #9 open) | INDEX-02, OPTO-01 | 4/4 |
-| Phase 3: Meeting Transcript & Audio Ingestion | ○ Pending | INDEX-04 | 0/4 |
-| Phase 4: /ask Q&A with Citations | ○ Pending | ASK-01 | 0/4 |
+| Phase 1: Foundation & GitHub & Miro Indexing | ◐ Partial (GitHub code in place; App auth live check and Miro verification pending) | INDEX-01, INDEX-03 | 6/8 |
+| Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
+| Phase 3: Meeting Transcript & Audio Ingestion | ✅ Implemented (L2 merged; acceptance verification tracked) | INDEX-04 | 4/4 |
+| Phase 4: /ask Q&A with Citations | ◐ In progress (P2 code and local tests ready; live full-corpus validation pending) | ASK-01 | 3/4 |
 | Phase 5: /decisions & PR Notifications | ○ Pending | DECI-01, PRNT-01 | 0/3 |
 | Phase 6: /digest Weekly Summaries | ○ Pending | DIGE-01 | 0/3 |
 | Phase 7: Meeting Summaries & Action Items | ○ Pending | MEET-01 | 0/4 |
@@ -44,14 +44,14 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 | Package | Owner | Status | Notes |
 |---------|-------|--------|-------|
-| K1 | Khushi | ✅ Merged (PR #1, #2) | Scaffold, Node 22, working `npm start`, README. GitHub App not created — org role is `member`; interim read-only fine-grained PAT verified (`GET` 200 / write attempt 403). |
-| K2 | Khushi | ✅ Merged (PR #3, `b3761d9`) | Security contract, read-only guard, GitHub/Miro read clients, citation layer, evidence gate, live citation check, 40 tests. Deferred: Miro live verification (`pending`, last in sequence); opt-out verification moved to CP3 (needs P1 `/optout` and L1 retrieval). |
+| K1 | Khushi | ✅ Merged (PR #1, #2) | Scaffold, Node 22, backend. PAT read access was verified. GitHub App is now installed; App auth code/live verification is still pending. |
+| K2 | Khushi | ◐ Code merged (PR #3, #7); live Miro check pending | Read-only guards, citations, evidence gate, and tests are merged. Miro token/MCP/board allowlist and live read verification are still outstanding. |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
-| L1 | Likhith | ✅ Merged (PR #4, `73b06b7`) | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. **Open follow-ups:** no worker/scheduler (indexing runs manually), migrations do not create `vector`/`tsvector` columns. **Completed follow-ups:** migrate runner is now idempotent (schema_migrations tracking table), indexer has test coverage (tests/db/index-github-issues.test.ts), database contract drafted at .planning/contracts/database.md (pending Khushi approval). |
+| L1 | Likhith | ✅ Complete (PR #4 + #8, migration fix #12) | Neon/Drizzle, pg-boss, public issue indexing, scheduled worker, idempotent migrations, tests, `vector(768)`/`tsvector` migration. Latest `main` tests/build pass. |
 | L2 | Likhith | ✅ Complete | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon. Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
-| P1 | Pragathi | ✅ Verified — PR #9 open | Branch `feat/pragathi`. discord.js v14 client, allowlist intake for the 4 configured channels, one startup backfill, bot-author exclusion, guild-scoped `/optout`, JSON state. 114 tests pass, build clean. Live verification 2026-11-14: `pluto#6497` online in DevNation; backfill 57/11/5/0; 0 records in `#core-secrets`/other non-allowlisted channels; guild commands `["optout"]`, global `[]`; member opt-out purged 2 records and blocked a later message. Pre-test state restored afterward. |
-| P2 | Pragathi | ⬜ Pending | Depends on P1, L1. |
+| P1 | Pragathi | ✅ Merged and live-verified (PR #9) | Discord allowlist intake, startup backfill, bot-author exclusion, guild-scoped `/optout`; live verification passed. |
+| P2 | Pragathi / Khushi takeover fix | ◐ In progress (PR #10 open; local `fix/p2-github-indexing`) | `/ask`, hybrid retrieval, App/PAT credential provider, paginated public-repository discovery, issues/PRs/commits/READMEs, and eligible source-file indexing with exclusions. Build and 193 tests pass locally; Khushi must run the App-backed full reindex and approve before any PR is opened. |
 | P3 | Pragathi | ⬜ Pending | Depends on P2, L2. |
 
 ### Credentials inventory
@@ -61,12 +61,12 @@ Values are never recorded here — only existence, owner, scope and expiry.
 | Credential | Status | Owner | Scope | Expiry |
 |------------|--------|-------|-------|--------|
 | Discord bot token | ✅ Active | Khushi | Bot, Message Content Intent | — |
-| GitHub App | ❌ Not created | — | Requires Ajiet-DevNation org owner | — |
+| GitHub App | ✅ Created and installed; auth code/verification pending | Khushi | Ajiet-DevNation installation, read-only repo permissions; public repos | — |
 | GitHub PAT (interim) | ✅ Active | Khushi | Fine-grained, public repos, Contents/Issues/Metadata read | 90 days |
 | Neon `DATABASE_URL` | ✅ Active | Likhith | Dev database, pgvector | — |
 | Miro access token | ❌ Missing | — | Board read | — |
 | Cloudflare Workers AI | ✅ Active | Khushi | Workers AI: Read (account-wide); bge-base-en-v1.5 (768), llama-3.1-8b-instruct, whisper-large-v3-turbo | Token has no TTL — roll quarterly |
-| Cloudflare R2 | ❌ Pending decision | — | Audio storage | — |
+| Cloudflare R2 | ⛔ Not used in v1 | — | Transcript-only audio flow; no audio persistence | — |
 
 ## Discord Channel Policy
 
@@ -103,10 +103,12 @@ At the start of each development session:
 - Pending/unresolved decisions are marked `"pending"` in `PROJECT.md` Key Decisions and `config.json`, and are not assumed resolved across sessions.
 
 ## Unresolved / Pending Items
-- GitHub App creation — blocked on Ajiet-DevNation org owner — pending
+- P2 full-corpus live reindex using the GitHub App; verify all public repos are enumerated and private repos/files remain excluded
+- GitHub App live read-only verification; PAT remains fallback until it passes
 - Miro access token, MCP server and board allowlist — pending
-- Discord contract (#3) — draft at `.planning/contracts/discord.md`; Khushi approval pending
-- P1 PR #9 — open, live-verified, awaiting review/merge
+- P2 PR #10 — open and stale against latest `main`; takeover fix branch contains updated P2 work but is not pushed pending Khushi approval
+- API contract #2, Miro contract #5, and Meeting contract #8 — pending
+- Database contract #1 approval status — pending confirmation by Khushi
 - Audio storage — decided: not needed for v1, transcript-only (audio goes directly to Whisper, buffer discarded)
 - CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_AI_TOKEN — verified working via Live API check; need values in each .env for local runs
 - UPLOAD_TOKEN — static upload auth token for v1; needs value in each .env
@@ -137,6 +139,7 @@ At the start of each development session:
 | Transcript storage | `meeting_transcripts` table + `search_chunks` chunks with `vector(768)` + `search_vector` tsvector | `contracts/database.md` (L2 contract), `contracts/search.md` |
 | Audio persistence | None — audio buffer discarded after Whisper; no R2, no disk | `contracts/database.md` (L2 scope decision) |
 | Citation URL for transcripts | `sourceUrl` from upload (e.g., Discord message link); gap tracked as pending if no real URL | `contracts/database.md` (L2 contract) |
+| GitHub corpus scope | All public Ajiet-DevNation repos; README, issues, PRs, commits, and eligible text/source files; no private repos; paginated | `contracts/github.md`, `contracts/search.md` |
 
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
@@ -145,4 +148,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-14 — L2 complete: upload endpoint, Whisper transcription, Neon storage (meeting_transcripts + search_chunks), pg-boss index-transcript queue, 123 tests pass, build clean. R2 removed; UPLOAD_TOKEN added for v1 auth.*
+*Last updated: 2026-11-14 — P2 indexing fix in progress on local `fix/p2-github-indexing`; latest local validation: build clean, 193 tests pass. No push or PR opened; live App-backed reindex and Khushi approval are pending.*

@@ -121,7 +121,7 @@ Indexes:
 - `meeting_transcripts_source_idx` (btree on `source`)
 - `meeting_transcripts_transcribed_at_idx` (btree on `transcribed_at`)
 
-## Planned search chunk table
+## Search chunk table
 
 ### `search_chunks`
 
@@ -134,7 +134,7 @@ by `drizzle/migrations/0004_search_chunks.sql` and represented in
 |--------|------|----------|-------|
 | `id` | uuid | NO | primary key |
 | `source_type` | text | NO | `github` \| `discord` \| `meeting` \| `miro` |
-| `source_id` | text | NO | issue/pr number, message id, transcript id |
+| `source_id` | text | NO | stable source key (issue, PR, commit, README, repo file, Discord message, transcript) |
 | `chunk_index` | integer | NO | zero-based position within the source |
 | `source_url` | text | YES | original source URL; nullable for records without a citable URL |
 | `channel_id` | text | YES | Discord only; `null` for other sources |

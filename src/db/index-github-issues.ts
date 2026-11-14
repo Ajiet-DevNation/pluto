@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { eq } from 'drizzle-orm';
-import { resolveGitHubToken } from '../github/app.js';
+import { createGitHubTokenProvider } from '../github/app.js';
 import { createDb, type Db } from '../db/index.js';
 import { createGitHubReader, type GitHubReader } from '../github/reader.js';
 import { getGitHubOrg } from '../config.js';
@@ -31,7 +31,7 @@ export async function indexGitHubIssues(
   options: IndexGitHubIssuesOptions = {}
 ): Promise<IndexedIssue[]> {
   const reader =
-    options.reader ?? createGitHubReader({ token: resolveGitHubToken() });
+    options.reader ?? createGitHubReader({ tokenProvider: createGitHubTokenProvider() });
   const db = options.db ?? createDb(connectionString);
   const GITHUB_ORG = options.org ?? getGitHubOrg();
   const results: IndexedIssue[] = [];

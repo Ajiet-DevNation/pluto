@@ -32,6 +32,25 @@ Credentials: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN` (`.env`).
 This dimension is a hard constraint. Changing it requires a migration and an
 embedding re-index of every stored chunk.
 
+## GitHub corpus coverage
+
+- Enumerate every **public** repository in Ajiet-DevNation using paginated
+  GitHub API requests; explicitly request public repositories and defensively
+  reject any repository marked private.
+- P2 indexes repository READMEs, issues, pull requests, commit messages, and
+  eligible text/source files from each public repository's default branch.
+- Paginate repository, issue, pull-request, and commit list endpoints so a
+  result set larger than one API page is not silently truncated.
+- Source-file ingestion uses an explicit text/source extension allowlist, a
+  128 KiB per-file limit, and excludes binary files, lockfiles, generated or
+  vendored directories, `.env`/credential/private-key paths, and likely leaked
+  GitHub/AWS/private-key credentials. This is not an index of binary assets or
+  arbitrarily large generated/vendor trees.
+- If GitHub reports a truncated recursive tree, indexing fails loudly instead
+  of reporting a successful partial repository index.
+- The manual reindex command must fail loudly if GitHub credentials are missing
+  or a GitHub API request fails; it must not report a successful partial index.
+
 ## Chunk format
 
 A chunk is the unit of retrieval and the unit of citation.

@@ -14,14 +14,18 @@ import type {
 import {
   buildDiscordSearchChunk,
   buildGithubCommitChunks,
+  buildGithubFileChunks,
   buildGithubIssueChunks,
   buildGithubPullRequestChunks,
+  buildGithubReadmeChunks,
 } from './chunk';
 import type {
   EmbeddingClient,
   IndexGitHubCommit,
+  IndexGitHubFile,
   IndexGitHubIssue,
   IndexGitHubPullRequest,
+  IndexGitHubReadme,
   SearchChunkInput,
   SearchStore,
   SourceIndexer,
@@ -77,6 +81,14 @@ export class SearchIndexer implements SourceIndexer {
 
   async indexGitHubCommit(commit: IndexGitHubCommit): Promise<void> {
     await this.upsertEmbedded(buildGithubCommitChunks(commit));
+  }
+
+  async indexGitHubReadme(readme: IndexGitHubReadme): Promise<void> {
+    await this.upsertEmbedded(buildGithubReadmeChunks(readme));
+  }
+
+  async indexGitHubFile(file: IndexGitHubFile): Promise<void> {
+    await this.upsertEmbedded(buildGithubFileChunks(file));
   }
 
   private async upsertEmbedded(chunks: SearchChunkInput[]): Promise<void> {

@@ -12,7 +12,7 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 - [ ] **INDEX-01**: Index public GitHub repositories belonging to Ajiet-DevNation (read-only)
   - Acceptance Criteria:
     1. Bot connects to Ajiet-DevNation GitHub org via a read-only GitHub App
-    2. Public repo contents (commits, pull requests, issues) are indexed and searchable
+    2. Public repo READMEs, issues, pull requests, commit messages, and eligible text/source files are indexed and searchable
     3. No write operations are performed on GitHub (read-only verified)
 
 - [ ] **INDEX-02**: Index selected Discord channels

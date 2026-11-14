@@ -8,7 +8,7 @@
  *   npx tsx scripts/verify-citations-live.ts
  */
 import 'dotenv/config';
-import { resolveGitHubToken } from '../src/github/app';
+import { createGitHubTokenProvider } from '../src/github/app';
 import { createGitHubReader } from '../src/github/reader';
 import { githubCommitUrl, githubIssueUrl, githubPullRequestUrl } from '../src/citations';
 
@@ -33,7 +33,7 @@ async function checkUrl(kind: string, url: string): Promise<CheckResult> {
 }
 
 async function main(): Promise<void> {
-  const reader = createGitHubReader({ token: resolveGitHubToken() });
+  const reader = createGitHubReader({ tokenProvider: createGitHubTokenProvider() });
 
   const [commit] = await reader.listCommits(OWNER, REPO);
   const pulls = await reader.listPullRequests(OWNER, REPO);

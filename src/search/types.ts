@@ -71,6 +71,21 @@ export interface IndexGitHubCommit {
   date?: string | null;
 }
 
+export interface IndexGitHubReadme {
+  repositoryFullName: string;
+  path: string;
+  content: string;
+  htmlUrl: string;
+  description?: string | null;
+}
+
+export interface IndexGitHubFile {
+  repositoryFullName: string;
+  path: string;
+  content: string;
+  htmlUrl: string;
+}
+
 export interface SourceIndexer {
   indexDiscordRecords(
     records: readonly import('../discord/types').DiscordIndexRecord[],
@@ -79,4 +94,6 @@ export interface SourceIndexer {
   indexGitHubIssue(issue: IndexGitHubIssue): Promise<void>;
   indexGitHubPullRequest(pullRequest: IndexGitHubPullRequest): Promise<void>;
   indexGitHubCommit(commit: IndexGitHubCommit): Promise<void>;
+  indexGitHubReadme(readme: IndexGitHubReadme): Promise<void>;
+  indexGitHubFile(file: IndexGitHubFile): Promise<void>;
 }

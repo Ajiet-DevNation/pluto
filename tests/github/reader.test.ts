@@ -98,7 +98,7 @@ test('listIssues maps fields and flags pull requests', async () => {
   assert.equal(issues[0].author, 'likhith992');
   assert.equal(issues[0].pullRequest, false);
   assert.equal(issues[1].pullRequest, true);
-  assert.match(calls[0].url, /\/issues\?state=all&per_page=100$/);
+  assert.match(calls[0].url, /\/issues\?state=all&per_page=100&page=1$/);
 });
 
 test('listPullRequests and listCommits map their payloads', async () => {
@@ -142,7 +142,8 @@ test('rejects a write method through the guard', () => {
   );
 });
 
-test('throws when the token is missing instead of returning empty results', () => {
+test('throws when token and token provider are missing instead of returning empty results', () => {
+  assert.throws(() => createGitHubReader({}), GitHubReadError);
   assert.throws(() => createGitHubReader({ token: '' }), GitHubReadError);
 });
 
@@ -152,4 +153,132 @@ test('rejects an invalid issue number before any request', async () => {
 
   await assert.rejects(() => reader.getIssue('o', 'r', 0), GitHubReadError);
   assert.equal(calls.length, 0);
+});
+
+test('uses a token provider for every request so expiring App tokens can refresh', async () => {
+  const tokens = ['installation-token-1', 'installation-token-2'];
+  const calls: RecordedCall[] = [];
+  const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    calls.push({
+      url: String(input),
+      method: init?.method,
+      authorization: headers.get('authorization') ?? undefined,
+    });
+    return new Response(JSON.stringify(REPO), { status: 200 });
+  }) as unknown as typeof fetch;
+  const reader = createGitHubReader({
+    tokenProvider: async () => tokens.shift() ?? 'fallback-token',
+    fetchImpl,
+  });
+
+  await reader.getRepo('Ajiet-DevNation', 'pluto');
+  await reader.getRepo('Ajiet-DevNation', 'pluto');
+  assert.deepEqual(calls.map((call) => call.authorization), [
+    'Bearer installation-token-1',
+    'Bearer installation-token-2',
+  ]);
+});
+
+test('listRepos paginates every public organization repository', async () => {
+  const calls: string[] = [];
+  const firstPage = Array.from({ length: 100 }, (_, index) => ({
+    ...REPO,
+    id: index + 1,
+    name: `repo-${index + 1}`,
+    full_name: `Ajiet-DevNation/repo-${index + 1}`,
+  }));
+  const secondPage = [{ ...REPO, id: 101, name: 'last-repo', full_name: 'Ajiet-DevNation/last-repo' }];
+  const fetchImpl = (async (input: string | URL | Request) => {
+    const url = String(input);
+    calls.push(url);
+    return new Response(JSON.stringify(url.endsWith('page=1') ? firstPage : secondPage), { status: 200 });
+  }) as unknown as typeof fetch;
+  const reader = createGitHubReader({ token: 'test-token', fetchImpl });
+
+  const repos = await reader.listRepos('Ajiet-DevNation');
+  assert.equal(repos.length, 101);
+  assert.match(calls[0], /type=public&per_page=100&page=1$/);
+  assert.match(calls[1], /type=public&per_page=100&page=2$/);
+});
+
+test('paginates issue, pull request, and commit lists', async () => {
+  const calls: string[] = [];
+  const fetchImpl = (async (input: string | URL | Request) => {
+    const url = String(input);
+    calls.push(url);
+    const page = url.endsWith('page=1') ? 1 : 2;
+    const rows = (template: object) => Array.from(
+      { length: page === 1 ? 100 : 1 },
+      (_, index) => ({ ...template, id: (page - 1) * 100 + index + 1, number: (page - 1) * 100 + index + 1 }),
+    );
+    const payload = url.includes('/pulls?')
+      ? rows(PULL)
+      : url.includes('/commits?')
+        ? rows(COMMIT)
+        : rows(ISSUE);
+    return new Response(JSON.stringify(payload), { status: 200 });
+  }) as unknown as typeof fetch;
+  const reader = createGitHubReader({ token: 'test-token', fetchImpl });
+
+  assert.equal((await reader.listIssues('Ajiet-DevNation', 'pluto')).length, 101);
+  assert.equal((await reader.listPullRequests('Ajiet-DevNation', 'pluto')).length, 101);
+  assert.equal((await reader.listCommits('Ajiet-DevNation', 'pluto')).length, 101);
+  assert.equal(calls.length, 6);
+  assert.ok(calls.every((url) => /page=[12]$/.test(url)));
+});
+
+test('decodes repository README and returns null when a README is absent', async () => {
+  const payload = {
+    path: 'README.md',
+    html_url: 'https://github.com/Ajiet-DevNation/pluto/blob/main/README.md',
+    encoding: 'base64',
+    content: Buffer.from('# Pluto\nKnowledge assistant').toString('base64'),
+  };
+  const reader = createGitHubReader({ token: 'test-token', fetchImpl: fakeFetch(payload).impl });
+  const readme = await reader.getReadme('Ajiet-DevNation', 'pluto');
+  assert.equal(readme?.content, '# Pluto\nKnowledge assistant');
+  assert.equal(readme?.repositoryFullName, 'Ajiet-DevNation/pluto');
+
+  const noReadme = createGitHubReader({
+    token: 'test-token',
+    fetchImpl: fakeFetch({ message: 'Not Found' }, 404).impl,
+  });
+  assert.equal(await noReadme.getReadme('Ajiet-DevNation', 'empty'), null);
+});
+
+test('lists repository blobs and refuses a truncated tree rather than indexing partial source', async () => {
+  const treeReader = createGitHubReader({
+    token: 'test-token',
+    fetchImpl: fakeFetch({
+      truncated: false,
+      tree: [
+        { path: 'src/index.ts', type: 'blob', sha: 'blob-1', size: 42 },
+        { path: 'src', type: 'tree', sha: 'tree-1' },
+      ],
+    }).impl,
+  });
+  assert.deepEqual(await treeReader.listRepositoryFiles('Ajiet-DevNation', 'pluto', 'main'), [
+    { path: 'src/index.ts', sha: 'blob-1', size: 42 },
+  ]);
+
+  const truncatedReader = createGitHubReader({
+    token: 'test-token',
+    fetchImpl: fakeFetch({ truncated: true, tree: [] }).impl,
+  });
+  await assert.rejects(
+    () => truncatedReader.listRepositoryFiles('Ajiet-DevNation', 'pluto', 'main'),
+    /truncated file tree/,
+  );
+});
+
+test('decodes blob content through a GET request', async () => {
+  const { impl, calls } = fakeFetch({
+    encoding: 'base64',
+    content: Buffer.from('export const answer = 42;').toString('base64'),
+  });
+  const reader = createGitHubReader({ token: 'test-token', fetchImpl: impl });
+  assert.equal(await reader.getFileContent('Ajiet-DevNation', 'pluto', 'blob-sha'), 'export const answer = 42;');
+  assert.equal(calls[0].method, 'GET');
+  assert.match(calls[0].url, /\/git\/blobs\/blob-sha$/);
 });

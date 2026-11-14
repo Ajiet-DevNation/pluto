@@ -67,12 +67,12 @@
       "all_ten_capabilities_in_v1": true
     },
     "unresolved": {
-      "discord_indexing_method": "pending — webhooks vs polling not decided",
-      "audio_storage": "pending — Cloudflare R2 under consideration",
+      "discord_indexing_method": "resolved — discord.js gateway MessageCreate plus startup backfill; no webhooks",
+      "audio_storage": "resolved — transcript-only; audio is sent directly to Whisper and discarded, no R2 or disk",
       "citation_format": "link to original source",
       "opt_out_scope": "opt out of message indexing",
       "miro_mcp_access": "pending — no token, no MCP server, no board allowlist; read-only REST client implemented, live verification deferred",
-      "github_app": "pending — requires Ajiet-DevNation org owner; interim read-only fine-grained PAT verified"
+      "github_app": "created and installed; App-auth code and live read-only verification pending"
     },
     "discord": {
       "application_id": "1570482371298467860",
@@ -119,7 +119,15 @@
     "credentials": {
       "github": {
         "org": "Ajiet-DevNation",
-        "app": "pending — requires Ajiet-DevNation org owner",
+        "app": {
+          "name": "Pluto-DN",
+          "app_id": "5756762",
+          "installation_id": "181868637",
+          "status": "installed; read-only permissions verified; webhook inactive",
+          "permissions": "Contents, Issues, Pull requests: read-only; Metadata: read-only",
+          "repository_access": "Only select repositories; public repositories are read-only; private repositories must not be indexed",
+          "auth_implementation": "pending live verification on fix/p2-github-indexing"
+        },
         "interim": {
           "type": "fine-grained PAT",
           "owner": "Khushi",

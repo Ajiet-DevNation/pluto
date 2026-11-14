@@ -7,10 +7,13 @@
  */
 
 import type { DiscordIndexRecord } from '../discord/types';
+import { createHash } from 'node:crypto';
 import type {
   IndexGitHubCommit,
   IndexGitHubIssue,
+  IndexGitHubFile,
   IndexGitHubPullRequest,
+  IndexGitHubReadme,
   SearchChunkInput,
 } from './types';
 
@@ -154,5 +157,33 @@ export function buildGithubCommitChunks(commit: IndexGitHubCommit): SearchChunkI
     `${commit.repositoryFullName}@${commit.sha}`,
     commit.htmlUrl,
     `${date}${commit.message}`,
+  );
+}
+
+export function buildGithubReadmeChunks(readme: IndexGitHubReadme): SearchChunkInput[] {
+  const description = readme.description?.trim();
+  const content = [
+    `# ${readme.repositoryFullName} README`,
+    `Path: ${readme.path}`,
+    description ? `Repository description: ${description}` : '',
+    readme.content,
+  ].filter(Boolean).join('\n\n');
+  return githubChunks(
+    `${readme.repositoryFullName}#readme`,
+    readme.htmlUrl,
+    content,
+  );
+}
+
+export function buildGithubFileChunks(file: IndexGitHubFile): SearchChunkInput[] {
+  const content = [
+    `# ${file.repositoryFullName}/${file.path}`,
+    `Repository file: ${file.path}`,
+    file.content,
+  ].join('\n\n');
+  return githubChunks(
+    `${file.repositoryFullName}#file:${createHash('sha256').update(file.path).digest('hex')}`,
+    file.htmlUrl,
+    content,
   );
 }

@@ -14,8 +14,9 @@ import { eq } from 'drizzle-orm';
 import type { Db } from '../db/index';
 import { issues, repositories } from '../db/schema';
 import { getGitHubOrg } from '../config';
-import { resolveGitHubToken } from '../github/app';
+import { createGitHubTokenProvider } from '../github/app';
 import { createGitHubReader } from '../github/reader';
+import { indexGitHubIssues } from '../db/index-github-issues';
 import { indexGithubSearchSources } from './github-sources';
 import type { SourceIndexer } from './types';
 import { createSearchRuntimeFromEnv } from './runtime';
@@ -50,28 +51,28 @@ export async function main(): Promise<void> {
     );
   }
 
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is required to index all public GitHub sources');
+  }
+  const reader = createGitHubReader({ tokenProvider: createGitHubTokenProvider() });
+  const githubOrg = getGitHubOrg();
+  const liveIssues = await indexGitHubIssues(databaseUrl, {
+    reader,
+    db: runtime.db,
+    org: githubOrg,
+  });
   const issuesIndexed = await reindexGithubIssues(runtime.db, runtime.indexer);
   const discordRecords = await runtime.baseStore.listRecords();
   await runtime.syncDiscord(discordRecords);
-
-  let githubExtras = { repositories: 0, pullRequests: 0, commits: 0 };
-  try {
-    const reader = createGitHubReader({ token: resolveGitHubToken() });
-    githubExtras = await indexGithubSearchSources(
-      reader,
-      getGitHubOrg(),
-      runtime.indexer,
-    );
-  } catch (error) {
-    console.warn(
-      'Skipping GitHub PR/commit search indexing (GitHub credential unavailable):',
-      error instanceof Error ? error.message : String(error),
-    );
-  }
+  const githubExtras = await indexGithubSearchSources(reader, githubOrg, runtime.indexer);
 
   console.log(
-    `Search reindex complete: ${issuesIndexed} GitHub issues, ` +
-      `${githubExtras.pullRequests} PRs, ${githubExtras.commits} commits, ` +
+    `Search reindex complete: ${githubExtras.repositories} public repositories, ` +
+      `${liveIssues.length} issues refreshed (${issuesIndexed} chunks re-indexed), ` +
+      `${githubExtras.readmes} READMEs, ${githubExtras.repositoryFiles} repository files, ` +
+      `${githubExtras.pullRequests} PRs, ` +
+      `${githubExtras.commits} commits, ` +
       `${discordRecords.length} Discord records`,
   );
 }
