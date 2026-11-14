@@ -8,6 +8,7 @@
  */
 
 import { createDb, type Db } from '../db/index';
+import { repositories } from '../db/schema';
 import { getDiscordGuildId, getDiscordOutputChannelId, getGitHubOrg } from '../config';
 import type { DiscordIndexRecord } from '../discord/types';
 import {
@@ -15,7 +16,7 @@ import {
   type JsonDiscordStore,
 } from '../discord/store';
 import { evidenceThresholdFromEnv } from '../guardrails/evidence';
-import { AskService } from './ask';
+import { AskService, repositoryScopeFromQuestion } from './ask';
 import {
   CloudflareAnswerGenerator,
   CloudflareEmbeddingClient,
@@ -83,6 +84,14 @@ export function createSearchRuntimeFromEnv(
     retrieval,
     generator,
     githubOrg: getGitHubOrg(),
+    async resolveRepositoryScope(question) {
+      const knownRepositories = await db.select({ fullName: repositories.fullName }).from(repositories);
+      return repositoryScopeFromQuestion(
+        question,
+        getGitHubOrg(),
+        knownRepositories.map((repository) => repository.fullName),
+      );
+    },
     blockedChannelIds: [outputChannelId],
   });
 

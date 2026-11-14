@@ -111,6 +111,25 @@ test('answer evidence is limited to three unique URLs and two chunks per URL', (
   assert.equal(sourcesFromChunks(selected).length, 3);
 });
 
+test('current-stack questions prefer default-branch files over commit messages', () => {
+  const commit = chunk({
+    sourceType: 'github',
+    sourceUrl: 'https://github.com/Ajiet-DevNation/dn-orbit/commit/da2fb19',
+    sourceId: 'Ajiet-DevNation/dn-orbit@da2fb19',
+    content: 'chore(deps): bump next to 16.4.2',
+    score: 0.95,
+  });
+  const manifest = chunk({
+    sourceType: 'github',
+    sourceUrl: 'https://github.com/Ajiet-DevNation/dn-orbit/blob/main/package.json',
+    sourceId: 'Ajiet-DevNation/dn-orbit#file:package-json-hash',
+    content: '"next": "16.3.1"',
+    score: 0.72,
+  });
+  const selected = selectAnswerChunks([commit, manifest], [], 3, 6, 'project stack in dn-orbit');
+  assert.equal(selected[0].sourceUrl, manifest.sourceUrl);
+});
+
 test('extracts an explicit repository qualifier for scoped retrieval', () => {
   assert.equal(
     repositoryScopeFromQuestion(
@@ -120,6 +139,13 @@ test('extracts an explicit repository qualifier for scoped retrieval', () => {
     'Ajiet-DevNation/DevNation-CMS',
   );
   assert.equal(repositoryScopeFromQuestion('What is Pluto?', 'Ajiet-DevNation'), undefined);
+  assert.equal(
+    repositoryScopeFromQuestion('What is the project stack in dn-orbit?', 'Ajiet-DevNation', [
+      'Ajiet-DevNation/dn-orbit',
+      'Ajiet-DevNation/pluto',
+    ]),
+    'Ajiet-DevNation/dn-orbit',
+  );
 });
 
 test('/ask passes an explicit repository qualifier to retrieval', async () => {

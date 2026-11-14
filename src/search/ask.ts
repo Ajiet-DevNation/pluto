@@ -32,6 +32,7 @@ export interface AskDependencies {
   retrieval: Pick<RetrievalService, 'retrieve'>;
   generator: AnswerGenerator;
   githubOrg?: string;
+  resolveRepositoryScope?: (question: string) => Promise<string | undefined>;
   blockedChannelIds?: readonly string[];
 }
 
@@ -116,12 +117,21 @@ export function selectAnswerChunks(
   blockedChannelIds: readonly string[] = [],
   maxSources: number = MAX_ANSWER_SOURCES,
   maxChunks: number = MAX_ANSWER_CHUNKS,
+  question = '',
 ): ScoredSearchChunk[] {
   const blocked = new Set(blockedChannelIds);
   const sourceCounts = new Map<string, number>();
   const selected: ScoredSearchChunk[] = [];
+  const candidates = [...chunks];
 
-  for (const chunk of chunks) {
+  if (/\b(stack|dependency|dependencies|version|current|currently|configured|built with)\b/i.test(question)) {
+    candidates.sort((left, right) => {
+      const freshness = currentFilePriority(right) - currentFilePriority(left);
+      return freshness || right.score - left.score;
+    });
+  }
+
+  for (const chunk of candidates) {
     if (!isHttpUrl(chunk.sourceUrl)) continue;
     const channelId = chunk.channelId ?? channelFromUrl(chunk.sourceUrl);
     if (channelId && blocked.has(channelId)) continue;
@@ -138,14 +148,36 @@ export function selectAnswerChunks(
   return selected;
 }
 
+function currentFilePriority(chunk: ScoredSearchChunk): number {
+  if (chunk.sourceType !== 'github') return 1;
+  try {
+    const pathname = new URL(chunk.sourceUrl).pathname;
+    if (pathname.includes('/blob/')) return 3;
+    if (pathname.includes('/issues/') || pathname.includes('/pull/')) return 2;
+    if (pathname.includes('/commit/')) return 0;
+  } catch {
+    return 1;
+  }
+  return 1;
+}
+
 export function repositoryScopeFromQuestion(
   question: string,
   githubOrg?: string,
+  knownRepositoryFullNames: readonly string[] = [],
 ): string | undefined {
   if (!githubOrg) return undefined;
   const escapedOrg = githubOrg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = question.match(new RegExp(`${escapedOrg}\\/([A-Za-z0-9._-]+)`, 'i'));
-  return match ? `${githubOrg}/${match[1]}` : undefined;
+  if (match) return `${githubOrg}/${match[1]}`;
+
+  const mentioned = knownRepositoryFullNames.filter((fullName) => {
+    if (!fullName.toLowerCase().startsWith(`${githubOrg.toLowerCase()}/`)) return false;
+    const repoName = fullName.slice(fullName.indexOf('/') + 1);
+    const escapedRepo = repoName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(^|[^A-Za-z0-9._-])${escapedRepo}($|[^A-Za-z0-9._-])`, 'i').test(question);
+  });
+  return mentioned.length === 1 ? mentioned[0] : undefined;
 }
 
 export function buildAskPrompt(
@@ -173,6 +205,8 @@ export function buildAskPrompt(
     '',
     'Answer using only the evidence above. Cite each claim with its bracket number,',
     'for example [1]. If the evidence is insufficient, say so explicitly.',
+    'For current configuration, dependency, or version questions, prefer current default-branch file URLs (/blob/) over historical commit messages.',
+    'Treat commit messages as history, not proof of the current state. If only historical evidence exists, say that it cannot confirm the current value.',
   ].join('\n');
 }
 
@@ -220,16 +254,24 @@ export class AskService {
       return { ok: false, message: NO_EVIDENCE_MESSAGE };
     }
 
-    const evidence: EvidenceResult<ScoredSearchChunk> =
-      await this.dependencies.retrieval.retrieve(
-        query,
-        repositoryScopeFromQuestion(query, this.dependencies.githubOrg),
-      );
+    const repositoryScope = this.dependencies.resolveRepositoryScope
+      ? await this.dependencies.resolveRepositoryScope(query)
+      : repositoryScopeFromQuestion(query, this.dependencies.githubOrg);
+    const evidence: EvidenceResult<ScoredSearchChunk> = await this.dependencies.retrieval.retrieve(
+      query,
+      repositoryScope,
+    );
     if (!evidence.ok) {
       return evidence;
     }
 
-    const answerChunks = selectAnswerChunks(evidence.chunks, this.dependencies.blockedChannelIds);
+    const answerChunks = selectAnswerChunks(
+      evidence.chunks,
+      this.dependencies.blockedChannelIds,
+      MAX_ANSWER_SOURCES,
+      MAX_ANSWER_CHUNKS,
+      query,
+    );
     const sources = sourcesFromChunks(answerChunks, this.dependencies.blockedChannelIds);
     const generated = await this.dependencies.generator.generate(
       buildAskPrompt(query, answerChunks),
