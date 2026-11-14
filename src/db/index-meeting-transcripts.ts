@@ -153,7 +153,6 @@ export async function indexMeetingTranscript(
       authorId: null,
       content: chunks[i],
       embedding,
-      searchVector: chunks[i],
     } as any);
   }
 

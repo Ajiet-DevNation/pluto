@@ -48,12 +48,11 @@ export const searchChunks = pgTable('search_chunks', {
   sourceType: varchar('source_type', { length: 50 }).notNull(),
   sourceId: varchar('source_id', { length: 255 }).notNull(),
   chunkIndex: integer('chunk_index').notNull(),
-  sourceUrl: text('source_url').notNull(),
+  sourceUrl: text('source_url'),
   channelId: varchar('channel_id', { length: 255 }),
   authorId: varchar('author_id', { length: 255 }),
   content: text('content').notNull(),
   embedding: vector('embedding', { dimensions: 768 }),
-  searchVector: text('search_vector').notNull(),
   indexedAt: timestamp('indexed_at', { withTimezone: true }).defaultNow(),
 }, (table) => ({
   sourceIdx: index('search_chunks_source_type_source_id_chunk_idx').on(table.sourceType, table.sourceId, table.chunkIndex),
