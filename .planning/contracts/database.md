@@ -125,17 +125,18 @@ Indexes:
 
 ### `search_chunks`
 
-Searchable chunks backing `/ask`, `/decisions`, `/digest`. Not yet created.
-Embeddings and full-text vectors stored here per `contracts/search.md`. Chunks
-from meeting transcripts use `source_type = 'meeting'`.
+Searchable chunks backing `/ask`, `/decisions`, and `/digest`. The table is created
+by `drizzle/migrations/0004_search_chunks.sql` and represented in
+`src/db/schema.ts`. Embeddings and generated full-text vectors are stored here per
+`contracts/search.md`. Chunks from meeting transcripts use `source_type = 'meeting'`.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|-------|
 | `id` | uuid | NO | primary key |
 | `source_type` | text | NO | `github` \| `discord` \| `meeting` \| `miro` |
 | `source_id` | text | NO | issue/pr number, message id, transcript id |
-| `chunk_index` | integer | NO | chunk position within source |
-| `source_url` | text | NO | original URL, built by `src/citations` |
+| `chunk_index` | integer | NO | zero-based position within the source |
+| `source_url` | text | YES | original source URL; nullable for records without a citable URL |
 | `channel_id` | text | YES | Discord only; `null` for other sources |
 | `author_id` | text | YES | used for opt-out filtering |
 | `content` | text | NO | the chunk text |
@@ -148,6 +149,8 @@ Indexes:
 - `search_chunks_author_id_idx` (btree on `author_id`)
 - GIN index on `search_vector` for full-text search
 - IVFFlat index on `embedding` (cosine distance) for vector search
+
+`search_vector` is a generated `tsvector` column over `content`; callers never write it.
 
 Constraints:
 - `embedding` dimension is hard-constrained to **768** (verified live against

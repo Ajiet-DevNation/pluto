@@ -7,7 +7,12 @@
  */
 
 import type { DiscordIndexRecord } from '../discord/types';
-import type { IndexGitHubIssue, SearchChunkInput } from './types';
+import type {
+  IndexGitHubCommit,
+  IndexGitHubIssue,
+  IndexGitHubPullRequest,
+  SearchChunkInput,
+} from './types';
 
 export const DEFAULT_CHUNK_CHARS = 2000;
 export const DEFAULT_OVERLAP_CHARS = 200;
@@ -97,18 +102,57 @@ export function buildDiscordSearchChunk(record: DiscordIndexRecord): SearchChunk
   };
 }
 
-export function buildGithubIssueChunks(issue: IndexGitHubIssue): SearchChunkInput[] {
-  const content = [`# ${issue.title}`, `State: ${issue.state}`, issue.body ?? '']
-    .join('\n\n')
-    .trim();
-
+function githubChunks(
+  sourceId: string,
+  sourceUrl: string,
+  content: string,
+): SearchChunkInput[] {
   return chunkText(content).map((text, chunkIndex) => ({
     sourceType: 'github' as const,
-    sourceId: `${issue.repositoryFullName}#${issue.issueNumber}`,
+    sourceId,
     chunkIndex,
-    sourceUrl: issue.htmlUrl,
+    sourceUrl,
     channelId: null,
     authorId: null,
     content: text,
   }));
+}
+
+export function buildGithubIssueChunks(issue: IndexGitHubIssue): SearchChunkInput[] {
+  const content = [`# ${issue.title}`, `State: ${issue.state}`, issue.body ?? '']
+    .join('\n\n')
+    .trim();
+  return githubChunks(
+    `${issue.repositoryFullName}#${issue.issueNumber}`,
+    issue.htmlUrl,
+    content,
+  );
+}
+
+export function buildGithubPullRequestChunks(
+  pullRequest: IndexGitHubPullRequest,
+): SearchChunkInput[] {
+  const merged = pullRequest.mergedAt ? `Merged: ${pullRequest.mergedAt}` : 'Not merged';
+  const content = [
+    `# PR #${pullRequest.number}: ${pullRequest.title}`,
+    `State: ${pullRequest.state}`,
+    merged,
+    pullRequest.body ?? '',
+  ]
+    .join('\n\n')
+    .trim();
+  return githubChunks(
+    `${pullRequest.repositoryFullName}#pr-${pullRequest.number}`,
+    pullRequest.htmlUrl,
+    content,
+  );
+}
+
+export function buildGithubCommitChunks(commit: IndexGitHubCommit): SearchChunkInput[] {
+  const date = commit.date ? `Date: ${commit.date}\n\n` : '';
+  return githubChunks(
+    `${commit.repositoryFullName}@${commit.sha}`,
+    commit.htmlUrl,
+    `${date}${commit.message}`,
+  );
 }

@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildDiscordSearchChunk,
+  buildGithubCommitChunks,
   buildGithubIssueChunks,
+  buildGithubPullRequestChunks,
   chunkText,
 } from '../../src/search/chunk';
 import { makeRecord } from '../discord/helpers';
@@ -69,4 +71,28 @@ test('GitHub issues produce citable chunks with a stable source id', () => {
   assert.equal(chunks[0].sourceUrl, 'https://github.com/Ajiet-DevNation/pluto/pull/9');
   assert.match(chunks[0].content, /Discord allowlist indexing/);
   assert.match(chunks[0].content, /allowlisted channels/);
+});
+
+test('GitHub pull requests and commits produce citable chunks', () => {
+  const pullRequest = buildGithubPullRequestChunks({
+    repositoryFullName: 'Ajiet-DevNation/pluto',
+    number: 9,
+    title: 'P1: Discord allowlist indexing',
+    body: 'Merged P1.',
+    state: 'closed',
+    htmlUrl: 'https://github.com/Ajiet-DevNation/pluto/pull/9',
+    mergedAt: '2026-11-14T07:25:17Z',
+  });
+  const commit = buildGithubCommitChunks({
+    repositoryFullName: 'Ajiet-DevNation/pluto',
+    sha: '823d07c1a3e',
+    message: 'feat(p2): add /ask',
+    htmlUrl: 'https://github.com/Ajiet-DevNation/pluto/commit/823d07c1a3e',
+    date: '2026-11-14T08:00:00Z',
+  });
+
+  assert.equal(pullRequest[0].sourceId, 'Ajiet-DevNation/pluto#pr-9');
+  assert.match(pullRequest[0].content, /Merged: 2026-11-14/);
+  assert.equal(commit[0].sourceId, 'Ajiet-DevNation/pluto@823d07c1a3e');
+  assert.match(commit[0].content, /feat\(p2\)/);
 });

@@ -53,10 +53,30 @@ export interface IndexGitHubIssue {
   htmlUrl: string;
 }
 
+export interface IndexGitHubPullRequest {
+  repositoryFullName: string;
+  number: number;
+  title: string;
+  body: string | null;
+  state: string;
+  htmlUrl: string;
+  mergedAt?: string | null;
+}
+
+export interface IndexGitHubCommit {
+  repositoryFullName: string;
+  sha: string;
+  message: string;
+  htmlUrl: string;
+  date?: string | null;
+}
+
 export interface SourceIndexer {
   indexDiscordRecords(
     records: readonly import('../discord/types').DiscordIndexRecord[],
   ): Promise<void>;
   removeDiscordAuthor(authorId: string): Promise<number>;
   indexGitHubIssue(issue: IndexGitHubIssue): Promise<void>;
+  indexGitHubPullRequest(pullRequest: IndexGitHubPullRequest): Promise<void>;
+  indexGitHubCommit(commit: IndexGitHubCommit): Promise<void>;
 }

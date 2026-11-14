@@ -11,10 +11,17 @@ import type {
   DiscordIndexStore,
   OptOutStore,
 } from '../discord/types';
-import { buildDiscordSearchChunk, buildGithubIssueChunks } from './chunk';
+import {
+  buildDiscordSearchChunk,
+  buildGithubCommitChunks,
+  buildGithubIssueChunks,
+  buildGithubPullRequestChunks,
+} from './chunk';
 import type {
   EmbeddingClient,
+  IndexGitHubCommit,
   IndexGitHubIssue,
+  IndexGitHubPullRequest,
   SearchChunkInput,
   SearchStore,
   SourceIndexer,
@@ -61,7 +68,18 @@ export class SearchIndexer implements SourceIndexer {
   }
 
   async indexGitHubIssue(issue: IndexGitHubIssue): Promise<void> {
-    const chunks = buildGithubIssueChunks(issue);
+    await this.upsertEmbedded(buildGithubIssueChunks(issue));
+  }
+
+  async indexGitHubPullRequest(pullRequest: IndexGitHubPullRequest): Promise<void> {
+    await this.upsertEmbedded(buildGithubPullRequestChunks(pullRequest));
+  }
+
+  async indexGitHubCommit(commit: IndexGitHubCommit): Promise<void> {
+    await this.upsertEmbedded(buildGithubCommitChunks(commit));
+  }
+
+  private async upsertEmbedded(chunks: SearchChunkInput[]): Promise<void> {
     if (chunks.length === 0) {
       return;
     }

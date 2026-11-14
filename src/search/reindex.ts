@@ -11,8 +11,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { eq } from 'drizzle-orm';
-import { createDb, type Db } from '../db/index';
+import type { Db } from '../db/index';
 import { issues, repositories } from '../db/schema';
+import { getGitHubOrg } from '../config';
+import { resolveGitHubToken } from '../github/app';
+import { createGitHubReader } from '../github/reader';
+import { indexGithubSearchSources } from './github-sources';
 import type { SourceIndexer } from './types';
 import { createSearchRuntimeFromEnv } from './runtime';
 
@@ -50,8 +54,25 @@ export async function main(): Promise<void> {
   const discordRecords = await runtime.baseStore.listRecords();
   await runtime.syncDiscord(discordRecords);
 
+  let githubExtras = { repositories: 0, pullRequests: 0, commits: 0 };
+  try {
+    const reader = createGitHubReader({ token: resolveGitHubToken() });
+    githubExtras = await indexGithubSearchSources(
+      reader,
+      getGitHubOrg(),
+      runtime.indexer,
+    );
+  } catch (error) {
+    console.warn(
+      'Skipping GitHub PR/commit search indexing (GitHub credential unavailable):',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+
   console.log(
-    `Search reindex complete: ${issuesIndexed} GitHub issues, ${discordRecords.length} Discord records`,
+    `Search reindex complete: ${issuesIndexed} GitHub issues, ` +
+      `${githubExtras.pullRequests} PRs, ${githubExtras.commits} commits, ` +
+      `${discordRecords.length} Discord records`,
   );
 }
 
