@@ -41,6 +41,8 @@ export type AskCommandResult =
   | 'empty'
   | 'answered'
   | 'no-evidence'
+  | 'read-only'
+  | 'busy'
   | 'error';
 
 async function safeEdit(
@@ -105,6 +107,8 @@ export async function handleAskInteraction(
     const result = await dependencies.askService.ask(question);
     if (!result.ok) {
       await safeEdit(interaction, result.message ?? NO_EVIDENCE_MESSAGE, logger);
+      if (result.reason === 'read-only') return 'read-only';
+      if (result.reason === 'quota') return 'busy';
       return 'no-evidence';
     }
 

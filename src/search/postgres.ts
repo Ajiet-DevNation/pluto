@@ -207,10 +207,22 @@ export class PostgresSearchStore implements SearchStore {
   }
 
   async reserveEmbeddingBudget(units: number, dailyLimit: number): Promise<Date | null> {
+    return this.reserveBudget(units, dailyLimit);
+  }
+
+  async reserveAnswerBudget(units: number, dailyLimit: number): Promise<Date | null> {
+    return this.reserveBudget(units, dailyLimit);
+  }
+
+  /**
+   * Atomically add `units` to today's ledger when the result stays within `cap`.
+   * Returns the time to resume when the reservation is refused.
+   */
+  private async reserveBudget(units: number, cap: number): Promise<Date | null> {
     const reserved = rowsOf(await this.db.execute(sql`
       INSERT INTO search_embedding_budget (id, budget_date, used_units, paused_until)
       SELECT true, (now() AT TIME ZONE 'UTC')::date, ${units}, NULL
-      WHERE ${units} <= ${dailyLimit}
+      WHERE ${units} <= ${cap}
       ON CONFLICT (id) DO UPDATE SET
         budget_date = EXCLUDED.budget_date,
         used_units = CASE
@@ -226,7 +238,7 @@ export class PostgresSearchStore implements SearchStore {
       WHERE search_embedding_budget.budget_date <> EXCLUDED.budget_date
         OR (
           (search_embedding_budget.paused_until IS NULL OR search_embedding_budget.paused_until <= now())
-          AND search_embedding_budget.used_units + EXCLUDED.used_units <= ${dailyLimit}
+          AND search_embedding_budget.used_units + EXCLUDED.used_units <= ${cap}
         )
       RETURNING paused_until
     `));
@@ -244,6 +256,31 @@ export class PostgresSearchStore implements SearchStore {
     if (value instanceof Date) return value;
     if (typeof value === 'string') return new Date(value);
     return new Date(Date.now() + 24 * 60 * 60 * 1000);
+  }
+
+  async listContributors(
+    repositoryFullName: string,
+  ): Promise<Array<{ login: string; contributions: number }>> {
+    const prefix = `${repositoryFullName.toLowerCase()}#contributor:`;
+    const rows = await this.db
+      .select({ sourceId: searchChunks.sourceId, content: searchChunks.content })
+      .from(searchChunks)
+      .where(
+        and(
+          eq(searchChunks.sourceType, 'github'),
+          sql`left(lower(${searchChunks.sourceId}), ${prefix.length}) = ${prefix}`,
+        ),
+      );
+    const contributors = new Map<string, number>();
+    for (const row of rows) {
+      const login = row.sourceId.slice(prefix.length).trim();
+      if (!login || contributors.has(login)) continue;
+      const match = row.content.match(/Contributions:\s*(\d+)/i);
+      contributors.set(login, match ? Number(match[1]) : 0);
+    }
+    return [...contributors.entries()]
+      .map(([login, contributions]) => ({ login, contributions }))
+      .sort((left, right) => right.contributions - left.contributions || left.login.localeCompare(right.login));
   }
 
   async deferEmbeddingUntil(resumeAt: Date): Promise<void> {

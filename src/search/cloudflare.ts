@@ -8,7 +8,7 @@
 
 import type { AnswerGenerator, EmbeddingClient } from './types';
 import { fetchWithRetry } from '../http/retry';
-import { EmbeddingQuotaExceededError, nextUtcDay } from './embedding-errors';
+import { EmbeddingQuotaExceededError, AnswerQuotaExceededError, nextUtcDay } from './embedding-errors';
 
 export const EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
 export const EMBEDDING_DIMENSIONS = 768;
@@ -173,7 +173,25 @@ export class CloudflareAnswerGenerator implements AnswerGenerator {
           ],
         }),
       },
+      // A 429 means the shared daily allowance is exhausted; retrying cannot help.
+      { retryableStatus: (candidate) => [500, 502, 503, 504].includes(candidate.status) },
     );
+
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('retry-after');
+      const retryAfterMs = retryAfter
+        ? (Number.isFinite(Number(retryAfter))
+          ? Number(retryAfter) * 1000
+          : Date.parse(retryAfter) - Date.now())
+        : 0;
+      const resumeAt = retryAfterMs > 0
+        ? new Date(Date.now() + retryAfterMs)
+        : nextUtcDay();
+      throw new AnswerQuotaExceededError(
+        resumeAt,
+        `Cloudflare generation quota/rate limit reached; resume after ${resumeAt.toISOString()}`,
+      );
+    }
 
     const payload = await readJson(response);
     if (!response.ok) {

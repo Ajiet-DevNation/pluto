@@ -9,6 +9,16 @@
 import { NO_EVIDENCE_MESSAGE, type EvidenceResult } from '../guardrails/evidence';
 import { chunkSourceLabel, type RetrievalService } from './retrieval';
 import type { AnswerGenerator, ScoredSearchChunk } from './types';
+import { AnswerQuotaExceededError, EmbeddingQuotaExceededError } from './embedding-errors';
+import { budgetLimitsFromEnv } from './budget';
+
+export const READ_ONLY_MESSAGE =
+  'Pluto is read-only. I can answer questions about the indexed GitHub, Discord, Miro, and meeting content, but I cannot change repositories, Discord history, or Miro.';
+
+export const BUSY_MESSAGE =
+  'Pluto has used its AI allowance for now and is paused. Please ask again later.';
+
+export type AskFailureReason = 'no-evidence' | 'read-only' | 'quota';
 
 export interface AskSource {
   label: string;
@@ -25,7 +35,8 @@ export type AskResult =
     }
   | {
       ok: false;
-      message: typeof NO_EVIDENCE_MESSAGE;
+      message: string;
+      reason: AskFailureReason;
     };
 
 export interface AskDependencies {
@@ -34,6 +45,82 @@ export interface AskDependencies {
   githubOrg?: string;
   resolveRepositoryScope?: (question: string) => Promise<string | undefined>;
   blockedChannelIds?: readonly string[];
+  /** Indexed contributor logins/counts for a repository, when available. */
+  listContributors?: (
+    repositoryFullName: string,
+  ) => Promise<Array<{ login: string; contributions: number }>>;
+  /** Reserve answering units from the shared daily budget. */
+  reserveAnswerBudget?: (units: number) => Promise<Date | null>;
+}
+
+const DEFAULT_ANSWER_CACHE_TTL_MS = 15 * 60 * 1000;
+const MAX_CACHED_ANSWERS = 200;
+
+function answerCacheTtlMs(env: NodeJS.ProcessEnv = process.env): number {
+  const value = Number(env.ANSWER_CACHE_TTL_MS);
+  return Number.isSafeInteger(value) && value >= 0 ? value : DEFAULT_ANSWER_CACHE_TTL_MS;
+}
+
+/**
+ * Requests that would require a write. The bot is read-only, so these are
+ * refused before retrieval, which also avoids spending generation quota.
+ */
+const WRITE_INTENT_PATTERNS = [
+  /^\s*(?:please\s+|pls\s+)?(?:edit|change|update|modify|rewrite|delete|remove|rename|move|create|add|commit|push|merge|revert|close|reopen|assign|label)\b/i,
+  /\b(?:can|could|would)\s+you\s+(?:please\s+)?(?:edit|change|update|modify|rewrite|delete|remove|rename|move|create|add|commit|push|merge|revert|close|reopen)\b/i,
+  /\b(?:please|pls)\s+(?:edit|change|update|modify|rewrite|delete|remove|rename|move|create|add|commit|push|merge|revert)\b/i,
+  /\b(?:i want|i need|i'd like)\s+(?:you\s+)?to\s+(?:edit|change|update|modify|rewrite|delete|remove|rename|move|create|add|commit|push|merge)\b/i,
+];
+
+export function isReadOnlyRequest(question: string): boolean {
+  const text = question.trim();
+  if (!text) return false;
+  // "Update me on ...", "change log" and similar read-only phrasings are not writes.
+  if (/^(?:update|inform)\s+(?:me|us)\b/i.test(text)) return false;
+  return WRITE_INTENT_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+/**
+ * The model sometimes answers "I cannot find evidence ..." instead of returning
+ * the standard message. Normalise that so `/ask` always uses one wording.
+ */
+const NO_EVIDENCE_PATTERNS = [
+  /\bi (?:cannot|can't|could not|couldn't|am unable to) (?:find|locate|determine|confirm|answer)\b/i,
+  /\bno (?:relevant )?(?:evidence|information|data)\b/i,
+  /\bnot (?:enough|sufficient) (?:evidence|information|context)\b/i,
+  /\bthe (?:provided |supplied )?evidence (?:does not|doesn't|did not) (?:answer|contain|mention|include|support|cover)\b/i,
+  /\bi (?:don't|do not) have (?:any )?(?:evidence|information)\b/i,
+  /\bthere is no (?:evidence|information) (?:about|on|for)\b/i,
+];
+
+export function isNoEvidenceAnswer(answer: string): boolean {
+  const text = answer.trim();
+  if (!text) return true;
+  return NO_EVIDENCE_PATTERNS.some((pattern) => pattern.test(text));
+}
+
+const CONTRIBUTOR_QUESTION = /\b(contributors?|maintainers?|who (?:contributed|works? on|worked on|built|wrote|maintains?))\b/i;
+
+export function isContributorQuestion(question: string): boolean {
+  return CONTRIBUTOR_QUESTION.test(question);
+}
+
+export function formatContributors(
+  repositoryFullName: string,
+  contributors: ReadonlyArray<{ login: string; contributions: number }>,
+): string {
+  const top = contributors.slice(0, 25);
+  const listed = top
+    .map((contributor) =>
+      contributor.contributions > 0
+        ? `${contributor.login} (${contributor.contributions} contributions)`
+        : contributor.login,
+    )
+    .join(', ');
+  const suffix = contributors.length > top.length
+    ? `, and ${contributors.length - top.length} more`
+    : '';
+  return `Contributors to ${repositoryFullName}: ${listed}${suffix}.`;
 }
 
 export const MAX_ANSWER_SOURCES = 3;
@@ -228,23 +315,67 @@ export function renderAnswer(answer: string, _sources: readonly AskSource[] = []
 }
 
 export class AskService {
+  private readonly cache = new Map<
+    string,
+    { at: number; result: Extract<AskResult, { ok: true }> }
+  >();
+
   constructor(private readonly dependencies: AskDependencies) {}
+
+  /** Drop cached answers, e.g. after a reindex changes the corpus. */
+  clearCache(): void {
+    this.cache.clear();
+  }
 
   async ask(question: string): Promise<AskResult> {
     const query = question.trim();
     if (!query) {
-      return { ok: false, message: NO_EVIDENCE_MESSAGE };
+      return { ok: false, message: NO_EVIDENCE_MESSAGE, reason: 'no-evidence' };
+    }
+
+    // Read-only boundary: refuse write requests before spending any quota.
+    if (isReadOnlyRequest(query)) {
+      return { ok: false, message: READ_ONLY_MESSAGE, reason: 'read-only' };
     }
 
     const repositoryScope = this.dependencies.resolveRepositoryScope
       ? await this.dependencies.resolveRepositoryScope(query)
       : repositoryScopeFromQuestion(query, this.dependencies.githubOrg);
-    const evidence: EvidenceResult<ScoredSearchChunk> = await this.dependencies.retrieval.retrieve(
-      query,
-      repositoryScope,
-    );
+
+    const cacheKey = `${repositoryScope ?? ''}\u0000${query.toLowerCase().replace(/\s+/g, ' ')}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.at < answerCacheTtlMs()) {
+      return cached.result;
+    }
+
+    // Contributor questions are answered from the structured contributor index
+    // instead of top-N retrieval, which cannot aggregate a full contributor list.
+    if (repositoryScope && this.dependencies.listContributors && isContributorQuestion(query)) {
+      const contributors = await this.dependencies.listContributors(repositoryScope);
+      if (contributors.length > 0) {
+        const result: Extract<AskResult, { ok: true }> = {
+          ok: true,
+          answer: formatContributors(repositoryScope, contributors),
+          sources: [],
+          chunks: [],
+        };
+        this.remember(cacheKey, result);
+        return result;
+      }
+    }
+
+    let evidence: EvidenceResult<ScoredSearchChunk>;
+    try {
+      evidence = await this.dependencies.retrieval.retrieve(query, repositoryScope);
+    } catch (error) {
+      // Query embedding draws from the same pool as answering.
+      if (error instanceof EmbeddingQuotaExceededError) {
+        return { ok: false, message: BUSY_MESSAGE, reason: 'quota' };
+      }
+      throw error;
+    }
     if (!evidence.ok) {
-      return evidence;
+      return { ok: false, message: NO_EVIDENCE_MESSAGE, reason: 'no-evidence' };
     }
 
     const answerChunks = selectAnswerChunks(
@@ -255,16 +386,46 @@ export class AskService {
       query,
     );
     const sources = sourcesFromChunks(answerChunks, this.dependencies.blockedChannelIds);
-    const generated = await this.dependencies.generator.generate(
-      buildAskPrompt(query, answerChunks),
-    );
-    const answer = stripCitationMarkers(generated);
 
-    return {
+    if (this.dependencies.reserveAnswerBudget) {
+      const resumeAt = await this.dependencies.reserveAnswerBudget(
+        budgetLimitsFromEnv().answerPerQuestion,
+      );
+      if (resumeAt) {
+        return { ok: false, message: BUSY_MESSAGE, reason: 'quota' };
+      }
+    }
+
+    let generated: string;
+    try {
+      generated = await this.dependencies.generator.generate(buildAskPrompt(query, answerChunks));
+    } catch (error) {
+      if (error instanceof AnswerQuotaExceededError) {
+        return { ok: false, message: BUSY_MESSAGE, reason: 'quota' };
+      }
+      throw error;
+    }
+
+    const answer = stripCitationMarkers(generated);
+    if (isNoEvidenceAnswer(answer)) {
+      return { ok: false, message: NO_EVIDENCE_MESSAGE, reason: 'no-evidence' };
+    }
+
+    const result: Extract<AskResult, { ok: true }> = {
       ok: true,
       answer: renderAnswer(answer, sources),
       sources,
       chunks: answerChunks,
     };
+    this.remember(cacheKey, result);
+    return result;
+  }
+
+  private remember(cacheKey: string, result: Extract<AskResult, { ok: true }>): void {
+    if (this.cache.size >= MAX_CACHED_ANSWERS) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest !== undefined) this.cache.delete(oldest);
+    }
+    this.cache.set(cacheKey, { at: Date.now(), result });
   }
 }

@@ -33,15 +33,21 @@ Credentials: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN` (`.env`).
   Successfully embedded batches are upserted immediately; those rows are the
   durable resume checkpoint for a later run.
 - Indexing reserves estimated units in Neon before each embedding request. Defaults
-  are 1,800 estimated units per run and 7,000 per UTC day, leaving headroom under
-  the 10,000-neuron free allocation. Override with
-  `INDEX_EMBEDDING_RUN_BUDGET` / `INDEX_EMBEDDING_DAILY_BUDGET` only after checking
-  Cloudflare usage; the estimate is intentionally conservative, not provider
-  metering.
+  are **700,000 estimated units per UTC day for indexing** and **150,000 per run**,
+  out of a shared **1,000,000/day** ledger. Answering draws from the same ledger
+  and is capped only at the total, so it keeps a **300,000/day reserve** that a
+  backfill cannot consume. Override with `INDEX_EMBEDDING_DAILY_BUDGET`,
+  `INDEX_EMBEDDING_DAILY_TOTAL`, `INDEX_EMBEDDING_RUN_BUDGET`, and
+  `ANSWER_BUDGET_UNITS`; the estimate is conservative, not provider metering.
 - A provider `429` pauses indexing until `Retry-After` or the next UTC day and is
   reported as a deferred run, not a failed process. The scheduled job retries on
   its next interval; completed chunks remain indexed and unchanged chunks are
   skipped on resume.
+- When answering hits the shared allowance, `/ask` replies with the busy message
+  rather than an error. Identical questions are served from a short-lived answer
+  cache (`ANSWER_CACHE_TTL_MS`, default 15 minutes) so repeats do not spend quota.
+- Write requests ("edit the README", "add my name") are refused before retrieval,
+  because the bot is read-only.
 
 This dimension is a hard constraint. Changing it requires a migration and an
 embedding re-index of every stored chunk.

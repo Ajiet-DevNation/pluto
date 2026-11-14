@@ -44,6 +44,12 @@ export interface SearchStore {
   cachedEmbeddings?(contentHashes: readonly string[]): Promise<Map<string, readonly number[]>>;
   /** Atomically reserves estimated daily embedding units; returns a retry time when deferred. */
   reserveEmbeddingBudget?(units: number, dailyLimit: number): Promise<Date | null>;
+  /** Reserves answering units from the shared daily ledger; returns a retry time when refused. */
+  reserveAnswerBudget?(units: number, dailyLimit: number): Promise<Date | null>;
+  /** Contributor logins and contribution counts already indexed for a repository. */
+  listContributors?(
+    repositoryFullName: string,
+  ): Promise<Array<{ login: string; contributions: number }>>;
   /** Persist provider quota deferral so other workers stop sending embedding requests. */
   deferEmbeddingUntil?(resumeAt: Date): Promise<void>;
   vectorSearch(

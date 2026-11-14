@@ -10,8 +10,10 @@ import {
   sourcesFromChunks,
   renderAnswer,
   stripCitationMarkers,
+  isReadOnlyRequest,
 } from '../../src/search/ask';
 import type { AnswerGenerator, ScoredSearchChunk } from '../../src/search/types';
+import { AnswerQuotaExceededError } from '../../src/search/embedding-errors';
 
 const OUTPUT = '1570721649538502686';
 
@@ -65,10 +67,12 @@ test('empty or no-evidence retrieval never calls the model', async () => {
   assert.deepEqual(await ask.ask('   '), {
     ok: false,
     message: NO_EVIDENCE_MESSAGE,
+    reason: 'no-evidence',
   });
   assert.deepEqual(await ask.ask('unknown'), {
     ok: false,
     message: NO_EVIDENCE_MESSAGE,
+    reason: 'no-evidence',
   });
   assert.deepEqual(generator.prompts, []);
 });
@@ -240,4 +244,125 @@ test('generator errors propagate so the command can report them', async () => {
   });
 
   await assert.rejects(() => ask.ask('question'), /provider down/);
+});
+
+test('write requests are refused without retrieval or generation', async () => {
+  const generator = new FakeGenerator();
+  let retrieved = 0;
+  const ask = new AskService({
+    retrieval: {
+      async retrieve() {
+        retrieved += 1;
+        return { ok: true, chunks: [chunk()] };
+      },
+    },
+    generator,
+  });
+
+  const result = await ask.ask('Edit the README of Ajiet-DevNation/pluto to add my name.');
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.reason, 'read-only');
+    assert.match(result.message, /read-only/i);
+  }
+  assert.equal(retrieved, 0);
+  assert.equal(generator.prompts.length, 0);
+});
+
+test('read questions that merely mention a change are not refused', async () => {
+  assert.equal(isReadOnlyRequest('What does pull request #12 change?'), false);
+  assert.equal(isReadOnlyRequest('Update me on the project status'), false);
+  assert.equal(isReadOnlyRequest('Add my name to the README'), true);
+});
+
+test('a model reply that cannot find evidence becomes the standard message', async () => {
+  const ask = service(
+    [chunk()],
+    new FakeGenerator('I cannot find evidence that Pluto supports Slack notifications.'),
+  );
+  const result = await ask.ask('Does Pluto support Slack notifications?');
+  assert.deepEqual(result, {
+    ok: false,
+    message: NO_EVIDENCE_MESSAGE,
+    reason: 'no-evidence',
+  });
+});
+
+test('contributor questions use the structured contributor index', async () => {
+  const generator = new FakeGenerator();
+  const ask = new AskService({
+    retrieval: {
+      async retrieve() {
+        throw new Error('retrieval should not run for contributor questions');
+      },
+    },
+    generator,
+    githubOrg: 'Ajiet-DevNation',
+    async listContributors(repository) {
+      assert.equal(repository, 'Ajiet-DevNation/pluto');
+      return [
+        { login: 'khushi', contributions: 12 },
+        { login: 'pragathi', contributions: 8 },
+        { login: 'likhith', contributions: 5 },
+      ];
+    },
+  });
+
+  const result = await ask.ask('Who are the contributors of Ajiet-DevNation/pluto?');
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.match(result.answer, /khushi/);
+    assert.match(result.answer, /pragathi/);
+    assert.match(result.answer, /likhith/);
+    assert.doesNotMatch(result.answer, /https?:\/\//);
+  }
+  assert.equal(generator.prompts.length, 0);
+});
+
+test('repeated identical questions are served from the answer cache', async () => {
+  const generator = new FakeGenerator();
+  const ask = service([chunk()], generator);
+
+  await ask.ask('what is the stack?');
+  await ask.ask('What is the stack?');
+  assert.equal(generator.prompts.length, 1);
+});
+
+test('an exhausted answering reserve returns the busy message without generating', async () => {
+  const generator = new FakeGenerator();
+  const ask = new AskService({
+    retrieval: {
+      async retrieve() {
+        return { ok: true, chunks: [chunk()] };
+      },
+    },
+    generator,
+    async reserveAnswerBudget() {
+      return new Date(Date.now() + 60_000);
+    },
+  });
+
+  const result = await ask.ask('what is the stack?');
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.reason, 'quota');
+  assert.equal(generator.prompts.length, 0);
+});
+
+test('a provider quota error during generation returns the busy message', async () => {
+  const ask = new AskService({
+    retrieval: {
+      async retrieve() {
+        return { ok: true, chunks: [chunk()] };
+      },
+    },
+    generator: {
+      async generate(): Promise<string> {
+        throw new AnswerQuotaExceededError(new Date(Date.now() + 60_000), 'quota');
+      },
+    },
+  });
+
+  const result = await ask.ask('what is the stack?');
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.reason, 'quota');
 });

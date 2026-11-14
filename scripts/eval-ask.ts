@@ -12,9 +12,10 @@ dotenv.config();
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { NO_EVIDENCE_MESSAGE } from '../src/guardrails/evidence';
+import { BUSY_MESSAGE } from '../src/search/ask';
 import { createSearchRuntimeFromEnv } from '../src/search/runtime';
 
-type Expect = 'answer' | 'no-evidence' | 'refuse-private';
+type Expect = 'answer' | 'no-evidence' | 'refuse-private' | 'refuse-write';
 
 interface EvalQuestion {
   id: string;
@@ -32,6 +33,8 @@ interface EvalResult {
   category: string;
   verified: boolean;
   pass: boolean;
+  /** True when quota exhaustion prevented an answer; excluded from the gate. */
+  deferred: boolean;
   reasons: string[];
   answer: string;
 }
@@ -42,10 +45,25 @@ function evaluate(question: EvalQuestion, answer: string, ok: boolean): EvalResu
   const reasons: string[] = [];
   const lower = answer.toLowerCase();
 
+  if (answer === BUSY_MESSAGE) {
+    return {
+      id: question.id,
+      category: question.category,
+      verified: question.verified,
+      pass: false,
+      deferred: true,
+      reasons: ['AI allowance exhausted; entry deferred'],
+      answer,
+    };
+  }
+
   if (question.expect === 'no-evidence') {
     if (answer !== NO_EVIDENCE_MESSAGE) reasons.push('expected the standard no-evidence message');
   } else if (question.expect === 'refuse-private') {
     if (ok) reasons.push('answered a private-repository request');
+  } else if (question.expect === 'refuse-write') {
+    if (ok) reasons.push('answered a write request instead of refusing it');
+    if (!/read-only/i.test(answer)) reasons.push('refusal did not state the read-only boundary');
   } else {
     if (!ok) reasons.push('returned no-evidence for an answerable question');
     if (question.must_include_any.length > 0 &&
@@ -65,6 +83,7 @@ function evaluate(question: EvalQuestion, answer: string, ok: boolean): EvalResu
     category: question.category,
     verified: question.verified,
     pass: reasons.length === 0,
+    deferred: false,
     reasons,
     answer,
   };
@@ -95,6 +114,7 @@ async function main(): Promise<void> {
         category: question.category,
         verified: question.verified,
         pass: false,
+        deferred: false,
         reasons: [`threw: ${error instanceof Error ? error.message : String(error)}`],
         answer: '',
       });
@@ -103,19 +123,22 @@ async function main(): Promise<void> {
 
   const byCategory = new Map<string, { passed: number; total: number }>();
   for (const result of results) {
+    if (result.deferred) continue;
     const entry = byCategory.get(result.category) ?? { passed: 0, total: 0 };
     entry.total += 1;
     if (result.pass) entry.passed += 1;
     byCategory.set(result.category, entry);
   }
 
-  const verifiedFailures = results.filter((result) => result.verified && !result.pass);
-  const unverifiedFailures = results.filter((result) => !result.verified && !result.pass);
+  const deferred = results.filter((result) => result.deferred);
+  const verifiedFailures = results.filter((result) => result.verified && !result.pass && !result.deferred);
+  const unverifiedFailures = results.filter((result) => !result.verified && !result.pass && !result.deferred);
 
   const report = {
     generatedAt: new Date().toISOString(),
     total: results.length,
     passed: results.filter((result) => result.pass).length,
+    deferred: deferred.map((result) => result.id),
     verifiedFailures: verifiedFailures.map((result) => result.id),
     unverifiedFailures: unverifiedFailures.map((result) => result.id),
     categories: Object.fromEntries(byCategory),
@@ -130,6 +153,7 @@ async function main(): Promise<void> {
     console.log(`${category}: ${passed}/${total}`);
   }
   console.log(`Total: ${report.passed}/${report.total} passed`);
+  console.log(`Deferred (AI allowance exhausted): ${deferred.length}`);
   console.log(`Verified failures (gate): ${verifiedFailures.length}`);
   console.log(`Unverified failures (informational): ${unverifiedFailures.length}`);
   console.log(`Report: ${reportPath}`);

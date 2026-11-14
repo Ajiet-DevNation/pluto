@@ -22,6 +22,7 @@ import {
   buildGithubReadmeChunks,
 } from './chunk';
 import { EmbeddingDeferredError, EmbeddingQuotaExceededError } from './embedding-errors';
+import { budgetLimitsFromEnv } from './budget';
 import type {
   EmbeddingClient,
   IndexGitHubCommit,
@@ -37,18 +38,11 @@ import type {
 
 const EMBED_BATCH_SIZE = 32;
 const EMBEDDING_CACHE_MODEL = '@cf/baai/bge-base-en-v1.5:768';
-const DEFAULT_DAILY_EMBEDDING_BUDGET = 7_000;
-const DEFAULT_RUN_EMBEDDING_BUDGET = 1_800;
-
-function positiveIntegerEnv(name: string, fallback: number): number {
-  const value = Number(process.env[name]);
-  return Number.isSafeInteger(value) && value > 0 ? value : fallback;
-}
 
 function estimatedEmbeddingUnits(text: string): number {
-  // Conservative character-based estimate; keep headroom below Cloudflare's
-  // 10,000-neuron free daily allowance, which can also be used by other calls.
-  return Math.max(1, Math.ceil(Buffer.byteLength(text, 'utf8') / 2));
+  // Estimated tokens. English text and code average roughly four characters
+  // per token; the ledger keeps headroom below the free daily allowance.
+  return Math.max(1, Math.ceil(Buffer.byteLength(text, 'utf8') / 4));
 }
 
 async function persistInBatches(
@@ -174,8 +168,9 @@ export class SearchIndexer implements SourceIndexer {
       content: groupedChunks[0].content,
       units: estimatedEmbeddingUnits(groupedChunks[0].content),
     }));
-    const dailyBudget = positiveIntegerEnv('INDEX_EMBEDDING_DAILY_BUDGET', DEFAULT_DAILY_EMBEDDING_BUDGET);
-    const runBudget = positiveIntegerEnv('INDEX_EMBEDDING_RUN_BUDGET', DEFAULT_RUN_EMBEDDING_BUDGET);
+    const limits = budgetLimitsFromEnv();
+    const dailyBudget = limits.indexingDaily;
+    const runBudget = limits.indexingRun;
 
     for (let start = 0; start < groups.length;) {
       const remainingRun = runBudget - this.runEmbeddingUnits;

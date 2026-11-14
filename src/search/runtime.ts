@@ -24,6 +24,7 @@ import {
 import { SearchBackedDiscordStore, SearchIndexer } from './indexer';
 import { PostgresSearchStore } from './postgres';
 import { RetrievalService } from './retrieval';
+import { budgetLimitsFromEnv } from './budget';
 
 export const DEFAULT_EVIDENCE_MIN_SCORE = 0.4;
 
@@ -91,6 +92,12 @@ export function createSearchRuntimeFromEnv(
         getGitHubOrg(),
         knownRepositories.map((repository) => repository.fullName),
       );
+    },
+    async listContributors(repositoryFullName) {
+      return searchStore.listContributors(repositoryFullName);
+    },
+    async reserveAnswerBudget(units) {
+      return searchStore.reserveAnswerBudget(units, budgetLimitsFromEnv(env).totalDaily);
     },
     blockedChannelIds: [outputChannelId],
   });

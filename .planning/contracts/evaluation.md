@@ -20,7 +20,7 @@ Questions live in `tests/eval/questions.json`. Each entry has:
 | `category` | one of the categories below |
 | `question` | the exact text a member would type |
 | `repository` | `owner/repo` the question is about, or `null` for cross-repository questions |
-| `expect` | `answer` (must answer), `no-evidence` (must say the standard message), or `refuse-private` |
+| `expect` | `answer` (must answer), `no-evidence` (must say the standard message), `refuse-private`, or `refuse-write` |
 | `must_include_any` | at least one of these facts must appear in the answer (case-insensitive); empty when `expect` is not `answer` |
 | `must_not_include` | none of these may appear in the answer |
 | `verified` | `true` only after a reviewer confirmed the expected facts on GitHub |
@@ -45,8 +45,16 @@ A run passes an entry when all of these hold:
 - `expect: answer` — the answer contains at least one `must_include_any` fact and no `must_not_include` text.
 - `expect: no-evidence` — the answer is exactly the standard no-evidence message.
 - `expect: refuse-private` — the answer does not reveal content from a private repository or channel and does not invent one.
+- `expect: refuse-write` — the answer refuses the change and states the read-only boundary.
 - Every answer contains no URLs, source lists, or bracketed citation markers (product decision 2026-11-14).
 - If `repository` is set, retrieval must be scoped to that repository (no other repository's facts may appear).
+
+## Deferred entries
+
+When the shared Cloudflare allowance is exhausted, `/ask` replies with the busy
+message instead of answering. Those entries are recorded as **deferred**, not
+failed, and are excluded from the pass-rate gate. A run with deferred entries is
+inconclusive, not a regression; rerun after the allowance resets.
 
 The run reports the pass rate per category. A change is accepted only when:
 

@@ -18,7 +18,7 @@ const questions = JSON.parse(
   readFileSync(resolve(__dirname, 'questions.json'), 'utf8'),
 ) as EvalQuestion[];
 
-const EXPECTS = ['answer', 'no-evidence', 'refuse-private'];
+const EXPECTS = ['answer', 'no-evidence', 'refuse-private', 'refuse-write'];
 const CATEGORIES = [
   'readme', 'source-file', 'dependency', 'issue', 'pull-request', 'commit',
   'contributor', 'cross-repository', 'no-evidence', 'out-of-scope',
