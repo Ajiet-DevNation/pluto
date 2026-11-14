@@ -28,9 +28,54 @@ Credentials: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN` (`.env`).
 - **Storage:** `vector(768)` column in Neon, via the `vector` extension
 - **Call shape:** POST `/ai/run/@cf/baai/bge-base-en-v1.5` with `{ "text": [...] }`
 - **Batching:** one request per chunk batch; do not loop one request per chunk
+- **Free-tier backfill:** embedding vectors are cached by a model-versioned content
+  hash and reused across identical chunks, including across different sources.
+  Successfully embedded batches are upserted immediately; those rows are the
+  durable resume checkpoint for a later run.
+- Indexing reserves estimated units in Neon before each embedding request. Defaults
+  are **700,000 estimated units per UTC day for indexing** and **150,000 per run**,
+  out of a shared **1,000,000/day** ledger. Answering draws from the same ledger
+  and is capped only at the total, so it keeps a **300,000/day reserve** that a
+  backfill cannot consume. Override with `INDEX_EMBEDDING_DAILY_BUDGET`,
+  `INDEX_EMBEDDING_DAILY_TOTAL`, `INDEX_EMBEDDING_RUN_BUDGET`, and
+  `ANSWER_BUDGET_UNITS`; the estimate is conservative, not provider metering.
+- A provider `429` pauses indexing until `Retry-After` or the next UTC day and is
+  reported as a deferred run, not a failed process. The scheduled job retries on
+  its next interval; completed chunks remain indexed and unchanged chunks are
+  skipped on resume.
+- When answering hits the shared allowance, `/ask` replies with the busy message
+  rather than an error. Identical questions are served from a short-lived answer
+  cache (`ANSWER_CACHE_TTL_MS`, default 15 minutes) so repeats do not spend quota.
+- Write requests ("edit the README", "add my name") are refused before retrieval,
+  because the bot is read-only.
 
 This dimension is a hard constraint. Changing it requires a migration and an
 embedding re-index of every stored chunk.
+
+## GitHub corpus coverage
+
+- Enumerate every **public** repository in Ajiet-DevNation using paginated
+  GitHub API requests; explicitly request public repositories and defensively
+  reject any repository marked private.
+- P2 indexes repository READMEs, issues, pull requests, commit messages, and
+  contributor identities/counts, and eligible text/source files from each public
+  repository's default branch.
+- Issue/PR comment threads, PR review comments, and historical commit patches
+  are not included in this first corpus pass; indexed issue/PR title and body,
+  commit messages, and the current default-branch files are searchable.
+- Paginate repository, issue, pull-request, and commit list endpoints so a
+  result set larger than one API page is not silently truncated.
+- Source-file ingestion uses an explicit text/source extension allowlist, a
+  128 KiB per-file limit, and excludes binary files, lockfiles, generated or
+  vendored directories, `.env`/credential/private-key paths, and likely leaked
+  GitHub/AWS/private-key credentials. This is not an index of binary assets or
+  arbitrarily large generated/vendor trees.
+- If GitHub reports a truncated recursive tree, indexing fails loudly instead
+  of reporting a successful partial repository index.
+- The manual reindex command must fail loudly if GitHub credentials are missing
+  or a GitHub API request fails; it must not report a successful partial index.
+  Embedding-budget and provider-quota deferrals are the exception: they must report
+  a paused/resumable run without treating quota exhaustion as a crash.
 
 ## Chunk format
 
@@ -46,6 +91,7 @@ A chunk is the unit of retrieval and the unit of citation.
 | `author_id` | text nullable | used for opt-out filtering |
 | `content` | text | the chunk text |
 | `embedding` | `vector(768)` | nullable until indexed |
+| `content_hash` | text nullable | model-versioned hash used for durable resume and cross-source vector reuse |
 | `search_vector` | `tsvector` | generated from `content` |
 | `indexed_at` | timestamptz | |
 
@@ -82,10 +128,34 @@ boundary in `contracts/security.md` §4.
 - v1 starting value: **`0.4`**
 - The value is tuned after P2 ships against real queries. It is not final.
 
+### Score normalization (P2 live calibration, 2026-11-14)
+
+Raw `bge-base-en-v1.5` cosine similarities have a high baseline: unrelated
+project text commonly scores around `0.5–0.65`. Applying `0.4` directly to raw
+cosine therefore admitted almost every chunk and defeated the no-evidence gate.
+
+The store converts raw scores to a calibrated `0..1` relevance before the gate:
+
+```text
+vector_relevance   = clamp((cosine - 0.5) / 0.5, 0, 1)
+full_text_relevance = rank > 0 ? clamp(0.4 + 2 * rank, 0, 1) : 0
+```
+
+Consequences:
+
+- `EVIDENCE_MIN_SCORE=0.4` corresponds to raw cosine `0.70`.
+- Any non-zero full-text match clears the threshold; vector search remains the
+  semantic path for paraphrases.
+- The calibration is recorded in `src/search/relevance.ts` with unit tests. It
+  is a scoring normalization, not a change to the configured threshold.
+
 ## Citations
 
 Every retrieved chunk carries `source_url`, built by the builders in
-`src/citations`. The answer cites only chunks that passed the gate.
+`src/citations`. Retrieved chunks that pass the gate ground the answer internally.
+Product decision 2026-11-14: `/ask` replies do not display source links, source
+footers, or citation markers. Source URLs remain evidence metadata for retrieval,
+opt-out and blocked-channel enforcement, and audit.
 
 - Never cite `#pluto` (`CitationPolicy.blockedChannelIds`)
 - Never cite the bot's own prior answers

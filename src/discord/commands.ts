@@ -13,10 +13,21 @@ export const optOutCommand = new SlashCommandBuilder()
   .setDescription('Opt out of Pluto indexing your Discord messages.')
   .setDMPermission(false);
 
+export const askCommand = new SlashCommandBuilder()
+  .setName('ask')
+  .setDescription('Ask a question grounded in indexed project sources.')
+  .setDMPermission(false)
+  .addStringOption((option) =>
+    option
+      .setName('question')
+      .setDescription('The question to answer from indexed project records')
+      .setRequired(true),
+  );
+
 export type CommandPayload = ReturnType<SlashCommandBuilder['toJSON']>;
 
 export function commandPayloads(): CommandPayload[] {
-  return [optOutCommand.toJSON()];
+  return [optOutCommand.toJSON(), askCommand.toJSON()];
 }
 
 export interface GuildCommandManager {

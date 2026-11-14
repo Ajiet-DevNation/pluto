@@ -2,7 +2,7 @@
 
 **Contract:** #3 — Discord (commands + channel configuration + permissions)
 **Owner:** Pragathi proposes; Khushi approves
-**Status:** Draft for review — 2026-11-14. P1 implementation follows this draft; Khushi approval is still required before merge.
+**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 consumes the retrieval/citation rules; `/ask` itself is specified by `contracts/search.md` and the P2 implementation.
 **Consumers:** P1 (Discord indexing, `/optout`), P2 (`/ask` retrieval/citations), P3 (`/digest`), L3 (`/decisions`), CP3.
 **Sources:** `.planning/PR-PLAN.md` §Shared Technical Contracts; `.planning/config.json` → `planning.discord`; `contracts/security.md`; `contracts/search.md`.
 

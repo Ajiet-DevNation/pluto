@@ -23,4 +23,17 @@ describe('database schema', () => {
     assert.ok(schema.issues.createdAt);
     assert.ok(schema.issues.updatedAt);
   });
+
+  it('defines the search_chunks table used by /ask', () => {
+    assert.ok(schema.searchChunks);
+    assert.ok(schema.searchChunks.sourceType);
+    assert.ok(schema.searchChunks.sourceId);
+    assert.ok(schema.searchChunks.chunkIndex);
+    assert.ok(schema.searchChunks.sourceUrl);
+    assert.ok(schema.searchChunks.channelId);
+    assert.ok(schema.searchChunks.authorId);
+    assert.ok(schema.searchChunks.content);
+    assert.ok(schema.searchChunks.embedding);
+    assert.ok(schema.searchChunks.searchVector);
+  });
 });

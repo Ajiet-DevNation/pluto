@@ -1,4 +1,5 @@
 import { createReadOnlyGuard } from '../guardrails/read-only';
+import { fetchWithRetry } from '../http/retry';
 
 /**
  * Read-only GitHub client.
@@ -63,6 +64,25 @@ export interface GitHubCommit {
   htmlUrl: string;
 }
 
+export interface GitHubReadme {
+  repositoryFullName: string;
+  path: string;
+  htmlUrl: string;
+  content: string;
+}
+
+export interface GitHubRepositoryFile {
+  path: string;
+  sha: string;
+  size: number;
+}
+
+export interface GitHubContributor {
+  login: string | null;
+  contributions: number;
+  htmlUrl: string | null;
+}
+
 export interface GitHubReader {
   listRepos(org: string): Promise<GitHubRepo[]>;
   getRepo(owner: string, repo: string): Promise<GitHubRepo>;
@@ -71,6 +91,10 @@ export interface GitHubReader {
   listPullRequests(owner: string, repo: string): Promise<GitHubPullRequest[]>;
   getPullRequest(owner: string, repo: string, number: number): Promise<GitHubPullRequest>;
   listCommits(owner: string, repo: string): Promise<GitHubCommit[]>;
+  getReadme(owner: string, repo: string): Promise<GitHubReadme | null>;
+  listRepositoryFiles(owner: string, repo: string, ref: string): Promise<GitHubRepositoryFile[]>;
+  getFileContent(owner: string, repo: string, sha: string): Promise<string>;
+  listContributors(owner: string, repo: string): Promise<GitHubContributor[]>;
 }
 
 export const GITHUB_READ_METHODS = [
@@ -81,10 +105,17 @@ export const GITHUB_READ_METHODS = [
   'listPullRequests',
   'getPullRequest',
   'listCommits',
+  'getReadme',
+  'listRepositoryFiles',
+  'getFileContent',
+  'listContributors',
 ] as const;
 
 export interface GitHubReaderOptions {
-  token: string;
+  /** Static PAT for compatibility and tests. */
+  token?: string;
+  /** Async token source for expiring GitHub App installation tokens. */
+  tokenProvider?: () => Promise<string>;
   /** Override for tests. Defaults to https://api.github.com */
   baseUrl?: string;
   /** Inject for tests. Defaults to global fetch. */
@@ -137,6 +168,32 @@ interface RawCommit {
     author: { name: string; date: string } | null;
   };
 }
+
+interface RawReadme {
+  path: string;
+  html_url: string;
+  encoding: string;
+  content: string;
+}
+
+interface RawTree {
+  truncated: boolean;
+  tree: Array<{ path: string; type: string; sha: string; size?: number }>;
+}
+
+interface RawBlob {
+  encoding: string;
+  content: string;
+}
+
+interface RawContributor {
+  login?: string | null;
+  contributions: number;
+  html_url?: string | null;
+}
+
+const PER_PAGE = 100;
+const MAX_PAGES = 1_000;
 
 function toRepo(raw: RawRepo): GitHubRepo {
   return {
@@ -198,8 +255,8 @@ function encodeSegment(value: string, label: string): string {
 }
 
 export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
-  if (!options.token) {
-    throw new GitHubReadError('GitHub token is required');
+  if (!options.token && !options.tokenProvider) {
+    throw new GitHubReadError('A GitHub token or token provider is required');
   }
 
   const baseUrl = (options.baseUrl ?? 'https://api.github.com').replace(/\/+$/, '');
@@ -211,14 +268,23 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
    * The only outbound call in this module. Method is fixed to GET.
    */
   async function getJson<T>(path: string): Promise<T> {
-    const response = await doFetch(`${baseUrl}${path}`, {
+    const token = options.tokenProvider ? await options.tokenProvider() : options.token;
+    if (!token?.trim()) {
+      throw new GitHubReadError('GitHub token provider returned an empty token');
+    }
+    const response = await fetchWithRetry(doFetch, `${baseUrl}${path}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${options.token}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': apiVersion,
         'User-Agent': userAgent,
       },
+    }, {
+      retryableStatus: (retryResponse) =>
+        retryResponse.status === 429 ||
+        retryResponse.status >= 500 ||
+        (retryResponse.status === 403 && retryResponse.headers.get('x-ratelimit-remaining') === '0'),
     });
 
     if (!response.ok) {
@@ -231,23 +297,41 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
     return (await response.json()) as T;
   }
 
+  async function getAllPages<T>(pathForPage: (page: number) => string): Promise<T[]> {
+    const results: T[] = [];
+    for (let page = 1; page <= MAX_PAGES; page += 1) {
+      const batch = await getJson<T[]>(pathForPage(page));
+      if (!Array.isArray(batch)) {
+        throw new GitHubReadError('GitHub list endpoint returned a non-array response');
+      }
+      results.push(...batch);
+      if (batch.length < PER_PAGE) {
+        return results;
+      }
+    }
+    throw new GitHubReadError(`GitHub pagination exceeded the ${MAX_PAGES}-page safety limit`);
+  }
+
+  function repoPath(owner: string, repo: string): string {
+    return `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}`;
+  }
+
   const reader: GitHubReader = {
     async listRepos(org: string): Promise<GitHubRepo[]> {
       const owner = encodeSegment(org, 'org');
-      const raw = await getJson<RawRepo[]>(`/orgs/${owner}/repos?per_page=100`);
+      const raw = await getAllPages<RawRepo>(
+        (page) => `/orgs/${owner}/repos?type=public&per_page=${PER_PAGE}&page=${page}`,
+      );
       return raw.map(toRepo);
     },
 
     async getRepo(owner: string, repo: string): Promise<GitHubRepo> {
-      const path = `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}`;
-      return toRepo(await getJson<RawRepo>(path));
+      return toRepo(await getJson<RawRepo>(repoPath(owner, repo)));
     },
 
     async listIssues(owner: string, repo: string): Promise<GitHubIssue[]> {
-      const path =
-        `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}` +
-        '/issues?state=all&per_page=100';
-      const raw = await getJson<RawIssue[]>(path);
+      const path = `${repoPath(owner, repo)}/issues?state=all&per_page=${PER_PAGE}`;
+      const raw = await getAllPages<RawIssue>((page) => `${path}&page=${page}`);
       return raw.map(toIssue);
     },
 
@@ -255,17 +339,13 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
       if (!Number.isInteger(number) || number <= 0) {
         throw new GitHubReadError(`Invalid issue number: ${number}`);
       }
-      const path =
-        `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}` +
-        `/issues/${number}`;
+      const path = `${repoPath(owner, repo)}/issues/${number}`;
       return toIssue(await getJson<RawIssue>(path));
     },
 
     async listPullRequests(owner: string, repo: string): Promise<GitHubPullRequest[]> {
-      const path =
-        `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}` +
-        '/pulls?state=all&per_page=100';
-      const raw = await getJson<RawPullRequest[]>(path);
+      const path = `${repoPath(owner, repo)}/pulls?state=all&per_page=${PER_PAGE}`;
+      const raw = await getAllPages<RawPullRequest>((page) => `${path}&page=${page}`);
       return raw.map(toPullRequest);
     },
 
@@ -277,18 +357,69 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
       if (!Number.isInteger(number) || number <= 0) {
         throw new GitHubReadError(`Invalid pull request number: ${number}`);
       }
-      const path =
-        `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}` +
-        `/pulls/${number}`;
+      const path = `${repoPath(owner, repo)}/pulls/${number}`;
       return toPullRequest(await getJson<RawPullRequest>(path));
     },
 
     async listCommits(owner: string, repo: string): Promise<GitHubCommit[]> {
-      const path =
-        `/repos/${encodeSegment(owner, 'owner')}/${encodeSegment(repo, 'repo')}` +
-        '/commits?per_page=100';
-      const raw = await getJson<RawCommit[]>(path);
+      const path = `${repoPath(owner, repo)}/commits?per_page=${PER_PAGE}`;
+      const raw = await getAllPages<RawCommit>((page) => `${path}&page=${page}`);
       return raw.map(toCommit);
+    },
+
+    async getReadme(owner: string, repo: string): Promise<GitHubReadme | null> {
+      try {
+        const raw = await getJson<RawReadme>(`${repoPath(owner, repo)}/readme`);
+        if (raw.encoding !== 'base64') {
+          throw new GitHubReadError(`Unsupported README encoding: ${raw.encoding}`);
+        }
+        return {
+          repositoryFullName: `${owner}/${repo}`,
+          path: raw.path,
+          htmlUrl: raw.html_url,
+          content: Buffer.from(raw.content, 'base64').toString('utf8'),
+        };
+      } catch (error) {
+        if (error instanceof GitHubReadError && error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
+
+    async listRepositoryFiles(
+      owner: string,
+      repo: string,
+      ref: string,
+    ): Promise<GitHubRepositoryFile[]> {
+      const encodedRef = encodeSegment(ref, 'ref');
+      const tree = await getJson<RawTree>(`${repoPath(owner, repo)}/git/trees/${encodedRef}?recursive=1`);
+      if (tree.truncated) {
+        throw new GitHubReadError(
+          `GitHub returned a truncated file tree for ${owner}/${repo}; refusing a partial repository index`,
+        );
+      }
+      return tree.tree
+        .filter((entry) => entry.type === 'blob' && typeof entry.size === 'number')
+        .map((entry) => ({ path: entry.path, sha: entry.sha, size: entry.size as number }));
+    },
+
+    async getFileContent(owner: string, repo: string, sha: string): Promise<string> {
+      const raw = await getJson<RawBlob>(`${repoPath(owner, repo)}/git/blobs/${encodeSegment(sha, 'blob sha')}`);
+      if (raw.encoding !== 'base64') {
+        throw new GitHubReadError(`Unsupported GitHub blob encoding: ${raw.encoding}`);
+      }
+      return Buffer.from(raw.content, 'base64').toString('utf8');
+    },
+
+    async listContributors(owner: string, repo: string): Promise<GitHubContributor[]> {
+      const path = `${repoPath(owner, repo)}/contributors?per_page=${PER_PAGE}`;
+      const raw = await getAllPages<RawContributor>((page) => `${path}&page=${page}`);
+      return raw.map((contributor) => ({
+        login: contributor.login ?? null,
+        contributions: contributor.contributions,
+        htmlUrl: contributor.html_url ?? null,
+      }));
     },
   };
 

@@ -12,7 +12,7 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 - [ ] **INDEX-01**: Index public GitHub repositories belonging to Ajiet-DevNation (read-only)
   - Acceptance Criteria:
     1. Bot connects to Ajiet-DevNation GitHub org via a read-only GitHub App
-    2. Public repo contents (commits, pull requests, issues) are indexed and searchable
+    2. Public repo READMEs, issues, pull requests, commit messages, contributors, and eligible text/source files are indexed and searchable
     3. No write operations are performed on GitHub (read-only verified)
 
 - [ ] **INDEX-02**: Index selected Discord channels
@@ -35,7 +35,7 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 
 ### Q&A
 
-- [ ] **ASK-01**: Answer questions through /ask with citations to original sources
+- [ ] **ASK-01**: Answer questions through /ask from indexed evidence, without visible source links or citation markers in the answer (product decision 2026-11-14; source URLs remain internal evidence metadata)
   - Acceptance Criteria:
     1. /ask returns answers grounded in indexed content
     2. Each answer cites links to original sources (GitHub commit/PR URL, Discord message link, or meeting transcript)

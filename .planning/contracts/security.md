@@ -68,7 +68,7 @@ Standard no-evidence message:
 
 ## 5. Citations
 
-- Every answer includes at least one link to the original source.
+- Product decision 2026-11-14: `/ask` answers are displayed without visible source links, source footers, or citation markers. Evidence grounding, opt-out filtering and blocked-channel filtering still apply before generation.
 - Supported formats:
   - GitHub: commit, pull request, or issue URL
   - Discord: `https://discord.com/channels/{guild}/{channel}/{message}`

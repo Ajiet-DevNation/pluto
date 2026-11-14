@@ -26,21 +26,37 @@ import {
   requireEnv,
   type DiscordPolicy,
 } from './policy';
-import { createDefaultStore, type JsonDiscordStore } from './store';
-import { defaultLogger, errorMessage } from './types';
+import { createDefaultStore } from './store';
+import {
+  defaultLogger,
+  errorMessage,
+  type DiscordIndexStore,
+  type OptOutStore,
+} from './types';
 import { handleOptOutInteraction, type OptOutInteraction } from '../optout/command';
+import { handleAskInteraction, type AskInteraction } from '../ask/command';
+import type { AskService } from '../search/ask';
+
+export type BotStore = DiscordIndexStore & OptOutStore;
 
 export interface StartedDiscordBot {
   client: Client;
-  store: JsonDiscordStore;
+  store: BotStore;
   shutdown: () => Promise<void>;
 }
 
 export interface StartDiscordBotOptions {
   env?: NodeJS.ProcessEnv;
   policy?: DiscordPolicy;
-  store?: JsonDiscordStore;
+  store?: BotStore;
+  askService?: Pick<AskService, 'ask'>;
 }
+
+const unavailableAskService: Pick<AskService, 'ask'> = {
+  async ask(): Promise<never> {
+    throw new Error('/ask is not configured (search credentials are missing)');
+  },
+};
 
 export function createDiscordClient(): Client {
   return new Client({
@@ -175,7 +191,21 @@ export async function startDiscordBot(
     void handleMessageCreate(message, context);
   });
 
+  const askService = options.askService ?? unavailableAskService;
+
   client.on(Events.InteractionCreate, (interaction) => {
+    if (interaction.isChatInputCommand() && interaction.commandName === 'ask') {
+      void handleAskInteraction(interaction as unknown as AskInteraction, {
+        guildId: policy.guildId,
+        askService,
+      }).catch((error: unknown) => {
+        defaultLogger.error('Unhandled /ask interaction error', {
+          error: errorMessage(error),
+        });
+      });
+      return;
+    }
+
     void handleOptOutInteraction(interaction as unknown as OptOutInteraction, {
       guildId: policy.guildId,
       optOutStore: store,

@@ -2,11 +2,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { eq } from 'drizzle-orm';
-import { resolveGitHubToken } from '../github/app.js';
+import { createGitHubTokenProvider } from '../github/app.js';
 import { createDb, type Db } from '../db/index.js';
 import { createGitHubReader, type GitHubReader } from '../github/reader.js';
 import { getGitHubOrg } from '../config.js';
 import { issues, repositories } from '../db/schema.js';
+import type { SourceIndexer } from '../search/types.js';
 
 export interface IndexedIssue {
   repositoryFullName: string;
@@ -21,6 +22,8 @@ export interface IndexGitHubIssuesOptions {
   reader?: GitHubReader;
   db?: Db;
   org?: string;
+  /** Optional search indexing hook; keeps `search_chunks` in sync with `issues`. */
+  searchIndexer?: Pick<SourceIndexer, 'indexGitHubIssue'>;
 }
 
 export async function indexGitHubIssues(
@@ -28,7 +31,7 @@ export async function indexGitHubIssues(
   options: IndexGitHubIssuesOptions = {}
 ): Promise<IndexedIssue[]> {
   const reader =
-    options.reader ?? createGitHubReader({ token: resolveGitHubToken() });
+    options.reader ?? createGitHubReader({ tokenProvider: createGitHubTokenProvider() });
   const db = options.db ?? createDb(connectionString);
   const GITHUB_ORG = options.org ?? getGitHubOrg();
   const results: IndexedIssue[] = [];
@@ -91,6 +94,17 @@ export async function indexGitHubIssues(
           htmlUrl: issue.htmlUrl,
           createdAt: new Date(issue.createdAt),
           updatedAt: new Date(issue.updatedAt),
+        });
+      }
+
+      if (options.searchIndexer) {
+        await options.searchIndexer.indexGitHubIssue({
+          repositoryFullName: repo.fullName,
+          issueNumber: issue.number,
+          title: issue.title,
+          body: issue.body,
+          state: issue.state,
+          htmlUrl: issue.htmlUrl,
         });
       }
 

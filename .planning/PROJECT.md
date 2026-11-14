@@ -48,10 +48,10 @@ Make community information easier to find, understand, and manage — with answe
 - **[Tech stack]**: TypeScript, Node.js 22, Express.js, Discord.js v14 hosted on heavencloud plan — backend language/runtime fixed
 - **[Database]**: Neon PostgreSQL with pgvector and tsvector, Drizzle ORM — vector + full-text search required
 - **[Job queue]**: pg-boss — background jobs for indexing and digests
-- **[GitHub integration]**: Read-only GitHub App via Ganju MCP endpoint and Octokit — no write access to GitHub
+- **[GitHub integration]**: Read-only GitHub App via Octokit App authentication, with a fine-grained PAT fallback during rollout — no repository writes
 - **[Miro integration]**: Read-only Miro access via MCP — boards, comments, texts, diagrams, and other board content; no write operations on Miro
 - **[AI & embeddings]**: Cloudflare Workers AI (bge-base-en-v1.5 embeddings, instruct model, Whisper transcription) — AI provider fixed
-- **[Audio storage]**: Cloudflare R2 (temporary, under consideration) — audio storage pending final decision
+- **[Audio storage]**: No v1 audio persistence — upload audio is transcribed directly and discarded; only transcripts are stored in Neon
 - **[Read-only]**: No writes to GitHub repos or Discord history; no private repo/channel indexing; no unsupported general knowledge — hard compliance boundary
 - **[Timeline]**: Prioritize quality over the original end-of-week target; all ten capabilities must ship in v1
 
@@ -66,7 +66,7 @@ Make community information easier to find, understand, and manage — with answe
 | Citations link to original source | Verifiability — users can jump to GitHub commit/PR, Discord message, or meeting transcript | — Pending |
 | TypeScript + Node.js 22 + discord.js v14 | Existing team stack decision (per provided stack table) | — Pending |
 | Neon Postgres + pgvector + tsvector + Drizzle | Vector + full-text search for knowledge retrieval | — Pending |
-| Cloudflare Workers AI + Whisper + R2 | AI embeddings, transcription, and temporary audio storage | — Pending |
+| Cloudflare Workers AI + Whisper | AI embeddings and transcription; no audio file persistence in v1 | — Resolved |
 
 ---
 

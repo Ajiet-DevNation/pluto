@@ -53,7 +53,7 @@ Git workflow and branch strategy for the Pluto v1 release. All ten capabilities 
 | PR | Content | Files | Acceptance | Depends on | Target hour |
 |----|---------|-------|------------|------------|-------------|
 | P1 | Connect Discord bot via discord.js v14; join DevNation server; index selected Discord channels; implement /optout command to exclude member messages from indexing | `src/cmd/pluto/**`, `src/discord/**`, `src/optout/**`, `tests/discord/` | Discord bot connected and joined; admin-selected channels indexed; non-selected channels excluded; opted-out members' messages excluded from search and answers | K1 | 5 |
-| P2 | Implement /ask Q&A command; ground answers in indexed content; handle no-evidence responses; cite links to original sources | `src/cmd/pluto/**`, `src/ask/**`, `src/retrieval/**`, `tests/ask/` | /ask returns answers grounded in indexed content; each answer cites GitHub commit/PR URL, Discord message link, or meeting transcript; when no evidence exists, /ask explicitly states so | P1, L1 | 7 |
+| P2 | Implement `/ask`; index all public-org GitHub READMEs, issues, PRs, commits, contributors, and eligible text/source files; ground answers in indexed content | `src/cmd/pluto/**`, `src/ask/**`, `src/search/**`, `tests/ask/`, `tests/search/` | `/ask` answers from indexed sources with original citations; all public Ajiet-DevNation repositories and API pages are included; repo-specific questions stay scoped to that repo; private repositories and excluded/sensitive files remain out; missing credentials fail reindex visibly | P1, L1 | 7 |
 | P3 | Generate /digest weekly summaries; generate meeting summaries; extract action items with owners and due dates; implement /meeting actions command with mark-complete | `src/cmd/pluto/**`, `src/digest/**`, `src/meetings/**`, `tests/digest/**, tests/meetings/` | Weekly digest summarizes indexed GitHub/Discord/decisions and delivers to Discord; meeting transcripts summarized; action items extracted with owners and due dates; /meeting actions lists pending tasks; action items can be marked complete | P2, L2 | 6 |
 
 **Contract ownership (Pragathi):**
@@ -97,12 +97,12 @@ The following contracts must be documented and agreed by all three bot members b
 | 1 | Database schema | Likhith proposes; Khushi approves | Tables, columns, relationships, indexes, migrations, naming conventions | Pending validation |
 | 2 | API contracts | Khushi owns | Endpoints, request/response formats, validation, errors | Pending validation |
 | 3 | Discord contracts | Pragathi proposes; Khushi approves | Bot command interfaces, channel configuration, permissions | Pending validation |
-| 4 | GitHub contracts | Khushi owns | GitHub App access, webhook/event payloads, repository allowlist | Pending validation |
+| 4 | GitHub contracts | Khushi owns | GitHub App access, webhook/event payloads, repository allowlist | Drafted in `contracts/github.md`; review pending |
 | 5 | Miro MCP contracts | Khushi proposes; Khushi approves | Miro MCP server connection, board allowlist, read-only enforcement, board/comment/text/diagram access | Pending validation |
-| 6 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Pending validation |
-| 7 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling | Pending validation |
+| 6 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Approved; GitHub corpus scope updated for P2 |
+| 7 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling | Approved (`contracts/background-jobs.md`) |
 | 8 | Meeting contracts | Pragathi proposes; Khushi approves | Upload, transcription, summary, action-item formats | Pending validation |
-| 9 | Security contracts | Khushi owns | Read-only boundaries, visibility enforcement, opt-out behavior | Pending validation |
+| 9 | Security contracts | Khushi owns | Read-only boundaries, visibility enforcement, opt-out behavior | Active/approved for K2 (`contracts/security.md`) |
 
 **Contract review rule:** All three must review shared interfaces before dependent implementation begins. Khushi resolves disagreements and approves changes to shared contracts.
 
@@ -185,17 +185,18 @@ Prerequisite order:
 | **P2 depends on L1** | Pragathi's /ask work package (P2) needs Likhith's database + job queue (L1) first. If L1 slips, P2 is blocked. | CP2 checkpoint; Likhith prioritizes L1 early. |
 | **L3 depends on P2** | Likhith's final work package (L3) needs Pragathi's /ask (P2) for citation grounding. Circular-ish dependency between P2 and L3 via search contract. | Search contract (CP1) must be frozen early so both can implement against it independently. |
 | **Shared contract disagreements** | Disagreements on database schema, API formats, or search contracts could cause rework. | All three review contracts at CP1; Khushi has final decision authority. |
-| **Unresolved providers** | Discord indexing method (webhooks vs polling) and audio storage (R2) are pending. These could change P1 and L2 scope mid-implementation. | Marked as pending validation; do not assume provider capabilities; revisit at CP1. |
+| **Unresolved providers** | Miro token/MCP and the App-backed GitHub live test remain pending. Discord gateway ingestion and transcript-only audio have been decided. | Record decisions in their contracts; keep Miro and GitHub App live acceptance pending until verified. |
 | **Beginner onboarding** | All three members need clear responsibility documentation to avoid stepping on each other's work. | This PR-PLAN.md plus STATE.md handoff requirements; branch-per-person isolation. |
 
 ---
 
 ## Unresolved / Pending
 
-- Discord indexing method (webhooks vs polling): pending — does not affect branch naming
-- Audio storage final decision (Cloudflare R2): pending — L2 branch assumes R2 but may be revisited
+- Miro token, MCP connection, board allowlist, and live read verification — pending
+- GitHub App auth live verification and full public-repository reindex — pending
+- Contracts #2 (API), #5 (Miro), and #8 (Meeting) — pending
+- Database contract #1 approval status — pending confirmation by Khushi
 - UI & showcase member names: pending — branches to be created when they join
-- All 8 shared contracts: pending validation before implementation begins
 
 **Constraints confirmed:**
 - All ten agreed capabilities remain in v1. None removed, postponed, or reduced.
