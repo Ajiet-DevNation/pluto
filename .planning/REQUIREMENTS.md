@@ -35,7 +35,7 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 
 ### Q&A
 
-- [ ] **ASK-01**: Answer questions through /ask with citations to original sources
+- [ ] **ASK-01**: Answer questions through /ask from indexed evidence, without visible source links or citation markers in the answer (product decision 2026-11-14; source URLs remain internal evidence metadata)
   - Acceptance Criteria:
     1. /ask returns answers grounded in indexed content
     2. Each answer cites links to original sources (GitHub commit/PR URL, Discord message link, or meeting transcript)

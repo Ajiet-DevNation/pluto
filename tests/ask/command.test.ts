@@ -137,7 +137,7 @@ test('returns a grounded answer', async () => {
     interaction,
     dependencies({
       ok: true,
-      answer: 'TypeScript and Postgres.\n\nSources:\n- [Discord message](https://discord.com/x)',
+      answer: 'TypeScript and Postgres.',
       sources: [{ label: 'Discord message', url: 'https://discord.com/x' }],
       chunks: [],
     }),
@@ -145,8 +145,7 @@ test('returns a grounded answer', async () => {
 
   assert.equal(result, 'answered');
   assert.deepEqual(interaction.defers, [{}]);
-  assert.match(interaction.edits[0], /TypeScript and Postgres/);
-  assert.match(interaction.edits[0], /Sources:/);
+  assert.deepEqual(interaction.edits, ['TypeScript and Postgres.']);
 });
 
 test('reports service failures without leaking the error', async () => {

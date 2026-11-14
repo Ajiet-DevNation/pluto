@@ -8,7 +8,8 @@ import {
   renderAnswer,
   selectAnswerChunks,
   sourcesFromChunks,
-  stripUnverifiedCitationMarkers,
+  renderAnswer,
+  stripCitationMarkers,
 } from '../../src/search/ask';
 import type { AnswerGenerator, ScoredSearchChunk } from '../../src/search/types';
 
@@ -80,9 +81,8 @@ test('a grounded answer includes the evidence and source links', async () => {
 
   assert.equal(result.ok, true);
   if (result.ok) {
-    assert.match(result.answer, /The stack is TypeScript and Postgres \[1\]\./);
-    assert.match(result.answer, /Sources:/);
-    assert.match(result.answer, /\[1\] \[Discord message\]\(https:\/\/discord\.com\/channels\//);
+    assert.equal(result.answer, 'The stack is TypeScript and Postgres.');
+    assert.doesNotMatch(result.answer, /Sources:|https?:\/\/|\[1\]/);
     assert.equal(result.sources.length, 1);
   }
   assert.equal(generator.prompts.length, 1);
@@ -209,26 +209,19 @@ test('renderAnswer leaves an answer without sources unchanged', () => {
   assert.equal(renderAnswer(' plain answer ', []), 'plain answer');
 });
 
-test('unverified citation markers are removed', () => {
-  assert.equal(
-    stripUnverifiedCitationMarkers('Grounded [1] but invented [2].', 1),
-    'Grounded [1] but invented .',
-  );
-  assert.equal(
-    stripUnverifiedCitationMarkers('Mixed [1, 7] and [0].', 2),
-    'Mixed [1] and .',
-  );
-  assert.equal(stripUnverifiedCitationMarkers('No citations.', 0), 'No citations.');
+test('citation markers and source footers are removed from displayed answers', () => {
+  assert.equal(stripCitationMarkers('Grounded [1] and [2, 3].'), 'Grounded and.');
+  assert.equal(renderAnswer('Answer [1]', [{ label: 'x', url: 'https://example.com', references: [1] }]), 'Answer');
 });
 
-test('answers can only cite evidence that passed the gate', async () => {
-  const ask = service([chunk()], new FakeGenerator('Claim [1] and invented [2].'));
+test('displayed answers never include source links even when evidence exists', async () => {
+  const ask = service([chunk()], new FakeGenerator('Claim [1] and more.'));
   const result = await ask.ask('what is the stack?');
 
   assert.equal(result.ok, true);
   if (result.ok) {
-    assert.match(result.answer, /Claim \[1\]/);
-    assert.doesNotMatch(result.answer, /\[2\]/);
+    assert.equal(result.answer, 'Claim and more.');
+    assert.doesNotMatch(result.answer, /Sources:|https?:\/\/|\[\d+\]/);
   }
 });
 

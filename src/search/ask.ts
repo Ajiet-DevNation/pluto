@@ -203,8 +203,8 @@ export function buildAskPrompt(
     'Evidence:',
     evidence,
     '',
-    'Answer using only the evidence above. Cite each claim with its bracket number,',
-    'for example [1]. If the evidence is insufficient, say so explicitly.',
+    'Answer directly using only the evidence above. Do not include URLs, source lists, or bracketed citation numbers.',
+    'If the evidence is insufficient, say so explicitly; never fill gaps from outside knowledge.',
     'For current configuration, dependency, or version questions, prefer current default-branch file URLs (/blob/) over historical commit messages.',
     'Treat commit messages as history, not proof of the current state. If only historical evidence exists, say that it cannot confirm the current value.',
   ].join('\n');
@@ -215,34 +215,16 @@ export function buildAskPrompt(
  * Models occasionally invent a citation number; the rendered answer must only
  * reference evidence that actually passed the gate.
  */
-export function stripUnverifiedCitationMarkers(
-  answer: string,
-  evidenceCount: number,
-): string {
+export function stripCitationMarkers(answer: string): string {
   return answer
-    .replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (_match, group: string) => {
-      const valid = group
-        .split(',')
-        .map((part) => Number(part.trim()))
-        .filter(
-          (number) =>
-            Number.isInteger(number) && number >= 1 && number <= evidenceCount,
-        );
-      return valid.length > 0 ? `[${valid.join(', ')}]` : '';
-    })
+    .replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, '')
     .replace(/[ \t]{2,}/g, ' ')
+    .replace(/ +([.,;:!?])/g, '$1')
     .trim();
 }
 
-export function renderAnswer(answer: string, sources: readonly AskSource[]): string {
-  const trimmed = answer.trim();
-  if (sources.length === 0) {
-    return trimmed;
-  }
-  const links = sources
-    .map((source) => `- ${source.references.map((reference) => `[${reference}]`).join(', ')} [${source.label}](${source.url})`)
-    .join('\n');
-  return `${trimmed}\n\nSources:\n${links}`;
+export function renderAnswer(answer: string, _sources: readonly AskSource[] = []): string {
+  return stripCitationMarkers(answer);
 }
 
 export class AskService {
@@ -276,10 +258,7 @@ export class AskService {
     const generated = await this.dependencies.generator.generate(
       buildAskPrompt(query, answerChunks),
     );
-    const answer = stripUnverifiedCitationMarkers(
-      generated,
-      answerChunks.length,
-    );
+    const answer = stripCitationMarkers(generated);
 
     return {
       ok: true,

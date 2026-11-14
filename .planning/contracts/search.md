@@ -129,7 +129,10 @@ Consequences:
 ## Citations
 
 Every retrieved chunk carries `source_url`, built by the builders in
-`src/citations`. The answer cites only chunks that passed the gate.
+`src/citations`. Retrieved chunks that pass the gate ground the answer internally.
+Product decision 2026-11-14: `/ask` replies do not display source links, source
+footers, or citation markers. Source URLs remain evidence metadata for retrieval,
+opt-out and blocked-channel enforcement, and audit.
 
 - Never cite `#pluto` (`CitationPolicy.blockedChannelIds`)
 - Never cite the bot's own prior answers
