@@ -32,8 +32,9 @@
 ## Indexed GitHub content
 
 P2's manual reindex discovers all public organization repositories with
-pagination, then indexes paginated issues, pull requests, and commits, each
-repository's README, and eligible text/source files from its default branch.
+pagination, then indexes paginated issues, pull requests, commits, contributor
+identities/counts, each repository's README, and eligible text/source files
+from its default branch.
 File exclusions and size limits are defined in `.planning/contracts/search.md`
 and `src/search/github-sources.ts`. The command fails visibly on missing
 credentials, API errors, or truncated repository trees rather than claiming a

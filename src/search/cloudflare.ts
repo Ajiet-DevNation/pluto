@@ -7,6 +7,7 @@
  */
 
 import type { AnswerGenerator, EmbeddingClient } from './types';
+import { fetchWithRetry } from '../http/retry';
 
 export const EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
 export const EMBEDDING_DIMENSIONS = 768;
@@ -74,7 +75,7 @@ export class CloudflareEmbeddingClient implements EmbeddingClient {
       throw new CloudflareAIError('Cannot embed an empty text');
     }
 
-    const response = await this.fetchImpl(
+    const response = await fetchWithRetry(this.fetchImpl,
       endpoint(this.credentials.accountId, EMBEDDING_MODEL),
       {
         method: 'POST',
@@ -132,7 +133,7 @@ export class CloudflareAnswerGenerator implements AnswerGenerator {
       throw new CloudflareAIError('Cannot generate an answer from an empty prompt');
     }
 
-    const response = await this.fetchImpl(
+    const response = await fetchWithRetry(this.fetchImpl,
       endpoint(this.credentials.accountId, GENERATION_MODEL),
       {
         method: 'POST',

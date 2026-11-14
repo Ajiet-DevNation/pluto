@@ -94,6 +94,13 @@ export interface IndexGitHubFile {
   htmlUrl: string;
 }
 
+export interface IndexGitHubContributor {
+  repositoryFullName: string;
+  login: string;
+  contributions: number;
+  sourceUrl: string;
+}
+
 export interface SourceIndexer {
   indexDiscordRecords(
     records: readonly import('../discord/types').DiscordIndexRecord[],
@@ -105,4 +112,5 @@ export interface SourceIndexer {
   indexGitHubReadme(readme: IndexGitHubReadme): Promise<void>;
   indexGitHubFile(file: IndexGitHubFile): Promise<void>;
   indexGitHubFiles(files: readonly IndexGitHubFile[]): Promise<void>;
+  indexGitHubContributor(contributor: IndexGitHubContributor): Promise<void>;
 }

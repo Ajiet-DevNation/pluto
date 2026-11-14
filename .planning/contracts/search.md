@@ -38,7 +38,8 @@ embedding re-index of every stored chunk.
   GitHub API requests; explicitly request public repositories and defensively
   reject any repository marked private.
 - P2 indexes repository READMEs, issues, pull requests, commit messages, and
-  eligible text/source files from each public repository's default branch.
+  contributor identities/counts, and eligible text/source files from each public
+  repository's default branch.
 - Issue/PR comment threads, PR review comments, and historical commit patches
   are not included in this first corpus pass; indexed issue/PR title and body,
   commit messages, and the current default-branch files are searchable.

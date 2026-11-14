@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildDiscordSearchChunk,
   buildGithubCommitChunks,
+  buildGithubContributorChunks,
   buildGithubFileChunks,
   buildGithubIssueChunks,
   buildGithubPullRequestChunks,
@@ -127,4 +128,18 @@ test('GitHub source files get stable ids and real blob citations', () => {
   assert.equal(chunks[0].sourceUrl, 'https://github.com/Ajiet-DevNation/pluto/blob/main/src/search.ts');
   assert.match(chunks[0].content, /src\/search.ts/);
   assert.match(chunks[0].content, /export const answer = 42/);
+});
+
+test('GitHub contributors become searchable with a repository citation', () => {
+  const chunks = buildGithubContributorChunks({
+    repositoryFullName: 'Ajiet-DevNation/pluto',
+    login: 'khushi',
+    contributions: 12,
+    sourceUrl: 'https://github.com/Ajiet-DevNation/pluto/graphs/contributors',
+  });
+  assert.equal(chunks.length, 1);
+  assert.equal(chunks[0].sourceId, 'Ajiet-DevNation/pluto#contributor:khushi');
+  assert.equal(chunks[0].sourceUrl, 'https://github.com/Ajiet-DevNation/pluto/graphs/contributors');
+  assert.match(chunks[0].content, /Contributor: khushi/);
+  assert.match(chunks[0].content, /Contributions: 12/);
 });

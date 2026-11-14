@@ -10,6 +10,7 @@ import type { DiscordIndexRecord } from '../discord/types';
 import { createHash } from 'node:crypto';
 import type {
   IndexGitHubCommit,
+  IndexGitHubContributor,
   IndexGitHubIssue,
   IndexGitHubFile,
   IndexGitHubPullRequest,
@@ -185,5 +186,19 @@ export function buildGithubFileChunks(file: IndexGitHubFile): SearchChunkInput[]
     `${file.repositoryFullName}#file:${createHash('sha256').update(file.path).digest('hex')}`,
     file.htmlUrl,
     content,
+  );
+}
+
+export function buildGithubContributorChunks(
+  contributor: IndexGitHubContributor,
+): SearchChunkInput[] {
+  return githubChunks(
+    `${contributor.repositoryFullName}#contributor:${contributor.login}`,
+    contributor.sourceUrl,
+    [
+      `Contributor: ${contributor.login}`,
+      `Repository: ${contributor.repositoryFullName}`,
+      `Contributions: ${contributor.contributions}`,
+    ].join('\n'),
   );
 }

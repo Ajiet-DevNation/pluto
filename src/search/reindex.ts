@@ -71,7 +71,7 @@ export async function main(): Promise<void> {
     `Search reindex complete: ${githubExtras.repositories} public repositories, ` +
       `${liveIssues.length} issues refreshed (${issuesIndexed} chunks re-indexed), ` +
       `${githubExtras.readmes} READMEs, ${githubExtras.repositoryFiles} repository files, ` +
-      `${githubExtras.pullRequests} PRs, ` +
+      `${githubExtras.contributors} contributors, ${githubExtras.pullRequests} PRs, ` +
       `${githubExtras.commits} commits, ` +
       `${discordRecords.length} Discord records`,
   );

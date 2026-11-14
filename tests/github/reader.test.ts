@@ -282,3 +282,18 @@ test('decodes blob content through a GET request', async () => {
   assert.equal(calls[0].method, 'GET');
   assert.match(calls[0].url, /\/git\/blobs\/blob-sha$/);
 });
+
+test('lists paginated contributor identities and contribution counts', async () => {
+  const { impl, calls } = fakeFetch([
+    { login: 'khushi', contributions: 12, html_url: 'https://github.com/khushi' },
+    { login: 'pragathi', contributions: 8, html_url: 'https://github.com/pragathi' },
+  ]);
+  const reader = createGitHubReader({ token: 'test-token', fetchImpl: impl });
+  const contributors = await reader.listContributors('Ajiet-DevNation', 'pluto');
+  assert.deepEqual(contributors, [
+    { login: 'khushi', contributions: 12, htmlUrl: 'https://github.com/khushi' },
+    { login: 'pragathi', contributions: 8, htmlUrl: 'https://github.com/pragathi' },
+  ]);
+  assert.match(calls[0].url, /\/contributors\?per_page=100&page=1$/);
+  assert.equal(calls[0].method, 'GET');
+});

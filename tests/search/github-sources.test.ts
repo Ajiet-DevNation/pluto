@@ -88,6 +88,13 @@ test('indexes PRs and commits from public repositories only', async () => {
         },
       ];
     },
+    async listContributors(owner: string, repo: string) {
+      assert.equal(`${owner}/${repo}`, 'Ajiet-DevNation/pluto');
+      return [
+        { login: 'khushi', contributions: 12, htmlUrl: 'https://github.com/khushi' },
+        { login: 'pragathi', contributions: 4, htmlUrl: 'https://github.com/pragathi' },
+      ];
+    },
   };
   const indexer = {
     async indexGitHubReadme(readme: { repositoryFullName: string }) {
@@ -102,6 +109,9 @@ test('indexes PRs and commits from public repositories only', async () => {
     async indexGitHubCommit(commit: { repositoryFullName: string }) {
       calls.push({ kind: 'commit', repo: commit.repositoryFullName });
     },
+    async indexGitHubContributor(contributor: { repositoryFullName: string }) {
+      calls.push({ kind: 'contributor', repo: contributor.repositoryFullName });
+    },
   };
 
   const result = await indexGithubSearchSources(
@@ -110,10 +120,12 @@ test('indexes PRs and commits from public repositories only', async () => {
     indexer,
   );
 
-  assert.deepEqual(result, { repositories: 1, readmes: 1, repositoryFiles: 1, pullRequests: 1, commits: 1 });
+  assert.deepEqual(result, { repositories: 1, readmes: 1, repositoryFiles: 1, contributors: 2, pullRequests: 1, commits: 1 });
   assert.deepEqual(calls, [
     { kind: 'readme', repo: 'Ajiet-DevNation/pluto' },
     { kind: 'file', repo: 'Ajiet-DevNation/pluto' },
+    { kind: 'contributor', repo: 'Ajiet-DevNation/pluto' },
+    { kind: 'contributor', repo: 'Ajiet-DevNation/pluto' },
     { kind: 'pr', repo: 'Ajiet-DevNation/pluto' },
     { kind: 'commit', repo: 'Ajiet-DevNation/pluto' },
   ]);
@@ -151,6 +163,7 @@ test('indexes eligible text files but skips credential-like file paths and conte
     },
     async listPullRequests() { return []; },
     async listCommits() { return []; },
+    async listContributors() { return []; },
   };
   const indexer = {
     async indexGitHubReadme() {},
@@ -159,6 +172,7 @@ test('indexes eligible text files but skips credential-like file paths and conte
     },
     async indexGitHubPullRequest() {},
     async indexGitHubCommit() {},
+    async indexGitHubContributor() {},
   };
 
   const result = await indexGithubSearchSources(reader, 'Ajiet-DevNation', indexer);

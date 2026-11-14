@@ -14,6 +14,7 @@ import type {
 import {
   buildDiscordSearchChunk,
   buildGithubCommitChunks,
+  buildGithubContributorChunks,
   buildGithubFileChunks,
   buildGithubIssueChunks,
   buildGithubPullRequestChunks,
@@ -22,6 +23,7 @@ import {
 import type {
   EmbeddingClient,
   IndexGitHubCommit,
+  IndexGitHubContributor,
   IndexGitHubFile,
   IndexGitHubIssue,
   IndexGitHubPullRequest,
@@ -94,6 +96,10 @@ export class SearchIndexer implements SourceIndexer {
   async indexGitHubFiles(files: readonly IndexGitHubFile[]): Promise<void> {
     if (files.length === 0) return;
     await this.upsertEmbedded(files.flatMap(buildGithubFileChunks));
+  }
+
+  async indexGitHubContributor(contributor: IndexGitHubContributor): Promise<void> {
+    await this.upsertEmbedded(buildGithubContributorChunks(contributor));
   }
 
   private async upsertEmbedded(chunks: SearchChunkInput[]): Promise<void> {

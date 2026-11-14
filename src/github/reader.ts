@@ -1,4 +1,5 @@
 import { createReadOnlyGuard } from '../guardrails/read-only';
+import { fetchWithRetry } from '../http/retry';
 
 /**
  * Read-only GitHub client.
@@ -76,6 +77,12 @@ export interface GitHubRepositoryFile {
   size: number;
 }
 
+export interface GitHubContributor {
+  login: string | null;
+  contributions: number;
+  htmlUrl: string | null;
+}
+
 export interface GitHubReader {
   listRepos(org: string): Promise<GitHubRepo[]>;
   getRepo(owner: string, repo: string): Promise<GitHubRepo>;
@@ -87,6 +94,7 @@ export interface GitHubReader {
   getReadme(owner: string, repo: string): Promise<GitHubReadme | null>;
   listRepositoryFiles(owner: string, repo: string, ref: string): Promise<GitHubRepositoryFile[]>;
   getFileContent(owner: string, repo: string, sha: string): Promise<string>;
+  listContributors(owner: string, repo: string): Promise<GitHubContributor[]>;
 }
 
 export const GITHUB_READ_METHODS = [
@@ -100,6 +108,7 @@ export const GITHUB_READ_METHODS = [
   'getReadme',
   'listRepositoryFiles',
   'getFileContent',
+  'listContributors',
 ] as const;
 
 export interface GitHubReaderOptions {
@@ -175,6 +184,12 @@ interface RawTree {
 interface RawBlob {
   encoding: string;
   content: string;
+}
+
+interface RawContributor {
+  login?: string | null;
+  contributions: number;
+  html_url?: string | null;
 }
 
 const PER_PAGE = 100;
@@ -257,7 +272,7 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
     if (!token?.trim()) {
       throw new GitHubReadError('GitHub token provider returned an empty token');
     }
-    const response = await doFetch(`${baseUrl}${path}`, {
+    const response = await fetchWithRetry(doFetch, `${baseUrl}${path}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -265,6 +280,11 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
         'X-GitHub-Api-Version': apiVersion,
         'User-Agent': userAgent,
       },
+    }, {
+      retryableStatus: (retryResponse) =>
+        retryResponse.status === 429 ||
+        retryResponse.status >= 500 ||
+        (retryResponse.status === 403 && retryResponse.headers.get('x-ratelimit-remaining') === '0'),
     });
 
     if (!response.ok) {
@@ -390,6 +410,16 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
         throw new GitHubReadError(`Unsupported GitHub blob encoding: ${raw.encoding}`);
       }
       return Buffer.from(raw.content, 'base64').toString('utf8');
+    },
+
+    async listContributors(owner: string, repo: string): Promise<GitHubContributor[]> {
+      const path = `${repoPath(owner, repo)}/contributors?per_page=${PER_PAGE}`;
+      const raw = await getAllPages<RawContributor>((page) => `${path}&page=${page}`);
+      return raw.map((contributor) => ({
+        login: contributor.login ?? null,
+        contributions: contributor.contributions,
+        htmlUrl: contributor.html_url ?? null,
+      }));
     },
   };
 

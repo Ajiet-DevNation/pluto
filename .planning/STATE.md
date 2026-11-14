@@ -51,7 +51,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | L2 | Likhith | ✅ Complete | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon. Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
 | P1 | Pragathi | ✅ Merged and live-verified (PR #9) | Discord allowlist intake, startup backfill, bot-author exclusion, guild-scoped `/optout`; live verification passed. |
-| P2 | Pragathi / Khushi takeover fix | ◐ In progress (PR #10 open; local `fix/p2-github-indexing`) | `/ask`, hybrid retrieval, App/PAT credential provider, paginated public-repository discovery, issues/PRs/commits/READMEs, and eligible source-file indexing with exclusions. Build and 193 tests pass locally; Khushi must run the App-backed full reindex and approve before any PR is opened. |
+| P2 | Pragathi / Khushi takeover fix | ◐ In progress (PR #10 open; local `fix/p2-github-indexing`) | `/ask`, repo-scoped retrieval, compact citations, App/PAT auth, and paginated public-repository indexing for READMEs, issues, PRs, commits, contributor identities, and eligible source files. Live reindex and Discord acceptance pending; no PR until Khushi approves. |
 | P3 | Pragathi | ⬜ Pending | Depends on P2, L2. |
 
 ### Credentials inventory

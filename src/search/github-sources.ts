@@ -13,6 +13,7 @@ export interface GitHubSourceIndexResult {
   repositories: number;
   readmes: number;
   repositoryFiles: number;
+  contributors: number;
   pullRequests: number;
   commits: number;
 }
@@ -102,14 +103,16 @@ function githubFileUrl(repositoryFullName: string, branch: string, path: string)
 export async function indexGithubSearchSources(
   reader: Pick<GitHubReader,
     'listRepos' | 'getReadme' | 'listRepositoryFiles' | 'getFileContent' |
-    'listPullRequests' | 'listCommits'>,
+    'listPullRequests' | 'listCommits' | 'listContributors'>,
   org: string,
   indexer: Pick<SourceIndexer,
-    'indexGitHubReadme' | 'indexGitHubFiles' | 'indexGitHubPullRequest' | 'indexGitHubCommit'>,
+    'indexGitHubReadme' | 'indexGitHubFiles' | 'indexGitHubContributor' |
+    'indexGitHubPullRequest' | 'indexGitHubCommit'>,
 ): Promise<GitHubSourceIndexResult> {
   const repos = (await reader.listRepos(org)).filter((repo) => !repo.private);
   let readmes = 0;
   let repositoryFiles = 0;
+  let contributors = 0;
   let pullRequests = 0;
   let commits = 0;
 
@@ -153,6 +156,17 @@ export async function indexGithubSearchSources(
       }
     }
 
+    for (const contributor of await reader.listContributors(owner, name)) {
+      if (!contributor.login || contributor.contributions <= 0) continue;
+      await indexer.indexGitHubContributor({
+        repositoryFullName: repo.fullName,
+        login: contributor.login,
+        contributions: contributor.contributions,
+        sourceUrl: `https://github.com/${repo.fullName}/graphs/contributors`,
+      });
+      contributors += 1;
+    }
+
     for (const pullRequest of await reader.listPullRequests(owner, name)) {
       await indexer.indexGitHubPullRequest({
         repositoryFullName: repo.fullName,
@@ -178,5 +192,5 @@ export async function indexGithubSearchSources(
     }
   }
 
-  return { repositories: repos.length, readmes, repositoryFiles, pullRequests, commits };
+  return { repositories: repos.length, readmes, repositoryFiles, contributors, pullRequests, commits };
 }
