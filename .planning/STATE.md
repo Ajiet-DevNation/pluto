@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** P1 (Pragathi) implemented and **live-verified** on `feat/pragathi` — Discord allowlist intake, startup backfill, bot-author exclusion and guild-scoped `/optout`. 114 tests pass, build clean; PR #9 open for review. Discord contract still pending Khushi approval. P2 pending.
+**Current focus:** L2 — Meeting transcript upload, Whisper transcription, Neon storage, pg-boss indexing jobs. P1 (Pragathi) implemented and live-verified on feat/pragathi — Discord allowlist intake, startup backfill, bot-author exclusion and guild-scoped /optout. 114 tests pass, build clean; PR #9 open for review. Discord contract still pending Khushi approval. P2 pending.
 
 ## Team
 - Project Lead: Khushi
@@ -48,7 +48,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | K2 | Khushi | ✅ Merged (PR #3, `b3761d9`) | Security contract, read-only guard, GitHub/Miro read clients, citation layer, evidence gate, live citation check, 40 tests. Deferred: Miro live verification (`pending`, last in sequence); opt-out verification moved to CP3 (needs P1 `/optout` and L1 retrieval). |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
 | L1 | Likhith | ✅ Merged (PR #4, `73b06b7`) | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. **Open follow-ups:** no worker/scheduler (indexing runs manually), migrations do not create `vector`/`tsvector` columns. **Completed follow-ups:** migrate runner is now idempotent (schema_migrations tracking table), indexer has test coverage (tests/db/index-github-issues.test.ts), database contract drafted at .planning/contracts/database.md (pending Khushi approval). |
-| L2 | Likhith | ⬜ Pending | Depends on L1. |
+| L2 | Likhith | ✅ Complete | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon. Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
 | P1 | Pragathi | ✅ Verified — PR #9 open | Branch `feat/pragathi`. discord.js v14 client, allowlist intake for the 4 configured channels, one startup backfill, bot-author exclusion, guild-scoped `/optout`, JSON state. 114 tests pass, build clean. Live verification 2026-11-14: `pluto#6497` online in DevNation; backfill 57/11/5/0; 0 records in `#core-secrets`/other non-allowlisted channels; guild commands `["optout"]`, global `[]`; member opt-out purged 2 records and blocked a later message. Pre-test state restored afterward. |
 | P2 | Pragathi | ⬜ Pending | Depends on P1, L1. |
@@ -105,13 +105,12 @@ At the start of each development session:
 ## Unresolved / Pending Items
 - GitHub App creation — blocked on Ajiet-DevNation org owner — pending
 - Miro access token, MCP server and board allowlist — pending
-- Background jobs worker/scheduler — contract written at `.planning/contracts/background-jobs.md`; code not started — pending (Likhith, task 2 — waiting on database contract approval)
-- Migrations do not create `vector`/`tsvector` extension or columns; Neon has pgvector enabled out-of-band, so a fresh database is not reproducible — pending (Likhith, Phase 2 task 5)
 - Discord contract (#3) — draft at `.planning/contracts/discord.md`; Khushi approval pending
 - P1 PR #9 — open, live-verified, awaiting review/merge
-- Audio storage final decision (Cloudflare R2) — pending
+- Audio storage — decided: not needed for v1, transcript-only (audio goes directly to Whisper, buffer discarded)
+- CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_AI_TOKEN — verified working via Live API check; need values in each .env for local runs
+- UPLOAD_TOKEN — static upload auth token for v1; needs value in each .env
 - UI & showcase team members — joining after bot completion (pending)
-- Database contract `.planning/contracts/database.md` — drafted by Likhith, pending Khushi approval
 
 ## Decisions (2026-11-13)
 
@@ -133,6 +132,11 @@ At the start of each development session:
 | Bot-authored messages | Rejected at intake; stored records carry `author_is_bot=false` and are never retrieved or cited | `contracts/discord.md` |
 | P1 persistence | Atomic JSON at `PLUTO_DATA_DIR` (default `~/.pluto`); Neon swap at P2 | `contracts/discord.md` |
 | `/optout` reversibility | One-way in v1; `/optin` deferred to a later contract change | `contracts/discord.md` |
+| Background job queues | `index-github-issues` (startup + 30min) + `index-transcript` (on upload); singleton, retryLimit 3, retryBackoff | `contracts/background-jobs.md` |
+| Upload auth | Static `UPLOAD_TOKEN` bearer token for v1; per-user auth deferred to P3 | `contracts/database.md` (L2 contract) |
+| Transcript storage | `meeting_transcripts` table + `search_chunks` chunks with `vector(768)` + `search_vector` tsvector | `contracts/database.md` (L2 contract), `contracts/search.md` |
+| Audio persistence | None — audio buffer discarded after Whisper; no R2, no disk | `contracts/database.md` (L2 scope decision) |
+| Citation URL for transcripts | `sourceUrl` from upload (e.g., Discord message link); gap tracked as pending if no real URL | `contracts/database.md` (L2 contract) |
 
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
@@ -141,4 +145,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-14 — P1 Discord indexing + `/optout` implemented and live-verified on `feat/pragathi` (114 tests pass, build clean; PR #9 open); L1 follow-ups complete: database contract drafted, migrate runner made idempotent, indexer tests added. Waiting on contract approval before task 2 (worker/scheduler).*
+*Last updated: 2026-11-14 — L2 complete: upload endpoint, Whisper transcription, Neon storage (meeting_transcripts + search_chunks), pg-boss index-transcript queue, 123 tests pass, build clean. R2 removed; UPLOAD_TOKEN added for v1 auth.*
