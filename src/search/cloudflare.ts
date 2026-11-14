@@ -8,6 +8,7 @@
 
 import type { AnswerGenerator, EmbeddingClient } from './types';
 import { fetchWithRetry } from '../http/retry';
+import { EmbeddingQuotaExceededError, nextUtcDay } from './embedding-errors';
 
 export const EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
 export const EMBEDDING_DIMENSIONS = 768;
@@ -85,8 +86,26 @@ export class CloudflareEmbeddingClient implements EmbeddingClient {
         },
         body: JSON.stringify({ text: texts }),
       },
+      // A 429 can mean the daily free neuron allocation is exhausted. Retrying
+      // it immediately only burns requests; the indexer persists a deferral.
+      { retryableStatus: (candidate) => [500, 502, 503, 504].includes(candidate.status) },
     );
 
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('retry-after');
+      const retryAfterMs = retryAfter
+        ? (Number.isFinite(Number(retryAfter))
+          ? Number(retryAfter) * 1000
+          : Date.parse(retryAfter) - Date.now())
+        : 0;
+      const resumeAt = retryAfterMs > 0
+        ? new Date(Date.now() + retryAfterMs)
+        : nextUtcDay();
+      throw new EmbeddingQuotaExceededError(
+        resumeAt,
+        `Cloudflare embedding quota/rate limit reached; resume after ${resumeAt.toISOString()}`,
+      );
+    }
     const payload = await readJson(response);
     if (!response.ok) {
       throw new CloudflareAIError(

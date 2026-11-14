@@ -6,6 +6,7 @@ import { getGitHubOrg } from '../config.js';
 import type { SourceIndexer } from '../search/types.js';
 import { createDb } from '../db/index.js';
 import { refreshGithubCorpus } from '../search/corpus-refresh.js';
+import { EmbeddingDeferredError } from '../search/embedding-errors.js';
 
 const GITHUB_ISSUES_QUEUE = 'index-github-issues';
 const TRANSCRIPT_INDEX_QUEUE = 'index-transcript';
@@ -74,7 +75,11 @@ async function runCorpusRefreshJob(
         `${result.sources.commits} commits`,
     );
   } catch (error) {
-    console.error('Corpus refresh failed:', error);
+    if (error instanceof EmbeddingDeferredError) {
+      console.warn(`Corpus refresh paused (${error.reason}); resumes after ${error.resumeAt.toISOString()}.`);
+    } else {
+      console.error('Corpus refresh failed:', error);
+    }
   } finally {
     isRefreshingCorpus = false;
   }
@@ -83,7 +88,7 @@ async function runCorpusRefreshJob(
 async function runGitHubIssuesJob(
   boss: PgBoss,
   connectionString: string,
-  searchIndexer?: Pick<SourceIndexer, 'indexGitHubIssue'>,
+  searchIndexer?: Pick<SourceIndexer, 'indexGitHubIssue' | 'beginEmbeddingRun'>,
 ): Promise<void> {
   if (isIndexingGitHubIssues) {
     console.log('GitHub issues indexing already running, skipping (singleton).');
@@ -92,11 +97,16 @@ async function runGitHubIssuesJob(
 
   isIndexingGitHubIssues = true;
   try {
+    searchIndexer?.beginEmbeddingRun?.();
     const org = getGitHubOrg();
     const results = await indexGitHubIssues(connectionString, { org, searchIndexer });
     console.log(`Background job: indexed ${results.length} issues from ${org}`);
   } catch (error) {
-    console.error('Background GitHub issues indexing job failed:', error);
+    if (error instanceof EmbeddingDeferredError) {
+      console.warn(`GitHub issue indexing paused (${error.reason}); resumes after ${error.resumeAt.toISOString()}.`);
+    } else {
+      console.error('Background GitHub issues indexing job failed:', error);
+    }
   } finally {
     isIndexingGitHubIssues = false;
   }

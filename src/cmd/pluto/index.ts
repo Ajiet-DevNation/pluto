@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { startDiscordBot } from '../../discord/bot';
 import { createDefaultStore } from '../../discord/store';
 import { createSearchRuntimeFromEnv } from '../../search/runtime';
+import { EmbeddingDeferredError } from '../../search/embedding-errors';
 
 import { uploadRouter } from '../../upload/index';
 import { startBackgroundJobs } from '../../jobs/worker';
@@ -39,8 +40,16 @@ async function start(): Promise<void> {
     // P1 records predate search_chunks; bring them over once before intake
     // starts writing new rows.
     const records = await baseStore.listRecords();
-    await search.syncDiscord(records);
-    console.log(`Search index synced for ${records.length} Discord records`);
+    search.indexer.beginEmbeddingRun?.();
+    try {
+      await search.syncDiscord(records);
+      console.log(`Search index synced for ${records.length} Discord records`);
+    } catch (error) {
+      if (!(error instanceof EmbeddingDeferredError)) throw error;
+      console.warn(
+        `Discord search sync paused (${error.reason}); Pluto will start and resume indexing later, after ${error.resumeAt.toISOString()}.`,
+      );
+    }
   }
 
   const bot = await startDiscordBot({

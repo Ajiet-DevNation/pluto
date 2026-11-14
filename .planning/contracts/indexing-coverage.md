@@ -35,11 +35,12 @@ Coverage is measured with the evaluation set, not assumed.
 | Releases, tags, GitHub Discussions, wiki | release notes and discussions are missed | index releases first; discussions and wiki later if enabled | medium |
 | Contributor answers depend on a fresh reindex | an old index shows no contributors | make reindex part of the scheduled job, not manual only | high |
 | Retrieval returns a small set of chunks | aggregate questions ("list all X") are under-answered | add a structured path for contributor and repository-listing questions | high |
-| Freshness: a scheduled job runs every 30 min for issues only | files, PRs and commits can be stale | extend the scheduled job to every source above | high |
+| Freshness: full-corpus refresh runs every 6 hours; issues also refresh every 30 minutes | a very large corpus may need multiple budgeted passes | monitor completion and tune only within the free-tier budget | medium |
+| Cloudflare free quota can be consumed by other account workloads | a run can stop before all sources are indexed | persist the daily reservation/pause, resume from saved chunk hashes, and leave quota headroom | high |
 
 ## Order of work
 
-1. Make the full reindex part of the scheduled job, and add the contributor and repository-listing query path.
+1. Keep the full reindex part of the scheduled job, verify it across all public repositories, and add the contributor and repository-listing query path.
 2. Index issue and PR comments.
 3. Index releases and open PR head branches.
 4. Chunk large files and index commit diffs under size caps.

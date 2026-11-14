@@ -6,6 +6,7 @@ import {
   CloudflareEmbeddingClient,
   EMBEDDING_DIMENSIONS,
 } from '../../src/search/cloudflare';
+import { EmbeddingQuotaExceededError } from '../../src/search/embedding-errors';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -108,6 +109,23 @@ test('embedding client surfaces non-2xx responses', async () => {
   });
 
   await assert.rejects(() => client.embed(['one']), /Embedding request failed \(500\)/);
+});
+
+test('embedding client treats 429 as a deferred quota condition without retrying', async () => {
+  const { fetch, calls } = captureFetch(jsonResponse({
+    errors: [{ message: 'daily free allocation exhausted' }],
+  }, 429));
+  const client = new CloudflareEmbeddingClient({
+    accountId: 'account',
+    token: 'token',
+    fetchImpl: fetch,
+  });
+
+  await assert.rejects(
+    () => client.embed(['one']),
+    (error: unknown) => error instanceof EmbeddingQuotaExceededError && error.resumeAt > new Date(),
+  );
+  assert.equal(calls.length, 1);
 });
 
 test('answer generator sends a system instruction and returns the response', async () => {

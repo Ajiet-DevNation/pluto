@@ -9,6 +9,7 @@ dotenv.config();
 
 import { refreshGithubCorpus } from './corpus-refresh';
 import { createSearchRuntimeFromEnv } from './runtime';
+import { EmbeddingDeferredError } from './embedding-errors';
 
 export async function main(): Promise<void> {
   const runtime = createSearchRuntimeFromEnv();
@@ -43,6 +44,12 @@ export async function main(): Promise<void> {
 
 if (typeof require !== 'undefined' && require.main === module) {
   main().catch((error: unknown) => {
+    if (error instanceof EmbeddingDeferredError) {
+      console.warn(
+        `Search reindex paused (${error.reason}); progress is saved and the next run can resume after ${error.resumeAt.toISOString()}.`,
+      );
+      return;
+    }
     console.error('Search reindex failed:', error);
     process.exitCode = 1;
   });

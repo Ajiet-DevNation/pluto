@@ -5,7 +5,7 @@
  * parameterized SQL. All writes go through Drizzle's typed insert/upsert.
  */
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db/index';
 import { searchChunks } from '../db/schema';
 import { cosineToRelevance, fullTextToRelevance } from './relevance';
@@ -29,6 +29,8 @@ interface RawChunkRow {
   content?: string;
   indexed_at?: Date | string | null;
   content_hash?: string | null;
+  embedding?: unknown;
+  resume_at?: Date | string | null;
   score?: number | string;
 }
 
@@ -88,6 +90,22 @@ function mapRow(
 
 function vectorLiteral(embedding: readonly number[]): string {
   return `[${embedding.join(',')}]`;
+}
+
+function parseVector(value: unknown): number[] | null {
+  if (Array.isArray(value)) {
+    const numbers = value.map(Number);
+    return numbers.length === 768 && numbers.every(Number.isFinite) ? numbers : null;
+  }
+  if (typeof value !== 'string') return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return null;
+    const numbers = parsed.map(Number);
+    return numbers.length === 768 && numbers.every(Number.isFinite) ? numbers : null;
+  } catch {
+    return null;
+  }
 }
 
 function githubRepositoryFilter(repositoryFullName?: string) {
@@ -150,17 +168,95 @@ export class PostgresSearchStore implements SearchStore {
     if (identities.length === 0) {
       return new Set();
     }
-    const rows = await this.db.execute(sql`
-      SELECT source_type, source_id, chunk_index, content_hash
-      FROM search_chunks
-      WHERE (source_type, source_id, chunk_index::text, content_hash) IN (${sql.join(
-        identities.map((identity) => sql`(${identity.sourceType}, ${identity.sourceId}, ${String(identity.chunkIndex)}, ${identity.contentHash})`),
-        sql`, `,
-      )})
+    const unchanged = new Set<string>();
+    for (let start = 0; start < identities.length; start += 500) {
+      const batch = identities.slice(start, start + 500);
+      const rows = await this.db.execute(sql`
+        SELECT source_type, source_id, chunk_index, content_hash
+        FROM search_chunks
+        WHERE embedding IS NOT NULL
+          AND (source_type, source_id, chunk_index::text, content_hash) IN (${sql.join(
+          batch.map((identity) => sql`(${identity.sourceType}, ${identity.sourceId}, ${String(identity.chunkIndex)}, ${identity.contentHash})`),
+          sql`, `,
+        )})
+      `);
+      for (const row of rowsOf(rows)) {
+        unchanged.add(`${row.source_type}:${row.source_id}:${row.chunk_index}:${row.content_hash}`);
+      }
+    }
+    return unchanged;
+  }
+
+  async cachedEmbeddings(contentHashes: readonly string[]): Promise<Map<string, readonly number[]>> {
+    if (contentHashes.length === 0) return new Map();
+    const cached = new Map<string, readonly number[]>();
+    const uniqueHashes = [...new Set(contentHashes)];
+    for (let start = 0; start < uniqueHashes.length; start += 500) {
+      const hashes = uniqueHashes.slice(start, start + 500);
+      const rows = await this.db
+        .select({ contentHash: searchChunks.contentHash, embedding: searchChunks.embedding })
+        .from(searchChunks)
+        .where(inArray(searchChunks.contentHash, hashes));
+      for (const row of rows) {
+        if (!row.contentHash || cached.has(row.contentHash)) continue;
+        const vector = parseVector(row.embedding);
+        if (vector) cached.set(row.contentHash, vector);
+      }
+    }
+    return cached;
+  }
+
+  async reserveEmbeddingBudget(units: number, dailyLimit: number): Promise<Date | null> {
+    const reserved = rowsOf(await this.db.execute(sql`
+      INSERT INTO search_embedding_budget (id, budget_date, used_units, paused_until)
+      SELECT true, (now() AT TIME ZONE 'UTC')::date, ${units}, NULL
+      WHERE ${units} <= ${dailyLimit}
+      ON CONFLICT (id) DO UPDATE SET
+        budget_date = EXCLUDED.budget_date,
+        used_units = CASE
+          WHEN search_embedding_budget.budget_date = EXCLUDED.budget_date
+            THEN search_embedding_budget.used_units + EXCLUDED.used_units
+          ELSE EXCLUDED.used_units
+        END,
+        paused_until = CASE
+          WHEN search_embedding_budget.budget_date = EXCLUDED.budget_date
+            THEN search_embedding_budget.paused_until
+          ELSE NULL
+        END
+      WHERE search_embedding_budget.budget_date <> EXCLUDED.budget_date
+        OR (
+          (search_embedding_budget.paused_until IS NULL OR search_embedding_budget.paused_until <= now())
+          AND search_embedding_budget.used_units + EXCLUDED.used_units <= ${dailyLimit}
+        )
+      RETURNING paused_until
+    `));
+    if (reserved.length > 0) return null;
+
+    const rows = rowsOf(await this.db.execute(sql`
+      SELECT CASE
+        WHEN paused_until > now() THEN paused_until
+        ELSE date_trunc('day', now() AT TIME ZONE 'UTC') + interval '1 day'
+      END AS resume_at
+      FROM search_embedding_budget
+      WHERE id = true
+    `));
+    const value = rows[0]?.resume_at;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') return new Date(value);
+    return new Date(Date.now() + 24 * 60 * 60 * 1000);
+  }
+
+  async deferEmbeddingUntil(resumeAt: Date): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO search_embedding_budget (id, budget_date, used_units, paused_until)
+      VALUES (true, (now() AT TIME ZONE 'UTC')::date, 0, ${resumeAt})
+      ON CONFLICT (id) DO UPDATE SET
+        budget_date = (now() AT TIME ZONE 'UTC')::date,
+        paused_until = GREATEST(
+          COALESCE(search_embedding_budget.paused_until, ${resumeAt}),
+          ${resumeAt}
+        )
     `);
-    return new Set(
-      rowsOf(rows).map((row) => `${row.source_type}:${row.source_id}:${row.chunk_index}:${row.content_hash}`),
-    );
   }
 
   async vectorSearch(

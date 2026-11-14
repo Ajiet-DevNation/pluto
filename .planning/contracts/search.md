@@ -28,6 +28,20 @@ Credentials: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_AI_TOKEN` (`.env`).
 - **Storage:** `vector(768)` column in Neon, via the `vector` extension
 - **Call shape:** POST `/ai/run/@cf/baai/bge-base-en-v1.5` with `{ "text": [...] }`
 - **Batching:** one request per chunk batch; do not loop one request per chunk
+- **Free-tier backfill:** embedding vectors are cached by a model-versioned content
+  hash and reused across identical chunks, including across different sources.
+  Successfully embedded batches are upserted immediately; those rows are the
+  durable resume checkpoint for a later run.
+- Indexing reserves estimated units in Neon before each embedding request. Defaults
+  are 1,800 estimated units per run and 7,000 per UTC day, leaving headroom under
+  the 10,000-neuron free allocation. Override with
+  `INDEX_EMBEDDING_RUN_BUDGET` / `INDEX_EMBEDDING_DAILY_BUDGET` only after checking
+  Cloudflare usage; the estimate is intentionally conservative, not provider
+  metering.
+- A provider `429` pauses indexing until `Retry-After` or the next UTC day and is
+  reported as a deferred run, not a failed process. The scheduled job retries on
+  its next interval; completed chunks remain indexed and unchanged chunks are
+  skipped on resume.
 
 This dimension is a hard constraint. Changing it requires a migration and an
 embedding re-index of every stored chunk.
@@ -54,6 +68,8 @@ embedding re-index of every stored chunk.
   of reporting a successful partial repository index.
 - The manual reindex command must fail loudly if GitHub credentials are missing
   or a GitHub API request fails; it must not report a successful partial index.
+  Embedding-budget and provider-quota deferrals are the exception: they must report
+  a paused/resumable run without treating quota exhaustion as a crash.
 
 ## Chunk format
 
@@ -69,6 +85,7 @@ A chunk is the unit of retrieval and the unit of citation.
 | `author_id` | text nullable | used for opt-out filtering |
 | `content` | text | the chunk text |
 | `embedding` | `vector(768)` | nullable until indexed |
+| `content_hash` | text nullable | model-versioned hash used for durable resume and cross-source vector reuse |
 | `search_vector` | `tsvector` | generated from `content` |
 | `indexed_at` | timestamptz | |
 

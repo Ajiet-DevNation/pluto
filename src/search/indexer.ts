@@ -21,6 +21,7 @@ import {
   buildGithubPullRequestChunks,
   buildGithubReadmeChunks,
 } from './chunk';
+import { EmbeddingDeferredError, EmbeddingQuotaExceededError } from './embedding-errors';
 import type {
   EmbeddingClient,
   IndexGitHubCommit,
@@ -35,26 +36,40 @@ import type {
 } from './types';
 
 const EMBED_BATCH_SIZE = 32;
+const EMBEDDING_CACHE_MODEL = '@cf/baai/bge-base-en-v1.5:768';
+const DEFAULT_DAILY_EMBEDDING_BUDGET = 7_000;
+const DEFAULT_RUN_EMBEDDING_BUDGET = 1_800;
+
+function positiveIntegerEnv(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isSafeInteger(value) && value > 0 ? value : fallback;
+}
+
+function estimatedEmbeddingUnits(text: string): number {
+  // Conservative character-based estimate; keep headroom below Cloudflare's
+  // 10,000-neuron free daily allowance, which can also be used by other calls.
+  return Math.max(1, Math.ceil(Buffer.byteLength(text, 'utf8') / 2));
+}
+
+async function persistInBatches(
+  store: SearchStore,
+  chunks: readonly SearchChunkInput[],
+): Promise<void> {
+  for (let start = 0; start < chunks.length; start += 200) {
+    await store.upsertChunks(chunks.slice(start, start + 200));
+  }
+}
 
 export class SearchIndexer implements SourceIndexer {
+  private runEmbeddingUnits = 0;
+
   constructor(
     private readonly searchStore: SearchStore,
     private readonly embeddingClient: EmbeddingClient,
   ) {}
 
-  private async embedChunks(chunks: SearchChunkInput[]): Promise<SearchChunkInput[]> {
-    const embedded: SearchChunkInput[] = [];
-    for (let start = 0; start < chunks.length; start += EMBED_BATCH_SIZE) {
-      const batch = chunks.slice(start, start + EMBED_BATCH_SIZE);
-      const vectors = await this.embeddingClient.embed(batch.map((chunk) => chunk.content));
-      if (vectors.length !== batch.length) {
-        throw new Error('Embedding provider returned the wrong number of vectors');
-      }
-      batch.forEach((chunk, index) => {
-        embedded.push({ ...chunk, embedding: vectors[index] });
-      });
-    }
-    return embedded;
+  beginEmbeddingRun(): void {
+    this.runEmbeddingUnits = 0;
   }
 
   async indexDiscordRecords(records: readonly DiscordIndexRecord[]): Promise<void> {
@@ -67,7 +82,8 @@ export class SearchIndexer implements SourceIndexer {
     if (chunks.length === 0) {
       return;
     }
-    await this.searchStore.upsertChunks(await this.embedChunks(chunks));
+    this.beginEmbeddingRun();
+    await this.upsertEmbedded(chunks);
   }
 
   async removeDiscordAuthor(authorId: string): Promise<number> {
@@ -109,7 +125,9 @@ export class SearchIndexer implements SourceIndexer {
     }
     const hashed = chunks.map((chunk) => ({
       ...chunk,
-      contentHash: createHash('sha256').update(chunk.content).digest('hex'),
+      contentHash: createHash('sha256')
+        .update(`${EMBEDDING_CACHE_MODEL}\0${chunk.content}`)
+        .digest('hex'),
     }));
     const unchanged = this.searchStore.unchangedKeys
       ? await this.searchStore.unchangedKeys(
@@ -129,7 +147,97 @@ export class SearchIndexer implements SourceIndexer {
     if (changed.length === 0) {
       return;
     }
-    await this.searchStore.upsertChunks(await this.embedChunks(changed));
+
+    // Reuse vectors across different sources that contain identical text.
+    const cached = this.searchStore.cachedEmbeddings
+      ? await this.searchStore.cachedEmbeddings([...new Set(changed.map((chunk) => chunk.contentHash))])
+      : new Map<string, readonly number[]>();
+    const needsEmbedding = new Map<string, typeof changed>();
+    const cachedChunks: SearchChunkInput[] = [];
+    for (const chunk of changed) {
+      const vector = cached.get(chunk.contentHash);
+      if (vector) {
+        cachedChunks.push({ ...chunk, embedding: vector });
+      } else {
+        const group = needsEmbedding.get(chunk.contentHash) ?? [];
+        group.push(chunk);
+        needsEmbedding.set(chunk.contentHash, group);
+      }
+    }
+    if (cachedChunks.length > 0) {
+      await persistInBatches(this.searchStore, cachedChunks);
+    }
+
+    const groups = [...needsEmbedding.entries()].map(([contentHash, groupedChunks]) => ({
+      contentHash,
+      chunks: groupedChunks,
+      content: groupedChunks[0].content,
+      units: estimatedEmbeddingUnits(groupedChunks[0].content),
+    }));
+    const dailyBudget = positiveIntegerEnv('INDEX_EMBEDDING_DAILY_BUDGET', DEFAULT_DAILY_EMBEDDING_BUDGET);
+    const runBudget = positiveIntegerEnv('INDEX_EMBEDDING_RUN_BUDGET', DEFAULT_RUN_EMBEDDING_BUDGET);
+
+    for (let start = 0; start < groups.length;) {
+      const remainingRun = runBudget - this.runEmbeddingUnits;
+      if (remainingRun <= 0) {
+        throw new EmbeddingDeferredError(
+          `Per-run embedding budget reached (${runBudget} estimated units); saved progress is reusable on the next run.`,
+          new Date(Date.now() + 6 * 60 * 60 * 1000),
+          'run-budget',
+        );
+      }
+
+      const batch = [] as typeof groups;
+      let batchUnits = 0;
+      while (start < groups.length && batch.length < EMBED_BATCH_SIZE) {
+        const next = groups[start];
+        if (batch.length > 0 && batchUnits + next.units > remainingRun) break;
+        if (batch.length === 0 && next.units > remainingRun) {
+          throw new EmbeddingDeferredError(
+            'The next content item exceeds the remaining per-run embedding budget.',
+            new Date(Date.now() + 6 * 60 * 60 * 1000),
+            'run-budget',
+          );
+        }
+        batch.push(next);
+        batchUnits += next.units;
+        start += 1;
+      }
+
+      const resumeAt = this.searchStore.reserveEmbeddingBudget
+        ? await this.searchStore.reserveEmbeddingBudget(batchUnits, dailyBudget)
+        : null;
+      if (resumeAt) {
+        throw new EmbeddingDeferredError(
+          `Daily embedding budget reached; saved progress will resume after ${resumeAt.toISOString()}.`,
+          resumeAt,
+          'daily-budget',
+        );
+      }
+
+      let vectors: number[][];
+      try {
+        vectors = await this.embeddingClient.embed(batch.map((group) => group.content));
+      } catch (error) {
+        if (error instanceof EmbeddingQuotaExceededError) {
+          await this.searchStore.deferEmbeddingUntil?.(error.resumeAt);
+          throw new EmbeddingDeferredError(error.message, error.resumeAt, 'provider-quota');
+        }
+        throw error;
+      }
+      if (vectors.length !== batch.length) {
+        throw new Error('Embedding provider returned the wrong number of vectors');
+      }
+
+      this.runEmbeddingUnits += batchUnits;
+      const embeddedChunks = batch.flatMap((group, index) =>
+        group.chunks.map((chunk) => ({ ...chunk, embedding: vectors[index] })),
+      );
+      // Persist each successful batch immediately. These rows are the durable
+      // checkpoint: subsequent runs skip matching source/hash pairs and reuse
+      // vectors for duplicate content elsewhere in the corpus.
+      await persistInBatches(this.searchStore, embeddedChunks);
+    }
   }
 }
 
@@ -141,6 +249,7 @@ export class SearchBackedDiscordStore implements DiscordIndexStore, OptOutStore 
 
   async upsert(record: DiscordIndexRecord): Promise<void> {
     await this.base.upsert(record);
+    this.indexer.beginEmbeddingRun?.();
     await this.indexer.indexDiscordRecords([record]);
   }
 

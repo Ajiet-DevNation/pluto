@@ -28,6 +28,7 @@ export interface CorpusRefreshOptions {
 export async function refreshGithubCorpus(
   options: CorpusRefreshOptions,
 ): Promise<CorpusRefreshResult> {
+  options.indexer.beginEmbeddingRun?.();
   const org = options.org ?? getGitHubOrg();
   const reader = createGitHubReader({ tokenProvider: createGitHubTokenProvider() });
 

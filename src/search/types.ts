@@ -40,6 +40,12 @@ export interface SearchStore {
   upsertChunks(chunks: readonly SearchChunkInput[]): Promise<void>;
   /** Returns the subset of identities already stored with the same content hash. */
   unchangedKeys?(identities: readonly ChunkIdentity[]): Promise<Set<string>>;
+  /** Finds stored vectors by content hash, allowing duplicate content to reuse embeddings. */
+  cachedEmbeddings?(contentHashes: readonly string[]): Promise<Map<string, readonly number[]>>;
+  /** Atomically reserves estimated daily embedding units; returns a retry time when deferred. */
+  reserveEmbeddingBudget?(units: number, dailyLimit: number): Promise<Date | null>;
+  /** Persist provider quota deferral so other workers stop sending embedding requests. */
+  deferEmbeddingUntil?(resumeAt: Date): Promise<void>;
   vectorSearch(
     embedding: readonly number[],
     limit: number,
@@ -112,6 +118,7 @@ export interface IndexGitHubContributor {
 }
 
 export interface SourceIndexer {
+  beginEmbeddingRun?(): void;
   indexDiscordRecords(
     records: readonly import('../discord/types').DiscordIndexRecord[],
   ): Promise<void>;
