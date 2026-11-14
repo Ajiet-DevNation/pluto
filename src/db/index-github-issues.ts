@@ -3,8 +3,8 @@ dotenv.config();
 
 import { eq } from 'drizzle-orm';
 import { resolveGitHubToken } from '../github/app.js';
-import { createDb } from '../db/index.js';
-import { createGitHubReader } from '../github/reader.js';
+import { createDb, type Db } from '../db/index.js';
+import { createGitHubReader, type GitHubReader } from '../github/reader.js';
 import { getGitHubOrg } from '../config.js';
 import { issues, repositories } from '../db/schema.js';
 
@@ -17,14 +17,20 @@ export interface IndexedIssue {
   htmlUrl: string;
 }
 
-const GITHUB_ORG = getGitHubOrg();
+export interface IndexGitHubIssuesOptions {
+  reader?: GitHubReader;
+  db?: Db;
+  org?: string;
+}
 
 export async function indexGitHubIssues(
-  connectionString: string
+  connectionString: string,
+  options: IndexGitHubIssuesOptions = {}
 ): Promise<IndexedIssue[]> {
   const token = resolveGitHubToken();
-  const reader = createGitHubReader({ token });
-  const db = createDb(connectionString);
+  const reader = options.reader ?? createGitHubReader({ token });
+  const db = options.db ?? createDb(connectionString);
+  const GITHUB_ORG = options.org ?? getGitHubOrg();
   const results: IndexedIssue[] = [];
 
   const repos = await reader.listRepos(GITHUB_ORG);
@@ -102,7 +108,7 @@ export async function indexGitHubIssues(
   return results;
 }
 
-async function main() {
+export async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     console.error('DATABASE_URL is not set');
@@ -111,11 +117,14 @@ async function main() {
 
   try {
     const results = await indexGitHubIssues(connectionString);
-    console.log(`Indexed ${results.length} issues from ${GITHUB_ORG} public repos`);
+    console.log(`Indexed ${results.length} issues from ${getGitHubOrg()} public repos`);
   } catch (error) {
     console.error('Indexing failed:', error);
     process.exit(1);
   }
 }
 
-main();
+// Only run when this file is the entry point, not when imported.
+if (typeof require !== 'undefined' && require.main === module) {
+  main();
+}
