@@ -108,6 +108,30 @@ export function buildAskPrompt(
   ].join('\n');
 }
 
+/**
+ * Remove `[n]` markers that do not correspond to a retrieved evidence chunk.
+ * Models occasionally invent a citation number; the rendered answer must only
+ * reference evidence that actually passed the gate.
+ */
+export function stripUnverifiedCitationMarkers(
+  answer: string,
+  evidenceCount: number,
+): string {
+  return answer
+    .replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (_match, group: string) => {
+      const valid = group
+        .split(',')
+        .map((part) => Number(part.trim()))
+        .filter(
+          (number) =>
+            Number.isInteger(number) && number >= 1 && number <= evidenceCount,
+        );
+      return valid.length > 0 ? `[${valid.join(', ')}]` : '';
+    })
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
 export function renderAnswer(answer: string, sources: readonly AskSource[]): string {
   const trimmed = answer.trim();
   if (sources.length === 0) {
@@ -138,8 +162,12 @@ export class AskService {
       evidence.chunks,
       this.dependencies.blockedChannelIds,
     );
-    const answer = await this.dependencies.generator.generate(
+    const generated = await this.dependencies.generator.generate(
       buildAskPrompt(query, evidence.chunks),
+    );
+    const answer = stripUnverifiedCitationMarkers(
+      generated,
+      evidence.chunks.length,
     );
 
     return {

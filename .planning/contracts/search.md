@@ -82,6 +82,27 @@ boundary in `contracts/security.md` §4.
 - v1 starting value: **`0.4`**
 - The value is tuned after P2 ships against real queries. It is not final.
 
+### Score normalization (P2 live calibration, 2026-11-14)
+
+Raw `bge-base-en-v1.5` cosine similarities have a high baseline: unrelated
+project text commonly scores around `0.5–0.65`. Applying `0.4` directly to raw
+cosine therefore admitted almost every chunk and defeated the no-evidence gate.
+
+The store converts raw scores to a calibrated `0..1` relevance before the gate:
+
+```text
+vector_relevance   = clamp((cosine - 0.5) / 0.5, 0, 1)
+full_text_relevance = rank > 0 ? clamp(0.4 + 2 * rank, 0, 1) : 0
+```
+
+Consequences:
+
+- `EVIDENCE_MIN_SCORE=0.4` corresponds to raw cosine `0.70`.
+- Any non-zero full-text match clears the threshold; vector search remains the
+  semantic path for paraphrases.
+- The calibration is recorded in `src/search/relevance.ts` with unit tests. It
+  is a scoring normalization, not a change to the configured threshold.
+
 ## Citations
 
 Every retrieved chunk carries `source_url`, built by the builders in

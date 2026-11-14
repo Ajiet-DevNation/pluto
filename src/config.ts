@@ -9,33 +9,37 @@ import { resolve } from 'node:path';
 
 let cachedConfig: Config | null = null;
 
+export interface DiscordConfig {
+  application_id: string;
+  guild_id: string;
+  output_channel_id: string;
+  output_channel_name: string;
+  index_own_output_channel: boolean;
+  indexed_channels: Record<string, string>;
+  excluded_channels: string[];
+}
+
 export interface Config {
-  github: {
-    org: string;
-    app: string;
-    interim: {
-      type: string;
-      owner: string;
-      scopes: string[];
-      repo_access: string;
-      expires: string;
+  planning: {
+    discord: DiscordConfig;
+    credentials: {
+      github: {
+        org: string;
+        app: string;
+        interim: {
+          type: string;
+          owner: string;
+          scopes: string[];
+          repo_access: string;
+          expires: string;
+        };
+      };
+      neon: {
+        database_url: string;
+      };
+      [key: string]: unknown;
     };
   };
-  discord: {
-    application_id: string;
-    guild_id: string;
-    output_channel_id: string;
-    output_channel_name: string;
-    index_own_output_channel: boolean;
-    indexed_channels: Record<string, string>;
-    excluded_channels: string[];
-  };
-  neon: {
-    database_url: string;
-  };
-  miro: string;
-  cloudflare_workers_ai: string;
-  cloudflare_r2: string;
 }
 
 export function loadConfig(): Config {
@@ -55,21 +59,21 @@ export function loadConfig(): Config {
 }
 
 export function getGitHubOrg(): string {
-  return loadConfig().github.org;
+  return loadConfig().planning.credentials.github.org;
 }
 
 export function getDiscordGuildId(): string {
-  return loadConfig().discord.guild_id;
+  return loadConfig().planning.discord.guild_id;
 }
 
 export function getDiscordOutputChannelId(): string {
-  return loadConfig().discord.output_channel_id;
+  return loadConfig().planning.discord.output_channel_id;
 }
 
 export function getIndexedChannels(): Record<string, string> {
-  return loadConfig().discord.indexed_channels;
+  return loadConfig().planning.discord.indexed_channels;
 }
 
 export function getExcludedChannels(): string[] {
-  return loadConfig().discord.excluded_channels;
+  return loadConfig().planning.discord.excluded_channels;
 }

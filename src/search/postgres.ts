@@ -8,6 +8,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db/index';
 import { searchChunks } from '../db/schema';
+import { cosineToRelevance, fullTextToRelevance } from './relevance';
 import {
   SEARCH_SOURCE_TYPES,
   type ScoredSearchChunk,
@@ -41,7 +42,10 @@ function rowsOf(result: unknown): RawChunkRow[] {
   return Array.isArray(rows) ? (rows as RawChunkRow[]) : [];
 }
 
-function mapRow(row: RawChunkRow): ScoredSearchChunk | null {
+function mapRow(
+  row: RawChunkRow,
+  toRelevance: (rawScore: number) => number,
+): ScoredSearchChunk | null {
   if (
     !row.source_type ||
     !isSourceType(row.source_type) ||
@@ -53,10 +57,11 @@ function mapRow(row: RawChunkRow): ScoredSearchChunk | null {
   }
 
   const chunkIndex = Number(row.chunk_index);
-  const score = Number(row.score);
-  if (!Number.isInteger(chunkIndex) || !Number.isFinite(score)) {
+  const rawScore = Number(row.score);
+  if (!Number.isInteger(chunkIndex) || !Number.isFinite(rawScore)) {
     return null;
   }
+  const score = toRelevance(rawScore);
 
   const indexedAt =
     row.indexed_at instanceof Date
@@ -150,7 +155,7 @@ export class PostgresSearchStore implements SearchStore {
     `);
 
     return rowsOf(result)
-      .map(mapRow)
+      .map((row) => mapRow(row, cosineToRelevance))
       .filter((row): row is ScoredSearchChunk => row !== null);
   }
 
@@ -178,7 +183,7 @@ export class PostgresSearchStore implements SearchStore {
     `);
 
     return rowsOf(result)
-      .map(mapRow)
+      .map((row) => mapRow(row, fullTextToRelevance))
       .filter((row): row is ScoredSearchChunk => row !== null);
   }
 

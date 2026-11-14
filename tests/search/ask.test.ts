@@ -6,6 +6,7 @@ import {
   buildAskPrompt,
   renderAnswer,
   sourcesFromChunks,
+  stripUnverifiedCitationMarkers,
 } from '../../src/search/ask';
 import type { AnswerGenerator, ScoredSearchChunk } from '../../src/search/types';
 
@@ -135,6 +136,29 @@ test('prompt labels all four source types', () => {
 
 test('renderAnswer leaves an answer without sources unchanged', () => {
   assert.equal(renderAnswer(' plain answer ', []), 'plain answer');
+});
+
+test('unverified citation markers are removed', () => {
+  assert.equal(
+    stripUnverifiedCitationMarkers('Grounded [1] but invented [2].', 1),
+    'Grounded [1] but invented .',
+  );
+  assert.equal(
+    stripUnverifiedCitationMarkers('Mixed [1, 7] and [0].', 2),
+    'Mixed [1] and .',
+  );
+  assert.equal(stripUnverifiedCitationMarkers('No citations.', 0), 'No citations.');
+});
+
+test('answers can only cite evidence that passed the gate', async () => {
+  const ask = service([chunk()], new FakeGenerator('Claim [1] and invented [2].'));
+  const result = await ask.ask('what is the stack?');
+
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.match(result.answer, /Claim \[1\]/);
+    assert.doesNotMatch(result.answer, /\[2\]/);
+  }
 });
 
 test('generator errors propagate so the command can report them', async () => {
