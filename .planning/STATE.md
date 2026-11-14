@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** P1 (Pragathi) implemented on `feat/pragathi` — Discord allowlist intake, startup backfill, bot-author exclusion and guild-scoped `/optout`. 111 tests pass, build clean; PR pending review. Discord contract draft at `.planning/contracts/discord.md`. P2 pending.
+**Current focus:** P1 (Pragathi) implemented on `feat/pragathi` — Discord allowlist intake, startup backfill, bot-author exclusion and guild-scoped `/optout`. 114 tests pass, build clean; PR pending review. Discord contract draft at `.planning/contracts/discord.md`. P2 pending.
 
 ## Team
 - Project Lead: Khushi
@@ -47,10 +47,10 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | K1 | Khushi | ✅ Merged (PR #1, #2) | Scaffold, Node 22, working `npm start`, README. GitHub App not created — org role is `member`; interim read-only fine-grained PAT verified (`GET` 200 / write attempt 403). |
 | K2 | Khushi | ✅ Merged (PR #3, `b3761d9`) | Security contract, read-only guard, GitHub/Miro read clients, citation layer, evidence gate, live citation check, 40 tests. Deferred: Miro live verification (`pending`, last in sequence); opt-out verification moved to CP3 (needs P1 `/optout` and L1 retrieval). |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
-| L1 | Likhith | ✅ Merged (PR #4, `73b06b7`) | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. **Open follow-ups:** no worker/scheduler (indexing runs manually), migrations do not create `vector`/`tsvector`, migrate runner is not idempotent, indexer has no tests. |
+| L1 | Likhith | ✅ Merged (PR #4, `73b06b7`) | Neon provisioned and connected. Drizzle schema, pg-boss queue (polling mode, verified on Neon), GitHub issues indexing code written and verified live. 8 repositories, 366 issues indexed in Neon. **Open follow-ups:** no worker/scheduler (indexing runs manually), migrations do not create `vector`/`tsvector` columns. **Completed follow-ups:** migrate runner is now idempotent (schema_migrations tracking table), indexer has test coverage (tests/db/index-github-issues.test.ts), database contract drafted at .planning/contracts/database.md (pending Khushi approval). |
 | L2 | Likhith | ⬜ Pending | Depends on L1. |
 | L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
-| P1 | Pragathi | ◐ Implemented — PR open | Branch `feat/pragathi`. discord.js v14 client, allowlist intake for the 4 configured channels, one startup backfill, bot-author exclusion, guild-scoped `/optout`, JSON state. 111 tests pass, build clean. Live guild verification pending. |
+| P1 | Pragathi | ◐ Implemented — PR open | Branch `feat/pragathi`. discord.js v14 client, allowlist intake for the 4 configured channels, one startup backfill, bot-author exclusion, guild-scoped `/optout`, JSON state. 114 tests pass, build clean. Live guild verification pending. |
 | P2 | Pragathi | ⬜ Pending | Depends on P1, L1. |
 | P3 | Pragathi | ⬜ Pending | Depends on P2, L2. |
 
@@ -105,14 +105,13 @@ At the start of each development session:
 ## Unresolved / Pending Items
 - GitHub App creation — blocked on Ajiet-DevNation org owner — pending
 - Miro access token, MCP server and board allowlist — pending
-- Background jobs worker/scheduler — contract written at `.planning/contracts/background-jobs.md`; code not started — pending (Likhith)
-- Migrations do not create `vector`/`tsvector` extension or columns; Neon has pgvector enabled out-of-band, so a fresh database is not reproducible — pending (Likhith)
-- `scripts/migrate/index.ts` replays every `.sql` and ignores drizzle's journal, so a second run fails — pending (Likhith)
-- `index-github-issues.ts` has no test coverage — pending (Likhith)
+- Background jobs worker/scheduler — contract written at `.planning/contracts/background-jobs.md`; code not started — pending (Likhith, task 2 — waiting on database contract approval)
+- Migrations do not create `vector`/`tsvector` extension or columns; Neon has pgvector enabled out-of-band, so a fresh database is not reproducible — pending (Likhith, Phase 2 task 5)
 - Discord contract (#3) — draft at `.planning/contracts/discord.md`; Khushi approval pending
 - Live Discord guild verification — pending (requires `.env` credentials; unit suite is green)
 - Audio storage final decision (Cloudflare R2) — pending
 - UI & showcase team members — joining after bot completion (pending)
+- Database contract `.planning/contracts/database.md` — drafted by Likhith, pending Khushi approval
 
 ## Decisions (2026-11-13)
 
@@ -142,4 +141,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-14 — P1 Discord indexing + `/optout` implemented on `feat/pragathi`; 111 tests pass, build clean; Discord contract draft added; live guild verification pending*
+*Last updated: 2026-11-14 — P1 Discord indexing + `/optout` implemented on `feat/pragathi` (114 tests pass, build clean; live guild verification pending); L1 follow-ups complete: database contract drafted, migrate runner made idempotent, indexer tests added. Waiting on contract approval before task 2 (worker/scheduler).*

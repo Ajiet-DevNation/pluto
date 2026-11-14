@@ -331,7 +331,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 ### 11.1 Rules
 
 - `node:test` + `node:assert/strict`; no live Discord calls in the suite; tests use fakes/temp dirs and require no `.env` secrets.
-- Baseline before P1: **44 passing tests**. P1 adds 67 tests for a total of **111 pass, 0 fail**.
+- Baseline before P1: **44 passing tests**. P1 adds 67 tests; after merging current `main` (47 tests) the branch records **114 pass, 0 fail**.
 - Coverage includes: all four allowlisted channels; `#core-secrets` and other non-allowlisted channels; `#pluto`; bot/webhook/self/system/empty messages; opt-out at index time; record mapping; citation URL; command metadata; guild-scope registration; opt-out handler states; persistence; backfill cursor/pagination/retry/isolation; static scans for the exclusion list, global commands and history writes.
 
 ### 11.2 Commands (Windows / PowerShell)
@@ -343,7 +343,7 @@ npm run build
 
 Do **not** run `bash scripts/test.sh`; the npm `test` script is bash-only and broken on this machine. Do not change it in P1.
 
-Pass criteria: **≥ 44 tests pass, 0 fail**, `npm run build` clean. P1 currently records **111 pass, 0 fail**, build clean.
+Pass criteria: **≥ 44 tests pass, 0 fail**, `npm run build` clean. P1 currently records **114 pass, 0 fail**, build clean.
 
 ### 11.3 Live verification (recorded in the PR)
 
@@ -369,7 +369,7 @@ Live guild checks remain manual because the test suite must not require credenti
 | `/optout` excludes member messages | §7.2, §8.2 | Handler/store tests; live check |
 | Opted-out excluded from search/answers | §6.1, §7.2 | P1 exposes `isOptedOut`; P2 enforces retrieval (CP3) |
 | Guild-scope registration | §8.1 | Command tests + static scan |
-| Tests/build clean | §11.2 | 111 pass, 0 fail; build clean |
+| Tests/build clean | §11.2 | 114 pass, 0 fail; build clean |
 
 ---
 
