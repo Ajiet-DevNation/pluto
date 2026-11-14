@@ -76,8 +76,11 @@ Values are never recorded here — only existence, owner, scope and expiry.
 | Indexed | `#project-stack` | `1423323863093088407` |
 | Indexed | `#resources` | `1422593926367547487` |
 | Indexed | `#announcements` | `1422593926367547486` |
+| Indexed | `#meeting-plans` (created 2026-11-14, under Projects) | `1570872485933752502` |
 | Excluded | `#pluto`, `#pluto-bot`, `#general` (text + media), `#off-topic`, `#assets`, `#welcome-and-rules`, `#takoyaki`, voice channels | — |
-| Unresolved | `#meeting-plans` — not visible to the bot; replacement pending (candidate `#event-ideation` = `1471543039326683329`) | — |
+| Not in policy | `#core-general`, `#code-wars`, `#event-ideation`, `#core-secrets`, `#dn-orbit-website`, `#server-hub`, `#bumblebee` — the bot can see them, but they are **not** indexed | — |
+
+**Indexing is allowlist-only.** Index exactly the 4 channels in `config.json → discord.indexed_channels`. Never infer from `excluded_channels`: that list is documentation and is not exhaustive. Verified against the live channel list on 2026-11-14 — the bot sees 29 channels, 4 of which are indexed.
 
 `#pluto` is never indexed: the bot must not cite its own answers.
 
@@ -100,7 +103,6 @@ At the start of each development session:
 - Pending/unresolved decisions are marked `"pending"` in `PROJECT.md` Key Decisions and `config.json`, and are not assumed resolved across sessions.
 
 ## Unresolved / Pending Items
-- `#meeting-plans` channel — not visible to the bot; replacement not chosen — pending
 - GitHub App creation — blocked on Ajiet-DevNation org owner — pending
 - Miro access token, MCP server and board allowlist — pending
 - Background jobs worker/scheduler — contract written at `.planning/contracts/background-jobs.md`; code not started — pending (Likhith)
@@ -124,6 +126,8 @@ At the start of each development session:
 | Evidence threshold | `EVIDENCE_MIN_SCORE = 0.4` (v1 starting value, tuned after P2) | `contracts/search.md` |
 | `#pluto-bot` | Logs-only for v1; never indexed. Revisit post-v1 with a bot-author filter | `config.json` channel policy |
 | Cloudflare credential | Provisioned by Khushi; Workers AI Read token | `config.json` credentials |
+| `#meeting-plans` | Created 2026-11-14 under Projects, `1570872485933752502`, **indexed** — replaces the unresolved state; `#event-ideation` not used | `config.json` discord.resolved |
+| Channel indexing mode | **allowlist only** — never derive indexing from the exclusion list | `config.json` discord.indexing_mode |
 
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
@@ -132,4 +136,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-13 — Cloudflare Workers AI provisioned, search contract written, background-jobs contract written*
+*Last updated: 2026-11-14 — #meeting-plans created and indexed; channel indexing mode set to allowlist; Cloudflare Workers AI provisioned; search + background-jobs contracts written*
