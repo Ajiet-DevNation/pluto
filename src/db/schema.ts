@@ -75,6 +75,7 @@ export const searchChunks = pgTable('search_chunks', {
   channelId: varchar('channel_id', { length: 255 }),
   authorId: varchar('author_id', { length: 255 }),
   content: text('content').notNull(),
+  contentHash: text('content_hash'),
   embedding: vector('embedding', { dimensions: 768 }),
   searchVector: tsvector('search_vector'),
   indexedAt: timestamp('indexed_at', { withTimezone: true }).notNull().defaultNow(),

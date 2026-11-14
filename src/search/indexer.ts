@@ -6,6 +6,7 @@
  * existing interfaces while `/optout` purges both stores.
  */
 
+import { createHash } from 'node:crypto';
 import type {
   DiscordIndexRecord,
   DiscordIndexStore,
@@ -106,7 +107,29 @@ export class SearchIndexer implements SourceIndexer {
     if (chunks.length === 0) {
       return;
     }
-    await this.searchStore.upsertChunks(await this.embedChunks(chunks));
+    const hashed = chunks.map((chunk) => ({
+      ...chunk,
+      contentHash: createHash('sha256').update(chunk.content).digest('hex'),
+    }));
+    const unchanged = this.searchStore.unchangedKeys
+      ? await this.searchStore.unchangedKeys(
+          hashed.map((chunk) => ({
+            sourceType: chunk.sourceType,
+            sourceId: chunk.sourceId,
+            chunkIndex: chunk.chunkIndex,
+            contentHash: chunk.contentHash,
+          })),
+        )
+      : new Set<string>();
+    const changed = hashed.filter(
+      (chunk) => !unchanged.has(
+        `${chunk.sourceType}:${chunk.sourceId}:${chunk.chunkIndex}:${chunk.contentHash}`,
+      ),
+    );
+    if (changed.length === 0) {
+      return;
+    }
+    await this.searchStore.upsertChunks(await this.embedChunks(changed));
   }
 }
 

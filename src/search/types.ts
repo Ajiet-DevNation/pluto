@@ -18,8 +18,16 @@ export interface SearchChunkInput {
   channelId?: string | null;
   authorId?: string | null;
   content: string;
+  contentHash?: string;
   embedding?: readonly number[] | null;
   indexedAt?: string;
+}
+
+export interface ChunkIdentity {
+  sourceType: SearchSourceType;
+  sourceId: string;
+  chunkIndex: number;
+  contentHash: string;
 }
 
 export interface ScoredSearchChunk extends SearchChunkInput {
@@ -30,6 +38,8 @@ export interface ScoredSearchChunk extends SearchChunkInput {
 
 export interface SearchStore {
   upsertChunks(chunks: readonly SearchChunkInput[]): Promise<void>;
+  /** Returns the subset of identities already stored with the same content hash. */
+  unchangedKeys?(identities: readonly ChunkIdentity[]): Promise<Set<string>>;
   vectorSearch(
     embedding: readonly number[],
     limit: number,

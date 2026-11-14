@@ -1,47 +1,14 @@
 #!/usr/bin/env tsx
 /**
- * Backfill `search_chunks` from sources that were indexed before P2.
- *
- * This is intentionally a manual/operational command: embedding 366 GitHub
- * issues plus the existing Discord records is not something to repeat on every
- * bot startup. The normal incremental paths keep both sides in sync afterwards.
+ * Manual full refresh of `search_chunks` from every public GitHub source and the
+ * Discord JSON store. The scheduled job runs the same refresh; see corpus-refresh.ts.
  */
 
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { eq } from 'drizzle-orm';
-import type { Db } from '../db/index';
-import { issues, repositories } from '../db/schema';
-import { getGitHubOrg } from '../config';
-import { createGitHubTokenProvider } from '../github/app';
-import { createGitHubReader } from '../github/reader';
-import { indexGitHubIssues } from '../db/index-github-issues';
-import { indexGithubSearchSources } from './github-sources';
-import type { SourceIndexer } from './types';
+import { refreshGithubCorpus } from './corpus-refresh';
 import { createSearchRuntimeFromEnv } from './runtime';
-
-export async function reindexGithubIssues(
-  db: Db,
-  indexer: Pick<SourceIndexer, 'indexGitHubIssue'>,
-): Promise<number> {
-  const rows = await db
-    .select({
-      repositoryFullName: repositories.fullName,
-      issueNumber: issues.number,
-      title: issues.title,
-      body: issues.body,
-      state: issues.state,
-      htmlUrl: issues.htmlUrl,
-    })
-    .from(issues)
-    .innerJoin(repositories, eq(issues.repositoryId, repositories.id));
-
-  for (const row of rows) {
-    await indexer.indexGitHubIssue(row);
-  }
-  return rows.length;
-}
 
 export async function main(): Promise<void> {
   const runtime = createSearchRuntimeFromEnv();
@@ -55,24 +22,21 @@ export async function main(): Promise<void> {
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is required to index all public GitHub sources');
   }
-  const reader = createGitHubReader({ tokenProvider: createGitHubTokenProvider() });
-  const githubOrg = getGitHubOrg();
-  const liveIssues = await indexGitHubIssues(databaseUrl, {
-    reader,
-    db: runtime.db,
-    org: githubOrg,
-  });
-  const issuesIndexed = await reindexGithubIssues(runtime.db, runtime.indexer);
+
   const discordRecords = await runtime.baseStore.listRecords();
   await runtime.syncDiscord(discordRecords);
-  const githubExtras = await indexGithubSearchSources(reader, githubOrg, runtime.indexer);
+
+  const github = await refreshGithubCorpus({
+    connectionString: databaseUrl,
+    db: runtime.db,
+    indexer: runtime.indexer,
+  });
 
   console.log(
-    `Search reindex complete: ${githubExtras.repositories} public repositories, ` +
-      `${liveIssues.length} issues refreshed (${issuesIndexed} chunks re-indexed), ` +
-      `${githubExtras.readmes} READMEs, ${githubExtras.repositoryFiles} repository files, ` +
-      `${githubExtras.contributors} contributors, ${githubExtras.pullRequests} PRs, ` +
-      `${githubExtras.commits} commits, ` +
+    `Search reindex complete: ${github.sources.repositories} public repositories, ` +
+      `${github.issuesRefreshed} issues, ${github.sources.readmes} READMEs, ` +
+      `${github.sources.repositoryFiles} repository files, ${github.sources.contributors} contributors, ` +
+      `${github.sources.pullRequests} PRs, ${github.sources.commits} commits, ` +
       `${discordRecords.length} Discord records`,
   );
 }

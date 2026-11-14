@@ -11,6 +11,7 @@ import { searchChunks } from '../db/schema';
 import { cosineToRelevance, fullTextToRelevance } from './relevance';
 import {
   SEARCH_SOURCE_TYPES,
+  type ChunkIdentity,
   type ScoredSearchChunk,
   type SearchChunkInput,
   type SearchSourceType,
@@ -27,6 +28,7 @@ interface RawChunkRow {
   author_id?: string | null;
   content?: string;
   indexed_at?: Date | string | null;
+  content_hash?: string | null;
   score?: number | string;
 }
 
@@ -118,6 +120,7 @@ export class PostgresSearchStore implements SearchStore {
       channelId: chunk.channelId ?? null,
       authorId: chunk.authorId ?? null,
       content: chunk.content,
+      contentHash: chunk.contentHash ?? null,
       embedding: chunk.embedding ? [...chunk.embedding] : null,
       indexedAt: chunk.indexedAt ? new Date(chunk.indexedAt) : new Date(),
     }));
@@ -136,10 +139,28 @@ export class PostgresSearchStore implements SearchStore {
           channelId: sql`excluded.channel_id`,
           authorId: sql`excluded.author_id`,
           content: sql`excluded.content`,
+          contentHash: sql`excluded.content_hash`,
           embedding: sql`excluded.embedding`,
           indexedAt: sql`now()`,
         },
       });
+  }
+
+  async unchangedKeys(identities: readonly ChunkIdentity[]): Promise<Set<string>> {
+    if (identities.length === 0) {
+      return new Set();
+    }
+    const rows = await this.db.execute(sql`
+      SELECT source_type, source_id, chunk_index, content_hash
+      FROM search_chunks
+      WHERE (source_type, source_id, chunk_index::text, content_hash) IN (${sql.join(
+        identities.map((identity) => sql`(${identity.sourceType}, ${identity.sourceId}, ${String(identity.chunkIndex)}, ${identity.contentHash})`),
+        sql`, `,
+      )})
+    `);
+    return new Set(
+      rowsOf(rows).map((row) => `${row.source_type}:${row.source_id}:${row.chunk_index}:${row.content_hash}`),
+    );
   }
 
   async vectorSearch(
