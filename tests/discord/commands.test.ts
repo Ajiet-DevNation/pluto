@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  askCommand,
   commandPayloads,
   optOutCommand,
   registerGuildCommands,
@@ -24,10 +25,19 @@ test('/optout is guild-only and needs no member permission', () => {
   );
 });
 
-test('commandPayloads contains exactly the /optout command', () => {
+test('/ask is guild-only and requires a question', () => {
+  const json = askCommand.toJSON();
+
+  assert.equal(json.name, 'ask');
+  assert.equal((json as { dm_permission?: boolean }).dm_permission, false);
+  assert.equal(json.options?.length, 1);
+  assert.equal(json.options?.[0].name, 'question');
+  assert.equal(json.options?.[0].required, true);
+});
+
+test('commandPayloads contains exactly /optout and /ask', () => {
   const payloads = commandPayloads();
-  assert.equal(payloads.length, 1);
-  assert.equal(payloads[0].name, 'optout');
+  assert.deepEqual(payloads.map((payload) => payload.name), ['optout', 'ask']);
 });
 
 test('registerGuildCommands registers through the supplied guild manager', async () => {
@@ -44,6 +54,5 @@ test('registerGuildCommands registers through the supplied guild manager', async
   await registerGuildCommands(manager);
 
   assert.equal(calls, 1);
-  assert.equal(received?.length, 1);
-  assert.equal(received?.[0].name, 'optout');
+  assert.deepEqual(received?.map((payload) => payload.name), ['optout', 'ask']);
 });

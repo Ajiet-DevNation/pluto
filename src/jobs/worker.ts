@@ -3,6 +3,7 @@ import { createJobQueue, ensureJobQueue } from './index.js';
 import { indexGitHubIssues } from '../db/index-github-issues.js';
 import { indexMeetingTranscript } from '../db/index-meeting-transcripts.js';
 import { getGitHubOrg } from '../config.js';
+import type { SourceIndexer } from '../search/types.js';
 
 const GITHUB_ISSUES_QUEUE = 'index-github-issues';
 const TRANSCRIPT_INDEX_QUEUE = 'index-transcript';
@@ -15,17 +16,17 @@ let isIndexingTranscript = false;
 /**
  * Start background jobs for the Pluto backend.
  *
- * Called once at process startup (wired by Pragathi in src/cmd/pluto/index.ts).
- * Connects to pg-boss in polling mode, creates both queues,
- * runs an initial GitHub issues indexing pass, then reschedules every 30 minutes.
- *
- * @param connectionString - Neon PostgreSQL connection string (DATABASE_URL)
+ * Called once at process startup. Connects to pg-boss in polling mode,
+ * creates both queues, runs an initial GitHub issues indexing pass, then
+ * reschedules every 30 minutes.
  */
-export async function startBackgroundJobs(connectionString: string): Promise<void> {
+export async function startBackgroundJobs(
+  connectionString: string,
+  searchIndexer?: Pick<SourceIndexer, 'indexGitHubIssue'>,
+): Promise<void> {
   const boss = createJobQueue(connectionString);
   await ensureJobQueue(boss);
 
-  // Create both queues explicitly at startup before any send/schedule call.
   await boss.createQueue(GITHUB_ISSUES_QUEUE, {
     retryLimit: 3,
     retryBackoff: true,
@@ -35,19 +36,17 @@ export async function startBackgroundJobs(connectionString: string): Promise<voi
     retryBackoff: true,
   });
 
-  // Run GitHub issues indexing on startup.
-  void runGitHubIssuesJob(boss, connectionString);
-
-  // Reschedule GitHub issues indexing every 30 minutes.
+  void runGitHubIssuesJob(boss, connectionString, searchIndexer);
   setInterval(() => {
-    void runGitHubIssuesJob(boss, connectionString);
+    void runGitHubIssuesJob(boss, connectionString, searchIndexer);
   }, SCHEDULE_INTERVAL_MS);
 }
 
-/**
- * Run a single GitHub issues indexing pass.
- */
-async function runGitHubIssuesJob(boss: PgBoss, connectionString: string): Promise<void> {
+async function runGitHubIssuesJob(
+  boss: PgBoss,
+  connectionString: string,
+  searchIndexer?: Pick<SourceIndexer, 'indexGitHubIssue'>,
+): Promise<void> {
   if (isIndexingGitHubIssues) {
     console.log('GitHub issues indexing already running, skipping (singleton).');
     return;
@@ -55,9 +54,9 @@ async function runGitHubIssuesJob(boss: PgBoss, connectionString: string): Promi
 
   isIndexingGitHubIssues = true;
   try {
-    const GITHUB_ORG = getGitHubOrg();
-    const results = await indexGitHubIssues(connectionString, { org: GITHUB_ORG });
-    console.log(`Background job: indexed ${results.length} issues from ${GITHUB_ORG}`);
+    const org = getGitHubOrg();
+    const results = await indexGitHubIssues(connectionString, { org, searchIndexer });
+    console.log(`Background job: indexed ${results.length} issues from ${org}`);
   } catch (error) {
     console.error('Background GitHub issues indexing job failed:', error);
   } finally {

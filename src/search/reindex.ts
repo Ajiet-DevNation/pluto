@@ -1,0 +1,63 @@
+#!/usr/bin/env tsx
+/**
+ * Backfill `search_chunks` from sources that were indexed before P2.
+ *
+ * This is intentionally a manual/operational command: embedding 366 GitHub
+ * issues plus the existing Discord records is not something to repeat on every
+ * bot startup. The normal incremental paths keep both sides in sync afterwards.
+ */
+
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { eq } from 'drizzle-orm';
+import { createDb, type Db } from '../db/index';
+import { issues, repositories } from '../db/schema';
+import type { SourceIndexer } from './types';
+import { createSearchRuntimeFromEnv } from './runtime';
+
+export async function reindexGithubIssues(
+  db: Db,
+  indexer: Pick<SourceIndexer, 'indexGitHubIssue'>,
+): Promise<number> {
+  const rows = await db
+    .select({
+      repositoryFullName: repositories.fullName,
+      issueNumber: issues.number,
+      title: issues.title,
+      body: issues.body,
+      state: issues.state,
+      htmlUrl: issues.htmlUrl,
+    })
+    .from(issues)
+    .innerJoin(repositories, eq(issues.repositoryId, repositories.id));
+
+  for (const row of rows) {
+    await indexer.indexGitHubIssue(row);
+  }
+  return rows.length;
+}
+
+export async function main(): Promise<void> {
+  const runtime = createSearchRuntimeFromEnv();
+  if (!runtime) {
+    throw new Error(
+      'Search is not configured; set DATABASE_URL, CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_AI_TOKEN',
+    );
+  }
+
+  const issuesIndexed = await reindexGithubIssues(runtime.db, runtime.indexer);
+  const discordRecords = await runtime.baseStore.listRecords();
+  await runtime.syncDiscord(discordRecords);
+
+  console.log(
+    `Search reindex complete: ${issuesIndexed} GitHub issues, ${discordRecords.length} Discord records`,
+  );
+}
+
+if (typeof require !== 'undefined' && require.main === module) {
+  main().catch((error: unknown) => {
+    console.error('Search reindex failed:', error);
+    process.exitCode = 1;
+  });
+}

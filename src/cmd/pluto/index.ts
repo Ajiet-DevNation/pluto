@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { startDiscordBot } from '../../discord/bot';
+import { createDefaultStore } from '../../discord/store';
+import { createSearchRuntimeFromEnv } from '../../search/runtime';
 
 import { uploadRouter } from '../../upload/index';
 import { startBackgroundJobs } from '../../jobs/worker';
@@ -28,16 +30,31 @@ const server = app.listen(PORT, () => {
 
 let shutdownBot: (() => Promise<void>) | undefined;
 
-startDiscordBot()
-  .then((bot) => {
-    shutdownBot = bot.shutdown;
-  })
-  .catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`Pluto Discord bot failed to start: ${message}`);
-    server.close();
-    process.exitCode = 1;
+async function start(): Promise<void> {
+  const baseStore = createDefaultStore();
+  const search = createSearchRuntimeFromEnv();
+
+  if (search) {
+    // P1 records predate search_chunks; bring them over once before intake
+    // starts writing new rows.
+    const records = await baseStore.listRecords();
+    await search.syncDiscord(records);
+    console.log(`Search index synced for ${records.length} Discord records`);
+  }
+
+  const bot = await startDiscordBot({
+    store: search?.store ?? baseStore,
+    askService: search?.askService,
   });
+  shutdownBot = bot.shutdown;
+}
+
+start().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`Pluto failed to start: ${message}`);
+  server.close();
+  process.exitCode = 1;
+});
 
 async function shutdown(signal: string): Promise<void> {
   console.log(`Received ${signal}; shutting down Pluto`);

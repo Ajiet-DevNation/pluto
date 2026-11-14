@@ -136,11 +136,17 @@ describe('index-github-issues happy path', () => {
   it('indexes public repos and their issues, skipping private repos and pull requests', async () => {
     const reader = createMockReader(MOCK_REPOS, MOCK_ISSUES);
     const db = createMockDb();
+    const searchCalls: Array<{ issueNumber: number }> = [];
 
     const results = await indexGitHubIssues('postgresql://localhost:5432/pluto', {
       reader,
       db,
       org: 'Ajiet-DevNation',
+      searchIndexer: {
+        async indexGitHubIssue(issue) {
+          searchCalls.push({ issueNumber: issue.issueNumber });
+        },
+      },
     });
 
     // Only the public repo (pluto) should be indexed, not private-repo
@@ -160,6 +166,9 @@ describe('index-github-issues happy path', () => {
     assert.equal(db.__issues.length, 1);
     assert.equal(db.__repos[0].fullName, 'Ajiet-DevNation/pluto');
     assert.equal(db.__issues[0].title, 'Index GitHub issues');
+
+    // The optional search hook receives the same non-PR issue.
+    assert.deepEqual(searchCalls, [{ issueNumber: 7 }]);
   });
 });
 
