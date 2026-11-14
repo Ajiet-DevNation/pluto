@@ -2,6 +2,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { startDiscordBot } from '../../discord/bot';
 
+import { uploadRouter } from '../../upload/index';
+import { startBackgroundJobs } from '../../jobs/worker';
+
 dotenv.config();
 
 const app = express();
@@ -10,6 +13,14 @@ const PORT = process.env.PORT || 3000;
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'pluto-backend' });
 });
+
+app.use(express.json());
+app.use('/upload', uploadRouter);
+
+const DATABASE_URL = process.env.DATABASE_URL;
+if (DATABASE_URL) {
+  void startBackgroundJobs(DATABASE_URL);
+}
 
 const server = app.listen(PORT, () => {
   console.log(`Pluto backend running on port ${PORT}`);

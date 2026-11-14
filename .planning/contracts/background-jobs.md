@@ -15,6 +15,7 @@ Status: approved 2026-11-13.
 | Queue | Payload | Schedule | Policy |
 |-------|---------|----------|--------|
 | index-github-issues | `{}` | on startup + every 30 min | singleton, retryLimit 3, retryBackoff |
+| index-transcript | `{ meetingId, title, content, source, sourceUrl?, audioFilename?, audioDurationSeconds?, language?, transcribedAt? }` | on upload | singleton, retryLimit 3, retryBackoff |
 
 Queues are created explicitly at startup before any `send`/`schedule` call.
 
@@ -25,7 +26,8 @@ Queues are created explicitly at startup before any `send`/`schedule` call.
 
 ## Idempotency
 
-- Re-indexing upserts on `github_id`. Re-runs must not create duplicates.
+- Re-indexing upserts on `github_id` (issues) and `source_id + chunk_index` (search_chunks).
+- Re-runs must not create duplicates.
 - Jobs are singleton: no two index runs overlap.
 
 ## Configuration

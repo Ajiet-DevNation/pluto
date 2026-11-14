@@ -98,18 +98,43 @@ Indexes:
 - `discord_messages_channel_id_idx` (btree on `channel_id`)
 - `discord_messages_author_id_idx` (btree on `author_id`)
 
+### `meeting_transcripts`
+
+Stored meeting transcripts from uploaded audio or text files. Created by L2.
+Audio is transcribed via Cloudflare Workers AI Whisper and only the transcript
+text is stored — no audio files are retained (Cloudflare R2 is out of v1).
+
+| Column | Type | Nullable | Notes |
+|--------|------|----------|-------|
+| `id` | uuid | NO | primary key, default `gen_random_uuid()` |
+| `title` | varchar(500) | NO | transcript title / meeting name |
+| `content` | text | NO | full transcript text from Whisper |
+| `source` | varchar(255) | NO | upload source (e.g. `upload`, `meeting-plans`) |
+| `audio_filename` | varchar(500) | YES | original uploaded audio filename |
+| `audio_duration_seconds` | integer | YES | duration of source audio |
+| `language` | varchar(50) | YES | detected/transcription language |
+| `transcribed_at` | timestamptz | NO | when Whisper completed transcription |
+| `indexed_at` | timestamptz | NO | default `now()` |
+
+Indexes:
+- `meeting_transcripts_title_idx` (btree on `title`)
+- `meeting_transcripts_source_idx` (btree on `source`)
+- `meeting_transcripts_transcribed_at_idx` (btree on `transcribed_at`)
+
 ## Planned search chunk table
 
 ### `search_chunks`
 
 Searchable chunks backing `/ask`, `/decisions`, `/digest`. Not yet created.
-Embeddings and full-text vectors stored here per `contracts/search.md`.
+Embeddings and full-text vectors stored here per `contracts/search.md`. Chunks
+from meeting transcripts use `source_type = 'meeting'`.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|-------|
 | `id` | uuid | NO | primary key |
 | `source_type` | text | NO | `github` \| `discord` \| `meeting` \| `miro` |
 | `source_id` | text | NO | issue/pr number, message id, transcript id |
+| `chunk_index` | integer | NO | chunk position within source |
 | `source_url` | text | NO | original URL, built by `src/citations` |
 | `channel_id` | text | YES | Discord only; `null` for other sources |
 | `author_id` | text | YES | used for opt-out filtering |
@@ -119,7 +144,7 @@ Embeddings and full-text vectors stored here per `contracts/search.md`.
 | `indexed_at` | timestamptz | NO | default `now()` |
 
 Indexes:
-- `search_chunks_source_type_source_id_idx` (btree on `(source_type, source_id)`)
+- `search_chunks_source_type_source_id_chunk_idx` (unique btree on `(source_type, source_id, chunk_index)`)
 - `search_chunks_author_id_idx` (btree on `author_id`)
 - GIN index on `search_vector` for full-text search
 - IVFFlat index on `embedding` (cosine distance) for vector search
@@ -127,6 +152,8 @@ Indexes:
 Constraints:
 - `embedding` dimension is hard-constrained to **768** (verified live against
   `@cf/baai/bge-base-en-v1.5`). Changing it requires a migration + re-index.
+- Chunk identity: `(source_type, source_id, chunk_index)` must be unique.
+  Re-indexing upserts; it must not create duplicates.
 
 Source: `contracts/search.md` §Chunk format, §Full-text search
 
