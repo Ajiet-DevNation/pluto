@@ -1,6 +1,6 @@
 # Pluto — PR Plan Per Person (Final Team Collaboration & Integration Workflow)
 
-Git workflow and branch strategy for the Pluto v1 release. All ten capabilities ship in v1. Hosting is heavencloud plan. Each person has exactly one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided.
+Git workflow and branch strategy for the Pluto v1 release. Nine capabilities ship in v1; automatic PR notifications (PRNT-01) were cancelled on 2026-11-15 because the Takoyaki bot already posts PR notices. Hosting is heavencloud plan. Each person has exactly one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided.
 
 ## Team and Branch Ownership
 
@@ -35,7 +35,7 @@ Git workflow and branch strategy for the Pluto v1 release. All ten capabilities 
 |----|---------|-------|------------|------------|-------------|
 | K1 | Initialize TypeScript/Express backend scaffold; configure Node.js 22 runtime; establish read-only GitHub access | `src/cmd/pluto/**`, `tsconfig.json`, `.nvmrc`, `scripts/build.sh`, `src/github/app.ts` | Backend builds and runs locally; Node.js 22 pinned; read-only GitHub credential verified (`GET` 200, write attempt 403) | — | 5 |
 | K2 | Enforce the read-only boundary in code: guard the GitHub and Miro clients, prove no write operation is reachable, build the citation layer, verify Miro read access | `src/guardrails/**`, `src/citations/**`, `src/github/**`, `src/miro/**`, `tests/**`, `.planning/contracts/security.md` | Write operations impossible by guard and by credential; static scan finds no write verbs in client modules; citation URLs correct and self-citation blocked; Miro live verification pending (no token) | K1 | 7 |
-| K3 | v1 release hardening; full acceptance verification across all ten requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All ten v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
+| K3 | v1 release hardening; full acceptance verification across all nine requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All nine v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
 
 **Cross-cutting responsibilities (Khushi):**
 - Owns overall architecture, integration, shared interfaces, Miro MCP setup, and final technical decisions
@@ -68,7 +68,7 @@ Git workflow and branch strategy for the Pluto v1 release. All ten capabilities 
 |----|---------|-------|------------|------------|-------------|
 | L1 | Provision Neon Postgres with pgvector and tsvector; connect via Drizzle ORM; configure pg-boss job queue; index GitHub issues from Ajiet-DevNation public repos | `src/db/**`, `src/jobs/**`, `scripts/migrate/**`, `tests/db/` | Neon Postgres provisioned and connected; pg-boss configured for background indexing jobs; GitHub issues indexed and searchable | K1 | 5 |
 | L2 | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon | `src/upload/**`, `src/transcription/**`, `src/db/**`, `src/jobs/**`, `tests/upload/**, tests/transcription/` | Users can upload meeting transcripts and audio; audio transcribed via Whisper; transcripts stored and indexed in Neon alongside GitHub and Discord content | L1 | 6 |
-| L3 | Implement /decisions searchable project decisions; send automatic GitHub PR notifications; extract action items with owners and due dates; verify no Discord history edits; verify no private repo/channel indexing | `src/cmd/pluto/**`, `src/decisions/**`, `src/notifications/**`, `src/actions/**`, `tests/decisions/**, tests/notifications/` | /decisions returns searchable decisions with source citations; new PRs trigger Discord notifications with PR and repo links; action items have owners and due dates; no Discord history edits; no private indexing | L2, P2 | 7 |
+| L3 | Implement /decisions searchable project decisions; expose a `decisions` module for /digest; fix meeting embedding to use the budgeted client; verify no Discord history edits; verify no private repo/channel indexing. (PR notifications cancelled 2026-11-15; action items moved to P3.) | `src/cmd/pluto/**`, `src/decisions/**`, `src/db/index-meeting-transcripts.ts`, `tests/decisions/**` | /decisions returns searchable decisions with source citations and a no-evidence message; `decisions` module exported for /digest; meeting embedding uses the budgeted client and handles 429; no Discord history edits; no private indexing | L2, P2 | 7 |
 
 **Contract ownership (Likhith):**
 - Proposes and implements database and job-queue contracts
@@ -133,10 +133,10 @@ Prerequisite order:
 | 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; /optout working |
 | 4 | L2 | Likhith | L1, meeting contract, search contract | Audio uploaded, transcribed, indexed in Neon |
 | 5 | P2 | Pragathi | P1, L1, search contract | /ask returns cited answers |
-| 6 | L3 | Likhith | L2, P2 | /decisions searchable; PR notifications sent |
+| 6 | L3 | Likhith | L2, P2 | /decisions searchable; decisions module exported for /digest |
 | 7 | P3 | Pragathi | P2, L2 | /digest delivered; /meeting actions working |
 | 8 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
-| 9 | K3 | Khushi | K2, P3, L3 | All ten capabilities tested; v1 deployed to heavencloud plan |
+| 9 | K3 | Khushi | K2, P3, L3 | All nine capabilities tested; v1 deployed to heavencloud plan |
 
 ### Phase C — Integration Checkpoints (Catch Incompatible Implementations Early)
 
@@ -147,11 +147,11 @@ Prerequisite order:
 | CP3: Discord + backend integration | After P1, before P2 | Khushi, Pragathi | Discord commands route through backend; /optout enforced in retrieval |
 | CP4: Search + retrieval integration | After L2, before P2 | Khushi, Pragathi, Likhith | Embeddings stored correctly; /ask citations resolve to indexed chunks |
 | CP5: Jobs + digest integration | After L1, before P3 | Khushi, Pragathi, Likhith | pg-boss jobs schedule and run; /digest produced on cadence |
-| CP6: Pre-release integration | Before K3 | All three | All ten capabilities work together; read-only boundary holds end-to-end |
+| CP6: Pre-release integration | Before K3 | All three | All nine capabilities work together; read-only boundary holds end-to-end |
 
 ### Phase D — Final Integration and Release Verification Checklist (K3)
 
-- [ ] All ten v1 requirements implemented and mapped to phases
+- [ ] All nine v1 requirements implemented and mapped to phases
 - [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no Miro writes, no private indexing, no unsupported answers
 - [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, Miro board URL, meeting transcript)
 - [ ] All acceptance criteria for K1–K3, P1–P3, L1–L3 verified and marked in REQUIREMENTS.md traceability
@@ -199,7 +199,7 @@ Prerequisite order:
 - UI & showcase member names: pending — branches to be created when they join
 
 **Constraints confirmed:**
-- All ten agreed capabilities remain in v1. None removed, postponed, or reduced.
+- Nine agreed capabilities remain in v1. PRNT-01 (PR notifications) was cancelled by Khushi on 2026-11-15; none are postponed.
 - Hosting is heavencloud plan. Kerit Cloud is not referenced anywhere.
 - Unresolved technical decisions are explicitly marked as pending validation.
 - No confirmed provider capabilities are invented.

@@ -1,6 +1,6 @@
 # Roadmap: Pluto
 
-All ten v1 capabilities are covered across eight phases. Each phase uses vertical MVP-style delivery — independently testable, end-to-end user value per phase — with **Mode: mvp** set on every phase.
+The nine v1 capabilities are covered across eight phases. Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15, because the Takoyaki bot already posts PR notices in the server. Each phase uses vertical MVP-style delivery — independently testable, end-to-end user value per phase — with **Mode: mvp** set on every phase.
 
 ## Phase 1: Foundation & GitHub Repository Indexing
 **Goal:** Set up the Pluto backend scaffold and index the first public Ajiet-DevNation GitHub repository (read-only).
@@ -46,14 +46,12 @@ All ten v1 capabilities are covered across eight phases. Each phase uses vertica
 4. No unsupported general knowledge is used in answers
 **Requirements:** ASK-01
 
-## Phase 5: /decisions & GitHub PR Notifications
-**Goal:** Provide searchable project decisions and automatic PR notifications.
+## Phase 5: /decisions
+**Goal:** Provide searchable project decisions.
 **Mode:** mvp
 **Success Criteria:**
 1. /decisions returns searchable past technical/project decisions with source citations
-2. New PRs in indexed Ajiet-DevNation repos trigger automatic Discord notifications
-3. PR notifications include links to the PR and related repo
-**Requirements:** DECI-01, PRNT-01
+**Requirements:** DECI-01
 
 ## Phase 6: /digest Weekly Summaries
 **Goal:** Generate and deliver weekly summaries of community activity.
@@ -75,15 +73,15 @@ All ten v1 capabilities are covered across eight phases. Each phase uses vertica
 **Requirements:** MEET-01
 
 ## Phase 8: Hardening, Quality Verification & v1 Release
-**Goal:** Verify all ten capabilities, enforce the read-only boundary, and release v1.
+**Goal:** Verify all nine v1 capabilities, enforce the read-only boundary, and release v1.
 **Mode:** mvp
 **Success Criteria:**
-1. All ten v1 requirements are implemented and tested
+1. All nine v1 requirements are implemented and tested
 2. Read-only boundary verified: no GitHub writes, no Discord history edits, no private indexing, no unsupported answers
 3. Citations consistently link to original sources
 4. All acceptance criteria across phases pass verification
 5. v1 release deployed to heavencloud plan
-**Requirements:** All (INDEX-01..03, ASK-01, DECI-01, DIGE-01, PRNT-01, MEET-01, OPTO-01)
+**Requirements:** All v1 (INDEX-01..03, ASK-01, DECI-01, DIGE-01, MEET-01, OPTO-01)
 
 ## Coverage Summary
 
@@ -93,9 +91,9 @@ All ten v1 capabilities are covered across eight phases. Each phase uses vertica
 | 2 | Discord Channel Indexing & Opt-Out | INDEX-02, OPTO-01 | 4 |
 | 3 | Meeting Transcript & Audio Ingestion | INDEX-04 | 4 |
 | 4 | /ask Q&A with Citations | ASK-01 | 4 |
-| 5 | /decisions & GitHub PR Notifications | DECI-01, PRNT-01 | 3 |
+| 5 | /decisions | DECI-01 | 1 |
 | 6 | /digest Weekly Summaries | DIGE-01 | 3 |
 | 7 | Meeting Summaries & Action Items | MEET-01 | 4 |
 | 8 | Hardening, Quality Verification & v1 Release | All | 5 |
 
-**Total:** 8 phases | 10 requirements | All v1 requirements covered ✓
+**Total:** 8 phases | 9 requirements | All v1 requirements covered ✓

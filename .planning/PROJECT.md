@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Pluto is a read-only Discord knowledge assistant for the DevNation developer community at AJIET. It connects information from public GitHub repositories, selected Discord channels, and meeting transcripts into one searchable place accessible through Discord. Members can ask questions and receive answers with source citations, track important decisions, receive automatic PR notifications and weekly digests, and convert meeting discussions into summaries and action items with owners and due dates.
+Pluto is a read-only Discord knowledge assistant for the DevNation developer community at AJIET. It connects information from public GitHub repositories, selected Discord channels, and meeting transcripts into one searchable place accessible through Discord. Members can ask questions and receive answers with source citations, track important decisions, receive weekly digests, and convert meeting discussions into summaries and action items with owners and due dates.
 
 ## Core Value
 
@@ -23,7 +23,6 @@ Make community information easier to find, understand, and manage — with answe
 - [ ] `/ask` — answer questions with citations to original sources
 - [ ] `/decisions` — searchable project decisions
 - [ ] `/digest` — weekly summaries
-- [ ] Automatic GitHub PR notifications
 - [ ] Generate meeting summaries and extract action items with owners and due dates
 - [ ] `/meeting actions` — display pending meeting tasks
 - [ ] `/optout` — allow members to opt out of message indexing
@@ -35,6 +34,7 @@ Make community information easier to find, understand, and manage — with answe
 - Generating answers from unsupported general knowledge (if no relevant evidence exists, Pluto must explicitly say so)
 - Real-time chat, video posts, OAuth login, mobile app — not core to Pluto's knowledge-assistant value
 - Writing to Discord history (editing/deleting messages); posting new bot messages (answers, notifications, digests) is permitted
+- Automatic GitHub PR notifications (PRNT-01) — cancelled 2026-11-15; the Takoyaki bot already posts PR notices in the server, so Pluto would duplicate them
 
 ## Context
 
@@ -53,13 +53,15 @@ Make community information easier to find, understand, and manage — with answe
 - **[AI & embeddings]**: Cloudflare Workers AI (bge-base-en-v1.5 embeddings, instruct model, Whisper transcription) — AI provider fixed
 - **[Audio storage]**: No v1 audio persistence — upload audio is transcribed directly and discarded; only transcripts are stored in Neon
 - **[Read-only]**: No writes to GitHub repos or Discord history; no private repo/channel indexing; no unsupported general knowledge — hard compliance boundary
-- **[Timeline]**: Prioritize quality over the original end-of-week target; all ten capabilities must ship in v1
+- **[Timeline]**: Prioritize quality over the original end-of-week target; all nine v1 capabilities must ship in v1 (PRNT-01 cancelled 2026-11-15)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| All ten capabilities in v1 | User requirement — no features excluded from first release | — Pending |
+| All ten capabilities in v1 | User requirement — no features excluded from first release | — Revised 2026-11-15: nine in v1 (PRNT-01 cancelled) |
+| Drop automatic PR notifications (PRNT-01) | Takoyaki bot already posts PR notices in the server; Pluto would duplicate them in the channel | — Decided 2026-11-15 (Khushi) |
+| Action items owned by P3 (Pragathi), not L3 | P3 already owns `/meeting actions`; keeps L3 smaller | — Decided 2026-11-15 (Khushi) |
 | Prioritize quality, extend timeline | Avoid sacrificing correctness for an aggressive deadline | — Pending |
 | Read-only with new-message posting permitted | Protects source data integrity while allowing bot to respond in Discord | — Pending |
 | Opt-out = exclude messages from indexing | Respects member privacy without over-engineering granular controls | — Pending |
@@ -70,7 +72,7 @@ Make community information easier to find, understand, and manage — with answe
 
 ---
 
-*Last updated: 2026-11-12 after initialization*
+*Last updated: 2026-11-15 — PRNT-01 cancelled; action items moved to P3*
 
 ## Evolution
 

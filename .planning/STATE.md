@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** P2 is merged to `main` (`298e557`, PR #10). The build is clean and 218 tests pass. Full App-backed search reindex, contributor-row verification, and the `/ask` eval are pending. Cleanup PR #13 is open on `fix/pre-l3-cleanup`; it unifies the meeting chunker and removes unused `pg_trgm`. After that, L3 (Likhith), P3 (Pragathi), and INDEX-03 (Miro REST) remain to complete before K3.
+**Current focus:** P2 is merged to `main` (`298e557`, PR #10). Cleanup PR #13 (`fix/pre-l3-cleanup`) is merged to `main` (`f335152`). The build is clean and 218 tests pass. Full App-backed search reindex, contributor-row verification, and the `/ask` eval are pending. Scope changed on 2026-11-15: PR notifications (PRNT-01) are cancelled, and action items belong to P3. Remaining before K3: L3 (Likhith: `/decisions` and the meeting embedding fix), P3 (Pragathi: meeting summaries, action items, `/meeting actions`, `/digest`), and INDEX-03 (Miro REST, blocked on token).
 
 ## Team
 - Project Lead: Khushi
@@ -35,7 +35,7 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 | Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
 | Phase 3: Meeting Transcript & Audio Ingestion | ✅ Implemented (L2 merged; acceptance verification tracked) | INDEX-04 | 4/4 |
 | Phase 4: /ask Q&A with Citations | ◐ In progress (P2 code and local tests ready; live full-corpus validation pending) | ASK-01 | 3/4 |
-| Phase 5: /decisions & PR Notifications | ○ Pending | DECI-01, PRNT-01 | 0/3 |
+| Phase 5: /decisions | ○ Pending | DECI-01 | 0/1 |
 | Phase 6: /digest Weekly Summaries | ○ Pending | DIGE-01 | 0/3 |
 | Phase 7: Meeting Summaries & Action Items | ○ Pending | MEET-01 | 0/4 |
 | Phase 8: Hardening & v1 Release | ○ Pending | All | 0/5 |
@@ -107,7 +107,7 @@ At the start of each development session:
 - GitHub App live read-only verification; PAT remains fallback until it passes
 - Miro REST access token and approved board IDs — **pending** (no shared DevNation Miro workspace exists)
 - Team/mentor agreement on posting five lines of meeting notes in `#meeting-plans` after each meeting — **pending**
-- Cleanup PR #13 (`fix/pre-l3-cleanup`) — open; approval and merge pending
+- Cleanup PR #13 (`fix/pre-l3-cleanup`) — merged to `main` (`f335152`)
 - API contract #2, Miro contract #5, and Meeting contract #8 — pending
 - Database contract #1 approval status — pending confirmation by Khushi
 - Audio storage — decided: not needed for v1, transcript-only (audio goes directly to Whisper, buffer discarded)
@@ -142,6 +142,14 @@ At the start of each development session:
 | Citation URL for transcripts | `sourceUrl` from upload (e.g., Discord message link); gap tracked as pending if no real URL | `contracts/database.md` (L2 contract) |
 | GitHub corpus scope | All public Ajiet-DevNation repos; README, issues, PRs, commits, and eligible text/source files; no private repos; paginated | `contracts/github.md`, `contracts/search.md` |
 
+## Scope decisions (2026-11-15)
+
+| Decision | Value | Recorded in |
+|----------|-------|-------------|
+| PR notifications (PRNT-01) | **Cancelled for v1.** The Takoyaki bot already posts PR notices in the server; Pluto would duplicate them. PRs stay indexed for `/ask` and `/decisions` | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md` |
+| Action items | Owned by **P3 (Pragathi)**; L3 does not include them | `PR-PLAN.md`, `PROJECT.md` |
+| v1 capability count | **Nine** (was ten) | `REQUIREMENTS.md`, `ROADMAP.md` |
+
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
 - The self-citation rule is about **bot-authored messages in any channel**, not only `#pluto`.
@@ -149,4 +157,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-15 — P2 merged to `main` (`298e557`). Cleanup PR #13 is open. Build passes and 218 tests pass; App-backed reindex, eval, contributor verification, and Miro REST access remain pending.*
+*Last updated: 2026-11-15 — P2 merged to `main` (`298e557`). Cleanup PR #13 merged (`f335152`). PRNT-01 cancelled; action items moved to P3. Build passes and 218 tests pass; App-backed reindex, eval, contributor verification, and Miro REST access remain pending.*

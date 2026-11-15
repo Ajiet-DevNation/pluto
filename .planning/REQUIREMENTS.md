@@ -3,7 +3,7 @@
 **Defined:** 2026-11-12
 **Core Value:** Make community information easier to find, understand, and manage — with answers based only on actual project records, always cited to their original source, and never generated from unsupported general knowledge.
 
-All ten Pluto capabilities belong to the first official release (v1). None are deferred to v2.
+Nine Pluto capabilities belong to the first official release (v1). None are deferred to v2. One capability, automatic PR notifications (PRNT-01), was cancelled on 2026-11-15 and is listed under Out of Scope.
 
 ## v1 Requirements
 
@@ -57,13 +57,6 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
     2. Digest is delivered to Discord on a weekly schedule
     3. Digest content is drawn only from indexed sources
 
-### PR Notifications
-
-- [ ] **PRNT-01**: Send automatic GitHub PR notifications
-  - Acceptance Criteria:
-    1. New PRs in indexed Ajiet-DevNation repos trigger automatic Discord notifications
-    2. Notifications include links to the PR and related repository
-
 ### Meetings
 
 - [ ] **MEET-01**: Generate meeting summaries, extract action items with owners and due dates, and display pending tasks through /meeting actions
@@ -95,6 +88,7 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 | Video posts | Storage/bandwidth costs, not in v1 scope |
 | OAuth login | Email/password or Discord identity sufficient for v1 |
 | Mobile app | Discord-first; web/mobile later |
+| Automatic GitHub PR notifications (PRNT-01) | Cancelled 2026-11-15. The Takoyaki bot already posts PR notices in the server, so Pluto would duplicate them |
 
 ## Traceability
 
@@ -106,16 +100,16 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 | INDEX-04 | Phase 3 | Pending |
 | ASK-01 | Phase 4 | Pending |
 | DECI-01 | Phase 5 | Pending |
-| PRNT-01 | Phase 5 | Pending |
+| PRNT-01 | — | Cancelled (2026-11-15) |
 | DIGE-01 | Phase 6 | Pending |
 | MEET-01 | Phase 7 | Pending |
 | OPTO-01 | Phase 2 | Pending |
 
 **Coverage:**
-- v1 requirements: 10 total
-- Mapped to phases: 10
+- v1 requirements: 9 total (PRNT-01 cancelled 2026-11-15)
+- Mapped to phases: 9
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-11-12*
-*Last updated: 2026-11-12 after initial definition*
+*Last updated: 2026-11-15 — PRNT-01 cancelled; action items owned by P3*
