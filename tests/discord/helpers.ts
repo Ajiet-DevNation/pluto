@@ -16,6 +16,7 @@ export const CHANNELS = {
   '#resources': '1422593926367547487',
   '#announcements': '1422593926367547486',
   '#meeting-plans': '1570872485933752502',
+  '#decisions': '1571564343995277492',
 } as const;
 
 /** Visible to the bot in the live guild, but deliberately not in the allowlist. */

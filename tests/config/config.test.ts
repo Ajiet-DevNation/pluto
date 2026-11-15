@@ -16,6 +16,7 @@ test('config getters read the planning section used by the repository', () => {
   const indexed = getIndexedChannels();
   assert.deepEqual(Object.keys(indexed).sort(), [
     '#announcements',
+    '#decisions',
     '#meeting-plans',
     '#project-stack',
     '#resources',

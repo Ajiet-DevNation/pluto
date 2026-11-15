@@ -77,10 +77,11 @@ Values are never recorded here — only existence, owner, scope and expiry.
 | Indexed | `#resources` | `1422593926367547487` |
 | Indexed | `#announcements` | `1422593926367547486` |
 | Indexed | `#meeting-plans` (created 2026-11-14, under Projects) | `1570872485933752502` |
+| Indexed | `#decisions` (created 2026-11-15, Information) | `1571564343995277492` |
 | Excluded | `#pluto`, `#pluto-bot`, `#general` (text + media), `#off-topic`, `#assets`, `#welcome-and-rules`, `#takoyaki`, voice channels | — |
 | Not in policy | `#core-general`, `#code-wars`, `#event-ideation`, `#core-secrets`, `#dn-orbit-website`, `#server-hub`, `#bumblebee` — the bot can see them, but they are **not** indexed | — |
 
-**Indexing is allowlist-only.** Index exactly the 4 channels in `config.json → discord.indexed_channels`. Never infer from `excluded_channels`: that list is documentation and is not exhaustive. Verified against the live channel list on 2026-11-14 — the bot sees 29 channels, 4 of which are indexed.
+**Indexing is allowlist-only.** Index exactly the 5 channels in `config.json → discord.indexed_channels`. Never infer from `excluded_channels`: that list is documentation and is not exhaustive. Verified against the live channel list on 2026-11-16 — the bot sees 29 channels, 5 of which are indexed.
 
 `#pluto` is never indexed: the bot must not cite its own answers.
 
@@ -149,6 +150,7 @@ At the start of each development session:
 | PR notifications (PRNT-01) | **Cancelled for v1.** The Takoyaki bot already posts PR notices in the server; Pluto would duplicate them. PRs stay indexed for `/ask` and `/decisions` | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md` |
 | Action items | Owned by **P3 (Pragathi)**; L3 does not include them | `PR-PLAN.md`, `PROJECT.md` |
 | v1 capability count | **Nine** (was ten) | `REQUIREMENTS.md`, `ROADMAP.md` |
+| #decisions channel | Created 2026-11-15 in the public Information category; added to the allowlist for decision capture. #core-general and #event-ideation were rejected as private Core Channels | `config.json`, `contracts/discord.md` |
 
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
@@ -157,4 +159,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-15 — P2 merged to `main` (`298e557`). Cleanup PR #13 merged (`f335152`). PRNT-01 cancelled; action items moved to P3. Build passes and 218 tests pass; App-backed reindex, eval, contributor verification, and Miro REST access remain pending.*
+*Last updated: 2026-11-16 — `#decisions` added to the allowlist (five indexed channels). P2 merged to `main` (`298e557`). Cleanup PR #13 merged (`f335152`). PRNT-01 cancelled; action items moved to P3. Build passes and 218 tests pass; App-backed reindex, eval, contributor verification, and Miro REST access remain pending.*

@@ -34,7 +34,7 @@
 
 | ID | Rule |
 |----|------|
-| D1 | **Allowlist only.** Index exactly the channel IDs in `planning.discord.indexed_channels`. In v1 that is exactly four: `#project-stack`, `#resources`, `#announcements`, `#meeting-plans`. |
+| D1 | **Allowlist only.** Index exactly the channel IDs in `planning.discord.indexed_channels`. In v1 that is exactly five: `#project-stack`, `#resources`, `#announcements`, `#meeting-plans`, `#decisions`. Private channels (Core Channels) are never indexed. |
 | D2 | **Never derive the allowlist from `excluded_channels`.** That list is documentation and is not exhaustive. Deriving from it would index `#core-secrets`. No code path may read it. A static-scan test enforces this. |
 | D3 | **Bot-authored messages are never indexed or cited**, in any channel: this bot, other bots, webhooks and app messages. |
 | D4 | **Intake is gateway `MessageCreate` + one startup backfill per channel** (`GET /channels/{id}/messages?after=<last_id>`). No webhook receiver, no polling loop. |
@@ -53,7 +53,7 @@
 - The allowlist is the **ID values** of `config.json → planning.discord.indexed_channels`. Names are labels; IDs are authoritative.
 - No channel ID is hardcoded. Adding/removing a channel is a config change, not a code change.
 - `#pluto` is never indexed. `index_own_output_channel` must be `false`.
-- `indexed_channels` must contain exactly the four v1 channels. The code reads the allowlist; the v1 acceptance check verifies the count is four.
+- `indexed_channels` must contain exactly the five v1 channels. The code reads the allowlist; the v1 acceptance check verifies the count is five.
 
 ### 3.2 v1 allowlist
 
@@ -63,6 +63,7 @@
 | `#resources` | `1422593926367547487` | ✅ |
 | `#announcements` | `1422593926367547486` | ✅ |
 | `#meeting-plans` | `1570872485933752502` | ✅ |
+| `#decisions` | `1571564343995277492` | ✅ |
 | `#pluto` | `1570721649538502686` | ❌ output |
 | `#core-secrets` and all other visible non-allowlisted channels | — | ❌ |
 | Threads, forum posts, DMs, other guilds | — | ❌ v1 |

@@ -21,9 +21,9 @@ function validRaw(overrides: Partial<RawDiscordConfig> = {}): RawDiscordConfig {
   };
 }
 
-test('loadDiscordPolicy reads exactly the four v1 allowlisted channels', () => {
+test('loadDiscordPolicy reads exactly the five v1 allowlisted channels', () => {
   const policy = loadDiscordPolicy();
-  assert.equal(Object.keys(policy.indexedChannels).length, 4);
+  assert.equal(Object.keys(policy.indexedChannels).length, 5);
   assert.deepEqual(
     [...policy.indexedChannelIds].sort(),
     Object.values(CHANNELS).sort(),

@@ -46,7 +46,7 @@ Nine Pluto capabilities belong to the first official release (v1). None are defe
 
 - [ ] **DECI-01**: Provide searchable project decisions through /decisions
   - Acceptance Criteria:
-    1. Past technical/project decisions extracted from indexed sources are searchable via /decisions
+    1. Past technical/project decisions from indexed sources, plus decisions recorded manually by team members, are searchable via /decisions
     2. Each decision cites its source
 
 ### Digest
