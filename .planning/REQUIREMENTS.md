@@ -21,11 +21,11 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
     2. Messages from selected channels are indexed
     3. Messages from non-selected channels are not indexed
 
-- [ ] **INDEX-03**: Index Miro boards via MCP (read-only)
+- [ ] **INDEX-03**: Index Miro boards via REST v2 (read-only)
   - Acceptance Criteria:
-    1. Bot connects to Miro via MCP with read-only access
-    2. Miro boards, comments, texts, diagrams, and other board content are indexed and searchable
-    3. No write operations are performed on Miro (read-only verified)
+    1. Bot connects to Miro via REST v2 with `boards:read` and issues GET requests only
+    2. Typed board content (such as text boxes, cards, and frame titles) and connectors are indexed and searchable; hand-drawn ink is not treated as text because Miro does not convert handwriting to text
+    3. No write operations are performed on Miro, and only approved public/shared boards are indexed
 
 - [ ] **INDEX-04**: Accept uploaded meeting transcripts and audio
   - Acceptance Criteria:
@@ -38,7 +38,7 @@ All ten Pluto capabilities belong to the first official release (v1). None are d
 - [ ] **ASK-01**: Answer questions through /ask from indexed evidence, without visible source links or citation markers in the answer (product decision 2026-11-14; source URLs remain internal evidence metadata)
   - Acceptance Criteria:
     1. /ask returns answers grounded in indexed content
-    2. Each answer cites links to original sources (GitHub commit/PR URL, Discord message link, or meeting transcript)
+    2. Source URLs are retained as internal evidence metadata and are not displayed in the answer (product decision 2026-11-14)
     3. When no relevant evidence exists, /ask explicitly states so
     4. No unsupported general knowledge is used in answers
 

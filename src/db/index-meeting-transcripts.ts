@@ -3,6 +3,7 @@ dotenv.config();
 
 import { createDb } from './index.js';
 import { meetingTranscripts, searchChunks } from './schema.js';
+import { chunkText } from '../search/chunk.js';
 
 const EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
 
@@ -33,48 +34,6 @@ export interface IndexMeetingTranscriptOptions {
   audioDurationSeconds?: number;
   language?: string;
   transcribedAt?: Date;
-}
-
-/**
- * Chunk text per search.md: ~512 tokens with ~64 tokens of overlap.
- * Split on paragraph and line breaks first; fall back to sentence boundaries.
- * Never split mid-word or mid-URL.
- */
-export function chunkText(text: string, maxChars = 2048, overlapChars = 256): string[] {
-  const chunks: string[] = [];
-
-  // Split on paragraph breaks first
-  const paragraphs = text.split(/\n\s*\n/);
-
-  let currentChunk = '';
-
-  for (const para of paragraphs) {
-    const paraText = para.trim();
-    if (!paraText) continue;
-
-    // If paragraph itself is too large, split on sentences
-    if (paraText.length > maxChars) {
-      const sentences = paraText.split(/(?<=[.!?])\s+/);
-      for (const sentence of sentences) {
-        if (currentChunk.length + sentence.length + 1 > maxChars && currentChunk.length > 0) {
-          chunks.push(currentChunk.trim());
-          currentChunk = currentChunk.slice(-overlapChars);
-        }
-        currentChunk = (currentChunk ? currentChunk + ' ' : '') + sentence;
-      }
-    } else if (currentChunk.length + paraText.length + 1 > maxChars && currentChunk.length > 0) {
-      chunks.push(currentChunk.trim());
-      currentChunk = currentChunk.slice(-overlapChars) + ' ' + paraText;
-    } else {
-      currentChunk = (currentChunk ? currentChunk + ' ' : '') + paraText;
-    }
-  }
-
-  if (currentChunk.trim()) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
 }
 
 /**
