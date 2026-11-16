@@ -33,13 +33,20 @@ function chunk(overrides: Partial<ScoredSearchChunk> = {}): ScoredSearchChunk {
 class FakeSearchStore implements SearchStore {
   vectorCalls: Array<{ embedding: readonly number[]; limit: number }> = [];
   textCalls: Array<{ query: string; limit: number }> = [];
+  lookupCalls: string[][] = [];
 
   constructor(
     private readonly vector: ScoredSearchChunk[] = [],
     private readonly text: ScoredSearchChunk[] = [],
+    private readonly exact: ScoredSearchChunk[] = [],
   ) {}
 
   async upsertChunks(): Promise<void> {}
+
+  async findBySourceIds(ids: readonly string[]): Promise<ScoredSearchChunk[]> {
+    this.lookupCalls.push([...ids]);
+    return this.exact;
+  }
 
   async vectorSearch(embedding: readonly number[], limit: number): Promise<ScoredSearchChunk[]> {
     this.vectorCalls.push({ embedding, limit });
@@ -222,4 +229,109 @@ test('empty questions never call the embedding provider', async () => {
   const result = await service.retrieve('   ');
   assert.deepEqual(result, { ok: false, message: NO_EVIDENCE_MESSAGE });
   assert.deepEqual(embeddings.calls, []);
+});
+
+test('a named pull request is looked up directly and skips embedding', async () => {
+  const embeddings = new FakeEmbeddings();
+  const store = new FakeSearchStore([], [], [
+    chunk({
+      sourceType: 'github',
+      sourceId: 'Ajiet-DevNation/pluto#pr-12',
+      sourceUrl: 'https://github.com/Ajiet-DevNation/pluto/pull/12',
+      content: 'PR #12: search_chunks uses tsvector',
+      score: 1,
+    }),
+  ]);
+  const service = new RetrievalService({
+    embeddingClient: embeddings,
+    searchStore: store,
+    guildId: GUILD,
+    minScore: 0.4,
+  });
+
+  const result = await service.retrieve(
+    'What does pull request #12 in Ajiet-DevNation/pluto change?',
+    'Ajiet-DevNation/pluto',
+  );
+
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.chunks[0].sourceId, 'Ajiet-DevNation/pluto#pr-12');
+    assert.equal(result.chunks[0].score, 1);
+  }
+  assert.deepEqual(store.lookupCalls, [['Ajiet-DevNation/pluto#pr-12']]);
+  assert.deepEqual(embeddings.calls, []);
+});
+
+test('a named source that is not indexed returns no evidence without embedding', async () => {
+  const embeddings = new FakeEmbeddings();
+  const service = new RetrievalService({
+    embeddingClient: embeddings,
+    searchStore: new FakeSearchStore([chunk({ score: 0.95 })]),
+    guildId: GUILD,
+    minScore: 0.4,
+  });
+
+  const result = await service.retrieve(
+    'Summarize issue #99999 in Ajiet-DevNation/pluto.',
+    'Ajiet-DevNation/pluto',
+  );
+
+  assert.deepEqual(result, { ok: false, message: NO_EVIDENCE_MESSAGE });
+  assert.deepEqual(embeddings.calls, []);
+});
+
+test('duplicate evidence is collapsed after filtering', async () => {
+  const service = new RetrievalService({
+    embeddingClient: new FakeEmbeddings(),
+    searchStore: new FakeSearchStore([
+      chunk({ sourceId: 'a', content: 'Same evidence', score: 0.9 }),
+      chunk({
+        sourceId: 'b',
+        sourceUrl: 'https://github.com/Ajiet-DevNation/repo/blob/main/a.ts',
+        content: 'same   evidence',
+        score: 0.8,
+      }),
+    ]),
+    guildId: GUILD,
+    minScore: 0.4,
+  });
+
+  const result = await service.retrieve('evidence');
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.chunks.length, 1);
+    assert.equal(result.chunks[0].sourceId, 'a');
+  }
+});
+
+test('a blocked higher-scoring duplicate cannot discard the allowed copy', async () => {
+  const service = new RetrievalService({
+    embeddingClient: new FakeEmbeddings(),
+    searchStore: new FakeSearchStore([
+      chunk({
+        sourceId: 'blocked-copy',
+        channelId: OUTPUT,
+        sourceUrl: `https://discord.com/channels/${GUILD}/${OUTPUT}/1400000000000000000`,
+        content: 'Identical community evidence',
+        score: 0.95,
+      }),
+      chunk({
+        sourceId: 'allowed-copy',
+        channelId: PROJECT_STACK,
+        sourceUrl: `https://discord.com/channels/${GUILD}/${PROJECT_STACK}/1300000000000000000`,
+        content: 'identical   community evidence',
+        score: 0.8,
+      }),
+    ]),
+    guildId: GUILD,
+    minScore: 0.4,
+    blockedChannelIds: [OUTPUT],
+  });
+
+  const result = await service.retrieve('community evidence');
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.deepEqual(result.chunks.map((entry) => entry.sourceId), ['allowed-copy']);
+  }
 });

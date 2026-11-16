@@ -20,12 +20,27 @@ test('cosine relevance clamps unrelated and malformed values', () => {
   assert.equal(cosineToRelevance(1.2), 1);
 });
 
-test('any non-zero full-text rank clears the v1 threshold', () => {
+test('a strict full-text match clears the v1 threshold', () => {
   assert.equal(fullTextToRelevance(0), 0);
-  assert.ok(fullTextToRelevance(0.001) >= 0.4);
-  assert.equal(fullTextToRelevance(0.2), 0.8);
-  assert.equal(fullTextToRelevance(1), 1);
-  assert.equal(fullTextToRelevance(Number.NaN), 0);
+  assert.ok(fullTextToRelevance(0.001, 1, 3, true) >= 0.6);
+  assert.equal(fullTextToRelevance(Number.NaN, 1, 1, true), 0);
+});
+
+test('a broad-only single term never clears the threshold', () => {
+  assert.ok(fullTextToRelevance(0.1, 1, 1) < 0.4);
+  assert.ok(fullTextToRelevance(1, 1, 1) < 0.4);
+  assert.ok(fullTextToRelevance(0.1, 1, 1, true) >= 0.6);
+});
+
+test('full-text coverage decides whether a partial match is evidence', () => {
+  // 60% weighted coverage is strong enough.
+  assert.ok(fullTextToRelevance(0.1, 0.6, 5) >= 0.4);
+  // 50% coverage does not pass with a weak rank ("capital of France").
+  assert.ok(fullTextToRelevance(0.2, 0.5, 2) < 0.4);
+  // 33% coverage is not enough even with a huge rank.
+  assert.ok(fullTextToRelevance(1, 0.33, 3) < 0.4);
+  // 50% coverage only passes with a strong rank.
+  assert.ok(fullTextToRelevance(0.5, 0.5, 2) >= 0.4);
 });
 
 test('clampRelevance always returns a finite 0..1 value', () => {

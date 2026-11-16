@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ASK_MESSAGES,
+  DISCORD_CONTENT_LIMIT,
+  formatAskReply,
   handleAskInteraction,
   type AskInteraction,
 } from '../../src/ask/command';
@@ -131,21 +133,96 @@ test('returns the no-evidence message unchanged', async () => {
   assert.deepEqual(interaction.edits, [NO_EVIDENCE_MESSAGE]);
 });
 
-test('returns a grounded answer', async () => {
+test('returns a grounded answer with one visible source', async () => {
   const interaction = new FakeAskInteraction();
   const result = await handleAskInteraction(
     interaction,
     dependencies({
       ok: true,
       answer: 'TypeScript and Postgres.',
-      sources: [{ label: 'Discord message', url: 'https://discord.com/x' }],
+      sources: [
+        { label: 'README', url: 'https://github.com/a/b/blob/main/README.md', references: [] },
+        { label: 'Discord message', url: 'https://discord.com/x', references: [] },
+      ],
       chunks: [],
     }),
   );
 
   assert.equal(result, 'answered');
   assert.deepEqual(interaction.defers, [{}]);
-  assert.deepEqual(interaction.edits, ['TypeScript and Postgres.']);
+  assert.deepEqual(interaction.edits, [
+    'TypeScript and Postgres.\n\nSource: [README](https://github.com/a/b/blob/main/README.md)',
+  ]);
+});
+
+test('renders the server-selected display sources instead of every source', async () => {
+  const interaction = new FakeAskInteraction();
+  const result = await handleAskInteraction(
+    interaction,
+    dependencies({
+      ok: true,
+      answer: 'Compared.',
+      sources: [
+        { label: 'A', url: 'https://github.com/a/a', references: [] },
+        { label: 'B', url: 'https://github.com/b/b', references: [] },
+      ],
+      displaySources: [{ label: 'B', url: 'https://github.com/b/b', references: [] }],
+      chunks: [],
+    }),
+  );
+
+  assert.equal(result, 'answered');
+  assert.deepEqual(interaction.edits, [
+    'Compared.\n\nSource: [B](https://github.com/b/b)',
+  ]);
+});
+
+test('an answer with no supporting source stays source-free', async () => {
+  const interaction = new FakeAskInteraction();
+  const result = await handleAskInteraction(
+    interaction,
+    dependencies({ ok: true, answer: 'Answer only.', sources: [], chunks: [] }),
+  );
+
+  assert.equal(result, 'answered');
+  assert.deepEqual(interaction.edits, ['Answer only.']);
+});
+
+test('long answers are truncated but keep the source footer', () => {
+  const source = {
+    label: 'README',
+    url: 'https://github.com/Ajiet-DevNation/pluto/blob/main/README.md',
+    references: [],
+  };
+  const reply = formatAskReply('word '.repeat(600), [source]);
+
+  assert.ok(reply.length <= DISCORD_CONTENT_LIMIT);
+  assert.match(reply, /… \[truncated\]/);
+  assert.match(reply, /Source: \[README\]\(https:\/\/github\.com\/Ajiet-DevNation\/pluto\/blob\/main\/README\.md\)$/);
+});
+
+test('long source URLs are preserved while the answer is truncated', () => {
+  const url = `https://github.com/Ajiet-DevNation/pluto/blob/main/${'a'.repeat(1_200)}.md`;
+  const reply = formatAskReply('word '.repeat(600), [
+    { label: 'README', url, references: [] },
+  ]);
+
+  assert.ok(reply.length <= DISCORD_CONTENT_LIMIT);
+  assert.ok(reply.includes(url));
+  assert.match(reply, /… \[truncated\]/);
+});
+
+test('a source footer too large to fit is omitted with a clear note', () => {
+  const url = `https://github.com/Ajiet-DevNation/pluto/blob/main/${'a'.repeat(2_500)}.md`;
+  const reply = formatAskReply('A useful answer. '.repeat(100), [
+    { label: 'Huge source', url, references: [] },
+  ]);
+
+  assert.ok(reply.length <= DISCORD_CONTENT_LIMIT);
+  assert.doesNotMatch(reply, /Source:/);
+  assert.ok(!reply.includes(url));
+  assert.match(reply, /source link omitted to fit Discord's limit/);
+  assert.match(reply, /^A useful answer\./);
 });
 
 test('reports service failures without leaking the error', async () => {

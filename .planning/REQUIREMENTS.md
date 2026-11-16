@@ -35,12 +35,15 @@ Nine Pluto capabilities belong to the first official release (v1). None are defe
 
 ### Q&A
 
-- [ ] **ASK-01**: Answer questions through /ask from indexed evidence, without visible source links or citation markers in the answer (product decision 2026-11-14; source URLs remain internal evidence metadata)
+- [ ] **ASK-01**: Answer questions through /ask from indexed evidence, display one best supporting source, and keep citation markers out of the answer text (product decision 2026-11-16, superseding the 2026-11-14 answer-only decision)
   - Acceptance Criteria:
     1. /ask returns answers grounded in indexed content
-    2. Source URLs are retained as internal evidence metadata and are not displayed in the answer (product decision 2026-11-14)
+    2. Source URLs are retained as internal evidence metadata; the reply displays one best supporting source by default (exact PR/issue for direct questions, README/docs for general questions, one per repository when needed for comparisons)
     3. When no relevant evidence exists, /ask explicitly states so
     4. No unsupported general knowledge is used in answers
+    5. Contributor questions use the on-demand read-only GitHub contributors API, report anonymous contributions honestly, and never guess names from commits or PRs
+    6. Internal prompt instructions never appear in the answer text
+  - 2026-11-16 status: retrieval and grounding fixes implemented and locally validated. Verified eval gate 9/9; full-corpus reindex and live Discord acceptance still pending, so the requirement is not marked complete.
 
 ### Decisions
 
@@ -98,7 +101,7 @@ Nine Pluto capabilities belong to the first official release (v1). None are defe
 | INDEX-02 | Phase 2 | Pending |
 | INDEX-03 | Phase 1 | Pending |
 | INDEX-04 | Phase 3 | Pending |
-| ASK-01 | Phase 4 | Pending |
+| ASK-01 | Phase 4 | Partial — retrieval/grounding fixes done; full-corpus live validation pending |
 | DECI-01 | Phase 5 | Pending |
 | PRNT-01 | — | Cancelled (2026-11-15) |
 | DIGE-01 | Phase 6 | Pending |

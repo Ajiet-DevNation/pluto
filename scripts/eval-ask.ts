@@ -13,9 +13,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { NO_EVIDENCE_MESSAGE } from '../src/guardrails/evidence';
 import { BUSY_MESSAGE } from '../src/search/ask';
+import { hasDisclosedUncertainty, hasSatisfyingVersionClaim, type VersionExpectation } from '../src/search/evaluation';
 import { createSearchRuntimeFromEnv } from '../src/search/runtime';
 
-type Expect = 'answer' | 'no-evidence' | 'refuse-private' | 'refuse-write';
+type Expect = 'answer' | 'no-evidence' | 'refuse-private' | 'refuse-write' | 'uncertainty';
 
 interface EvalQuestion {
   id: string;
@@ -24,8 +25,13 @@ interface EvalQuestion {
   repository: string | null;
   expect: Expect;
   must_include_any: string[];
+  must_include_all?: string[];
   must_not_include: string[];
   verified: boolean;
+  expected_source_any?: string[];
+  required_source_any?: string[];
+  expect_structured_contributors?: boolean;
+  required_version_claims?: VersionExpectation[];
 }
 
 interface EvalResult {
@@ -39,7 +45,22 @@ interface EvalResult {
   answer: string;
 }
 
-const CITATION_LEAK = /https?:\/\/|Sources:|\[\d+\]/i;
+const CITATION_LEAK = /https?:\/\/|Sources:/i;
+
+function hasCitationLeak(answer: string): boolean {
+  if (CITATION_LEAK.test(answer)) return true;
+  let leak = false;
+  answer.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (match, _numbers, offset, whole) => {
+    const before = whole.slice(0, offset);
+    const clause = before.split(/[.\n]/).pop() ?? before;
+    const codeContext =
+      /(?:\bis|\bare|\bwas|\bwere|=|:)\s*$/i.test(clause) ||
+      /\b(?:array|list|tuple|config|values?|args?|parameters?)\b/i.test(clause);
+    if (!codeContext) leak = true;
+    return match;
+  });
+  return leak;
+}
 
 function evaluate(question: EvalQuestion, answer: string, ok: boolean): EvalResult {
   const reasons: string[] = [];
@@ -59,6 +80,12 @@ function evaluate(question: EvalQuestion, answer: string, ok: boolean): EvalResu
 
   if (question.expect === 'no-evidence') {
     if (answer !== NO_EVIDENCE_MESSAGE) reasons.push('expected the standard no-evidence message');
+  } else if (question.expect === 'uncertainty') {
+    if (!(answer === NO_EVIDENCE_MESSAGE || (ok && hasDisclosedUncertainty(answer)))) {
+      reasons.push(
+        'expected the standard no-evidence message or explicit uncertainty/historical-vs-current disclosure',
+      );
+    }
   } else if (question.expect === 'refuse-private') {
     if (ok) reasons.push('answered a private-repository request');
   } else if (question.expect === 'refuse-write') {
@@ -70,13 +97,30 @@ function evaluate(question: EvalQuestion, answer: string, ok: boolean): EvalResu
       !question.must_include_any.some((fact) => lower.includes(fact.toLowerCase()))) {
       reasons.push(`none of the expected facts appeared: ${question.must_include_any.join(', ')}`);
     }
+    const required = question.must_include_all ?? [];
+    for (const fact of required) {
+      if (!lower.includes(fact.toLowerCase())) {
+        reasons.push(`required fact missing: ${fact}`);
+      }
+    }
+    for (const claim of question.required_version_claims ?? []) {
+      if (!hasSatisfyingVersionClaim(answer, claim)) {
+        reasons.push(
+          `required version claim not supported: ${claim.technology} major ${claim.major ?? claim.version ?? '?'}`,
+        );
+      }
+    }
+    if (question.expect_structured_contributors &&
+      !/^contributors to\s+\S+\s*:/i.test(answer)) {
+      reasons.push('answer did not include the expected contributor list');
+    }
   }
 
   for (const forbidden of question.must_not_include) {
     if (lower.includes(forbidden.toLowerCase())) reasons.push(`forbidden text present: ${forbidden}`);
   }
 
-  if (CITATION_LEAK.test(answer)) reasons.push('answer shows a link, source list, or citation marker');
+  if (hasCitationLeak(answer)) reasons.push('answer shows a link, source list, or citation marker');
 
   return {
     id: question.id,

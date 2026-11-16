@@ -9,6 +9,7 @@
 
 import type { OptOutStore } from '../discord/types';
 import { gateEvidence, type EvidenceResult } from '../guardrails/evidence';
+import { dedupeChunksByContent, sourceReferencesFromQuestion } from './query';
 import type {
   EmbeddingClient,
   ScoredSearchChunk,
@@ -26,6 +27,8 @@ export interface RetrievalDependencies {
   minScore: number;
   blockedChannelIds?: readonly string[];
   candidateLimit?: number;
+  /** GitHub organization name, used to remove it from full-text queries. */
+  organizationName?: string;
 }
 
 function chunkKey(chunk: ScoredSearchChunk): string {
@@ -132,6 +135,22 @@ export class RetrievalService {
       return gateEvidence([], this.dependencies.minScore);
     }
 
+    // A question that names an issue/PR is a structured lookup, not a
+    // similarity problem. The exact source id is authoritative; if it is
+    // absent from the index, say so instead of substituting a loosely related
+    // chunk from the same repository.
+    const sourceIds = sourceReferencesFromQuestion(query, repositoryFullName);
+    if (sourceIds.length > 0 && this.dependencies.searchStore.findBySourceIds) {
+      const exact = await this.dependencies.searchStore.findBySourceIds(sourceIds);
+      if (exact.length === 0) {
+        return gateEvidence([], this.dependencies.minScore);
+      }
+      // Filter first: if two identical chunks exist and the higher-scoring copy
+      // is blocked/opted out, the allowed copy must survive dedupe.
+      const filtered = await filterRetrievedChunks(exact, this.dependencies);
+      return gateEvidence(dedupeChunksByContent(filtered), this.dependencies.minScore);
+    }
+
     const [embedding] = await this.dependencies.embeddingClient.embed([query]);
     if (!embedding) {
       return gateEvidence([], this.dependencies.minScore);
@@ -143,9 +162,14 @@ export class RetrievalService {
       this.dependencies.searchStore.fullTextSearch(query, limit, repositoryFullName),
     ]);
 
-    const merged = mergeCandidates(vectorCandidates, fullTextCandidates).slice(0, limit);
-    const safe = await filterRetrievedChunks(merged, this.dependencies);
-    return gateEvidence(safe, this.dependencies.minScore);
+    // Filter before dedupe. Deduping first can keep a blocked/opted-out copy and
+    // discard the allowed duplicate before the filter runs.
+    const filtered = await filterRetrievedChunks(
+      mergeCandidates(vectorCandidates, fullTextCandidates),
+      this.dependencies,
+    );
+    const deduped = dedupeChunksByContent(filtered).slice(0, limit);
+    return gateEvidence(deduped, this.dependencies.minScore);
   }
 }
 

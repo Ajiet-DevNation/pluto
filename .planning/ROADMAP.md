@@ -45,6 +45,7 @@ The nine v1 capabilities are covered across eight phases. Automatic PR notificat
 3. When no relevant evidence exists, /ask explicitly states so
 4. No unsupported general knowledge is used in answers
 **Requirements:** ASK-01
+**Status (2026-11-16):** Partial. Retrieval/grounding audit implemented on `feature/phase-2-retrieval`; verified eval gate 9/9. Full-corpus reindex and live Discord acceptance are still pending.
 
 ## Phase 5: /decisions
 **Goal:** Provide searchable project decisions.

@@ -9,7 +9,7 @@
 import type { DiscordLogger } from '../discord/types';
 import { defaultLogger, errorMessage } from '../discord/types';
 import { NO_EVIDENCE_MESSAGE } from '../guardrails/evidence';
-import type { AskService } from '../search/ask';
+import type { AskService, AskSource } from '../search/ask';
 
 export const ASK_MESSAGES = {
   wrongGuild: 'This command works only inside the DevNation server.',
@@ -55,6 +55,69 @@ async function safeEdit(
   } catch (error) {
     logger.warn('Failed to send /ask reply', { error: errorMessage(error) });
   }
+}
+
+export const DISCORD_CONTENT_LIMIT = 2_000;
+const TRUNCATION_SUFFIX = '\n\n… [truncated]';
+const SOURCE_OMITTED_SUFFIX = "\n\n… [source link omitted to fit Discord's limit]";
+const MIN_TRUNCATED_ANSWER_LENGTH = 40;
+
+function truncateText(text: string, maxLength: number): string {
+  if (maxLength <= 0) return '';
+  if (text.length <= maxLength) return text;
+  let truncated = text.slice(0, maxLength);
+  // Never split a UTF-16 surrogate pair.
+  if (/[\uD800-\uDBFF]$/.test(truncated)) {
+    truncated = truncated.slice(0, -1);
+  }
+  // Prefer a word boundary when it does not discard most of the budget.
+  const boundary = truncated.search(/\s+\S*$/);
+  if (boundary >= Math.floor(maxLength * 0.6)) {
+    truncated = truncated.slice(0, boundary);
+  }
+  return truncated.trimEnd();
+}
+
+function truncateAnswer(answer: string, maxLength: number): string {
+  if (maxLength <= 0) return '';
+  if (answer.length <= maxLength) return answer;
+  const suffix = TRUNCATION_SUFFIX.length <= maxLength ? TRUNCATION_SUFFIX : '…';
+  const budget = maxLength - suffix.length;
+  return budget > 0 ? `${truncateText(answer, budget)}${suffix}` : suffix.slice(0, maxLength);
+}
+
+/**
+ * Render the answer plus at most the selected supporting sources. The full
+ * evidence set stays internal for grounding and audit. The reply is kept within
+ * Discord's single-message limit by truncating the answer, never the link.
+ */
+export function formatAskReply(
+  answer: string,
+  sources: readonly AskSource[] = [],
+): string {
+  const lines = sources.map((source) => {
+    const label = source.label.replace(/[[\]\r\n]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    return `Source: [${label || 'source'}](${source.url})`;
+  });
+  const footer = lines.join('\n');
+  if (!footer) return truncateAnswer(answer, DISCORD_CONTENT_LIMIT);
+
+  const footerBlock = `\n\n${footer}`;
+  if (answer.length + footerBlock.length <= DISCORD_CONTENT_LIMIT) {
+    return `${answer}${footerBlock}`;
+  }
+
+  const answerBudget =
+    DISCORD_CONTENT_LIMIT - footerBlock.length - TRUNCATION_SUFFIX.length;
+  if (answerBudget >= MIN_TRUNCATED_ANSWER_LENGTH) {
+    return `${truncateText(answer, answerBudget)}${TRUNCATION_SUFFIX}${footerBlock}`;
+  }
+
+  // The source block itself is too large to keep any useful answer. Preserve
+  // the answer and disclose that the link could not be shown rather than
+  // emitting a broken partial URL.
+  const omissionBudget = DISCORD_CONTENT_LIMIT - SOURCE_OMITTED_SUFFIX.length;
+  return `${truncateText(answer, omissionBudget)}${SOURCE_OMITTED_SUFFIX}`;
 }
 
 export async function handleAskInteraction(
@@ -112,7 +175,11 @@ export async function handleAskInteraction(
       return 'no-evidence';
     }
 
-    await safeEdit(interaction, result.answer, logger);
+    await safeEdit(
+      interaction,
+      formatAskReply(result.answer, result.displaySources ?? result.sources.slice(0, 1)),
+      logger,
+    );
     return 'answered';
   } catch (error) {
     logger.error('/ask failed', {

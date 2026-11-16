@@ -52,6 +52,8 @@ export interface SearchStore {
   ): Promise<Array<{ login: string; contributions: number }>>;
   /** Persist provider quota deferral so other workers stop sending embedding requests. */
   deferEmbeddingUntil?(resumeAt: Date): Promise<void>;
+  /** Look up chunks for source ids named explicitly by the question. */
+  findBySourceIds?(sourceIds: readonly string[]): Promise<ScoredSearchChunk[]>;
   vectorSearch(
     embedding: readonly number[],
     limit: number,
