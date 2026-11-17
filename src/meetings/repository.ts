@@ -1,11 +1,14 @@
 /**
- * Meeting event persistence (L3).
+ * Meeting event persistence (L3 MVP).
  *
  * Wraps the meeting_events table with the announcer lifecycle: idempotent
- * creation on the unique source identity, confirmation, cancellation,
- * rescheduling (version bump), the conditional delivery claim, and delivery
- * bookkeeping. The conditional claim uses reminder_claimed_at with a 10-minute
- * expiry per contracts/background-jobs.md §8.
+ * creation on the unique source identity, the conditional delivery claim, and
+ * delivery bookkeeping. No confirmation/cancel/reschedule methods — events are
+ * created directly as confirmed when parsing succeeds, and completed after the
+ * reminder is delivered or the meeting starts.
+ *
+ * The conditional claim uses reminder_claimed_at with a 10-minute expiry per
+ * contracts/background-jobs.md §8.
  */
 
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
@@ -21,13 +24,6 @@ export interface MeetingRepository {
     sourceMessageId: string,
   ): Promise<MeetingEvent | null>;
   getById(id: string): Promise<MeetingEvent | null>;
-  confirm(id: string): Promise<MeetingEvent | null>;
-  cancel(id: string, expectedVersion: number): Promise<MeetingEvent | null>;
-  reschedule(
-    id: string,
-    expectedVersion: number,
-    newStartAt: Date,
-  ): Promise<MeetingEvent | null>;
   claim(id: string, expectedVersion: number): Promise<MeetingEvent | null>;
   markSent(id: string, messageId: string): Promise<MeetingEvent | null>;
   markCompleted(id: string): Promise<MeetingEvent | null>;
@@ -71,42 +67,6 @@ export function createMeetingRepository(db: NodePgDatabase<typeof schema>): Meet
 
     async getById(id) {
       const rows = await db.select().from(meetingEvents).where(eq(meetingEvents.id, id));
-      return rows[0] ?? null;
-    },
-
-    async confirm(id) {
-      const rows = await db
-        .update(meetingEvents)
-        .set({ status: 'confirmed', updatedAt: new Date() })
-        .where(eq(meetingEvents.id, id))
-        .returning();
-      return rows[0] ?? null;
-    },
-
-    async cancel(id, expectedVersion) {
-      const rows = await db
-        .update(meetingEvents)
-        .set({
-          status: 'cancelled',
-          eventVersion: sql`${meetingEvents.eventVersion} + 1`,
-          updatedAt: new Date(),
-        })
-        .where(and(eq(meetingEvents.id, id), eq(meetingEvents.eventVersion, expectedVersion)))
-        .returning();
-      return rows[0] ?? null;
-    },
-
-    async reschedule(id, expectedVersion, newStartAt) {
-      const rows = await db
-        .update(meetingEvents)
-        .set({
-          startAt: newStartAt,
-          eventVersion: sql`${meetingEvents.eventVersion} + 1`,
-          status: 'confirmed',
-          updatedAt: new Date(),
-        })
-        .where(and(eq(meetingEvents.id, id), eq(meetingEvents.eventVersion, expectedVersion)))
-        .returning();
       return rows[0] ?? null;
     },
 

@@ -1,11 +1,11 @@
 /**
- * Meeting reminder worker registration (L3).
+ * Meeting reminder worker registration (L3 MVP).
  *
  * Registers a real pg-boss worker on the send-meeting-reminder queue. The
  * worker reads the current event, validates version/status, claims delivery
  * conditionally, sends one reminder to #pluto, and persists delivery state.
- * Stale jobs (cancelled/completed/wrong version/already reminded) are
- * acknowledged as no-ops. Infrastructure errors throw so pg-boss retries.
+ * Stale jobs (already reminded or wrong version) are acknowledged as no-ops.
+ * Infrastructure errors throw so pg-boss retries.
  *
  * Likhith exports registerMeetingReminderWorker; Khushi wires it into
  * src/jobs/worker.ts at startup.
@@ -25,8 +25,6 @@ export interface MeetingReminderDeps {
     error(message: string, details?: Record<string, unknown>): void;
   };
 }
-
-const CLAIM_EXPIRY_LOG = 'reminder-claim';
 
 export function registerMeetingReminderWorker(
   boss: PgBoss,
@@ -69,7 +67,6 @@ export function registerMeetingReminderWorker(
               jobId: job.id,
               meetingId,
               status: event.status,
-              eventVersion: event.eventVersion,
             });
             continue;
           }

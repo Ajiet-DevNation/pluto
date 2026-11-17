@@ -36,7 +36,7 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 | Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
 | Phase 3: /ask Q&A with Citations | ◐ In progress (P2 and retrieval audit merged; full-corpus reindex and live acceptance pending) | ASK-01 | 3/5 |
 | Phase 4: /digest Weekly Summaries | ○ Pending (P3 — Pragathi) | DIGE-01 | 0/10 |
-| Phase 5: Automatic Meeting Announcer | ◐ Implemented & verified locally (L3 — Likhith) | MEET-02 | 15/15 implemented; unit+integration tests pass, typecheck/build clean; DB integration tests skip without live Neon; pending Khushi shared-file integration (bot.ts, jobs/worker.ts, db/schema.ts, cmd/pluto/index.ts) and live verification |
+| Phase 5: Automatic Meeting Announcer | ◐ Implemented & verified locally (L3 — Likhith, MVP) | MEET-02 | 13/13 MVP criteria implemented; unit+integration tests pass, typecheck/build clean; DB integration tests skip without live Neon; pending Khushi shared-file integration (bot.ts, jobs/worker.ts, db/schema.ts, cmd/pluto/index.ts) and live verification |
 | Phase 6: Hardening & v1 Release | ○ Pending | All active v1 (7) | 0/6 |
 
 **Deferred / not active v1 phases:** transcript upload and ingestion (INDEX-04), transcript summaries/action items/`/meeting actions` (MEET-01), and the `/decisions` command (DECI-01). L2's upload code remains in the repository but is not in the v1 critical path.
@@ -269,7 +269,7 @@ Files changed in this hardening pass: `src/ask/command.ts`,
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
 | L1 | Likhith | ✅ Complete (PR #4 + #8, migration fix #12) | Neon/Drizzle, pg-boss, public issue indexing, scheduled worker, idempotent migrations, tests, `vector(768)`/`tsvector` migration. Latest `main` tests/build pass. |
 | L2 | Likhith | ✅ Merged historically (PR #11, #12); ⏸ **deferred from active v1** | Upload endpoint, Whisper transcription, `meeting_transcripts` storage and transcript chunk indexing exist in the repository. No new upload/transcription user workflow is active in v1. The code and tables must not be deleted; L2 is not a prerequisite for L3 or P3. |
-| L3 | Likhith | ◐ Implemented & verified locally (current assignment) | **Automatic Meeting Announcer, end-to-end.** All modules implemented (detection, parsing, confirmation, repository, scheduling, worker, reconciliation, index wiring) plus migration `0008_meeting_events.sql` and tests under `tests/meetings/`. Unit + integration tests pass (52/52 meetings tests), typecheck & build clean, full suite no regressions. DB integration tests skip without a live Neon DB. Depends on L1 and P1; not on L2 or P2. Pending: Khushi's shared-file integration into src/discord/bot.ts, src/jobs/worker.ts, src/db/schema.ts, src/cmd/pluto/index.ts, and live verification. |
+| L3 | Likhith | ◐ Implemented & verified locally (current assignment, MVP) | **Automatic Meeting Announcer, MVP.** Detection in #meeting-plans, actual @everyone/@here mention validation, meeting-keyword filtering, deterministic Asia/Kolkata parsing anchored to message createdAt, auto event creation + pg-boss reminder scheduling, conditional claim delivery, startup reconciliation, duplicate-safe scheduling/delivery. Modules: detection, parsing, repository, scheduling, worker, reconciliation, index wiring. Migration `0008_meeting_events.sql` and tests under `tests/meetings/`. No confirmation/cancel/reschedule (removed for MVP). Unit + integration tests pass, typecheck & build clean, full suite no regressions. DB integration tests skip without a live Neon DB. Depends on L1 and P1; not on L2 or P2. Pending: Khushi's shared-file integration into src/discord/bot.ts, src/jobs/worker.ts, src/db/schema.ts, src/cmd/pluto/index.ts, and live verification. |
 | P1 | Pragathi | ✅ Merged and live-verified (PR #9) | Discord allowlist intake, startup backfill, bot-author exclusion, guild-scoped `/optout`; live verification passed. |
 | P2 | Pragathi / Khushi takeover fix | ✅ Merged (PR #10 `298e557`; retrieval audit PR #14 `2ff2871`) | `/ask`, repo-scoped retrieval, one visible supporting source, App/PAT auth, and paginated public-repository indexing for READMEs, issues, PRs, commits, contributor identities, and eligible source files. Retrieval audit fixed IVFFlat probes, full-text query construction, exact issue/PR lookup, dedupe and answer guards. Full reindex and live Discord acceptance are still pending. |
 | P3 | Pragathi | ⬜ Pending (current assignment) | **Weekly `/digest` only.** Summarize the intended weekly period from indexed GitHub and Discord activity, include `#decisions` messages as evidence, ground every claim in indexed records, handle empty periods, deliver on a persistent non-duplicating schedule, preserve privacy/opt-out/bot-author rules, and test. No meeting summaries, transcript action items or `/meeting actions`. Depends on P2 and L1. |
@@ -334,7 +334,7 @@ At the start of each development session:
 - Team/mentor agreement on posting five lines of meeting notes in `#meeting-plans` after each meeting — **pending**
 - Cleanup PR #13 (`fix/pre-l3-cleanup`) — merged to `main` (`f335152`)
 - API contract #2 and Miro contract #5 — pending
-- Meeting contract #8 — drafted in `contracts/meeting.md` on 2026-11-17; **Khushi approval pending**
+- Meeting contract #8 — drafted in `contracts/meeting.md` on 2026-11-17; revised for MVP (no confirmation/cancel/reschedule); **Khushi approval pending**
 - Database contract #1 approval status — pending confirmation by Khushi; `meeting_events` definition added 2026-11-17
 - Audio storage — **legacy L2 only**: no active v1 upload workflow; retained code discards the audio buffer and stores no R2/disk audio
 - CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_AI_TOKEN — verified working via Live API check; need values in each .env for local runs
@@ -412,7 +412,7 @@ At the start of each development session:
 - Bot-authored and other-channel messages are ignored.
 - Reminders never repeat `@everyone`/`@here`.
 - The original announcement is never edited or deleted.
-- Only the original announcer or an authorized moderator may confirm, cancel or reschedule.
+- Events are auto-confirmed when parsing succeeds; no confirmation/cancel/reschedule controls.
 - No voice-channel recording or indexing.
 - The five-channel indexing allowlist is unchanged; `#pluto` remains excluded.
 

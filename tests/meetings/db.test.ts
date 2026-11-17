@@ -52,7 +52,7 @@ test('unique source identity prevents duplicate events', async (t) => {
       guildId: 'g', channelId: 'c', sourceMessageId: 'm-unique',
       sourceMessageUrl: 'https://discord.com/channels/g/c/m-unique', createdBy: 'u1',
       title: 'Standup', startAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      timezone: 'Asia/Kolkata', status: 'pending', eventVersion: 1,
+      timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
     };
     const first = await repo.create(input);
     assert.ok(first);
@@ -64,19 +64,18 @@ test('unique source identity prevents duplicate events', async (t) => {
   });
 });
 
-test('confirmation persists', async (t) => {
+test('event is created with confirmed status and version 1', async (t) => {
   await withDb(t, async (db) => {
     const repo = createMeetingRepository(db);
     const created = await repo.create({
-      guildId: 'g', channelId: 'c', sourceMessageId: 'm-conf',
-      sourceMessageUrl: 'https://discord.com/channels/g/c/m-conf', createdBy: 'u1',
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-status',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-status', createdBy: 'u1',
       title: 'Standup', startAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      timezone: 'Asia/Kolkata', status: 'pending', eventVersion: 1,
+      timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
     });
     assert.ok(created);
-    const confirmed = await repo.confirm(created!.id);
-    assert.ok(confirmed);
-    assert.equal(confirmed!.status, 'confirmed');
+    assert.equal(created!.status, 'confirmed');
+    assert.equal(created!.eventVersion, 1);
   });
 });
 
@@ -90,43 +89,39 @@ test('claim is conditional: first wins, second yields within expiry', async (t) 
       timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1, reminderSentAt: null,
     });
     const first = await repo.claim(created!.id, 1);
-    assert.ok(first);
+    assert.ok(first, 'first claim should win');
     const second = await repo.claim(created!.id, 1);
-    assert.equal(second, null);
+    assert.equal(second, null, 'second claim within expiry should yield');
   });
 });
 
-test('cancellation bumps event version', async (t) => {
+test('claim with wrong version yields', async (t) => {
   await withDb(t, async (db) => {
     const repo = createMeetingRepository(db);
     const created = await repo.create({
-      guildId: 'g', channelId: 'c', sourceMessageId: 'm-cancel',
-      sourceMessageUrl: 'https://discord.com/channels/g/c/m-cancel', createdBy: 'u1',
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-wrongver',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-wrongver', createdBy: 'u1',
       title: 'Standup', startAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
+      timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1, reminderSentAt: null,
     });
-    const cancelled = await repo.cancel(created!.id, 1);
-    assert.ok(cancelled);
-    assert.equal(cancelled!.status, 'cancelled');
-    assert.equal(cancelled!.eventVersion, 2);
+    const claimed = await repo.claim(created!.id, 99);
+    assert.equal(claimed, null, 'claim with wrong version should yield');
   });
 });
 
-test('rescheduling bumps event version and keeps confirmed', async (t) => {
+test('markSent persists reminder_sent_at and reminder_message_id', async (t) => {
   await withDb(t, async (db) => {
     const repo = createMeetingRepository(db);
     const created = await repo.create({
-      guildId: 'g', channelId: 'c', sourceMessageId: 'm-resched',
-      sourceMessageUrl: 'https://discord.com/channels/g/c/m-resched', createdBy: 'u1',
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-sent',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-sent', createdBy: 'u1',
       title: 'Standup', startAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
       timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
     });
-    const later = new Date(Date.now() + 5 * 60 * 60 * 1000);
-    const rescheduled = await repo.reschedule(created!.id, 1, later);
-    assert.ok(rescheduled);
-    assert.equal(rescheduled!.status, 'confirmed');
-    assert.equal(rescheduled!.eventVersion, 2);
-    assert.equal(rescheduled!.startAt.getTime(), later.getTime());
+    const marked = await repo.markSent(created!.id, 'msg-100');
+    assert.ok(marked);
+    assert.ok(marked!.reminderSentAt);
+    assert.equal(marked!.reminderMessageId, 'msg-100');
   });
 });
 
@@ -142,5 +137,39 @@ test('markCompleted sets status completed', async (t) => {
     const completed = await repo.markCompleted(created!.id);
     assert.ok(completed);
     assert.equal(completed!.status, 'completed');
+  });
+});
+
+test('listUnremindedFuture returns only confirmed, unsent, future events', async (t) => {
+  await withDb(t, async (db) => {
+    const repo = createMeetingRepository(db);
+    const now = new Date();
+    const future = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    const past = new Date(now.getTime() - 60 * 60 * 1000);
+
+    await repo.create({
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-future',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-future', createdBy: 'u1',
+      title: 'Future', startAt: future, timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
+    });
+    await repo.create({
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-past',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-past', createdBy: 'u1',
+      title: 'Past', startAt: past, timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
+    });
+    await repo.create({
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-sent',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-sent', createdBy: 'u1',
+      title: 'Sent', startAt: future, timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1, reminderSentAt: new Date(),
+    });
+    await repo.create({
+      guildId: 'g', channelId: 'c', sourceMessageId: 'm-cancelled',
+      sourceMessageUrl: 'https://discord.com/channels/g/c/m-cancelled', createdBy: 'u1',
+      title: 'Cancelled', startAt: future, timezone: 'Asia/Kolkata', status: 'cancelled', eventVersion: 1,
+    });
+
+    const unreminded = await repo.listUnremindedFuture();
+    assert.equal(unreminded.length, 1);
+    assert.equal(unreminded[0].title, 'Future');
   });
 });
