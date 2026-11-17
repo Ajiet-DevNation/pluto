@@ -1,14 +1,14 @@
 # Pluto — PR Plan Per Person (Final Team Collaboration & Integration Workflow)
 
-Git workflow and branch strategy for the Pluto v1 release. Nine capabilities ship in v1; automatic PR notifications (PRNT-01) were cancelled on 2026-11-15 because the Takoyaki bot already posts PR notices. Hosting is heavencloud plan. Each person has exactly one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided.
+Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities ship in v1**: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. On 2026-11-17 the `/decisions` command (DECI-01) and the transcript-based meeting pipeline (INDEX-04, MEET-01, `/meeting actions`) were removed from active v1 and deferred. Hosting is heavencloud plan. Each person has one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided. Historical merged packages are identified explicitly so a completed package is not mistaken for new work.
 
 ## Team and Branch Ownership
 
-| Person | Role | Branch | Responsible For |
-|--------|------|--------|-----------------|
-| Khushi | Project Lead | `feat/khushi` | K1, K2, K3 (includes Miro MCP read-only access) |
-| Pragathi | Bot Development | `feat/pragathi` | P1, P2, P3 |
-| Likhith | Bot Development | `feat/likhith` | L1, L2, L3 |
+| Person | Role | Branch | Current responsibility |
+|--------|------|--------|------------------------|
+| Khushi | Project Lead | `feat/khushi` | K1, K2, K3; contracts, architecture approval, shared integration, final PR review |
+| Pragathi | Bot Development | `feat/pragathi` | P1, P2 (merged); **P3 — weekly `/digest` only** |
+| Likhith | Bot Development | `feat/likhith` | L1, L2 (merged, L2 legacy/deferred); **L3 — complete Automatic Meeting Announcer** |
 | UI Member 1 | UI & Showcase | TBD (joins after bot complete) | — |
 | UI Member 2 | UI & Showcase | TBD (joins after bot complete) | — |
 
@@ -26,22 +26,24 @@ Git workflow and branch strategy for the Pluto v1 release. Nine capabilities shi
 5. Each person must sync their feature branch with the latest `main` and run relevant tests before merging.
 6. Each PR must include an update to `STATE.md` reflecting phase progress and completed requirements.
 7. PRs are not mergeable until `STATE.md` is updated and acceptance criteria are verified.
+8. **Do not mark a feature complete because a contract or plan was written.** Completion requires implementation, tests, and the acceptance criteria below.
 
 ---
 
 ## Khushi — Project Lead (`feat/khushi`)
 
-| PR | Content | Files | Acceptance | Depends on | Target hour |
-|----|---------|-------|------------|------------|-------------|
-| K1 | Initialize TypeScript/Express backend scaffold; configure Node.js 22 runtime; establish read-only GitHub access | `src/cmd/pluto/**`, `tsconfig.json`, `.nvmrc`, `scripts/build.sh`, `src/github/app.ts` | Backend builds and runs locally; Node.js 22 pinned; read-only GitHub credential verified (`GET` 200, write attempt 403) | — | 5 |
-| K2 | Enforce the read-only boundary in code: guard the GitHub and Miro clients, prove no write operation is reachable, build the citation layer, verify Miro read access | `src/guardrails/**`, `src/citations/**`, `src/github/**`, `src/miro/**`, `tests/**`, `.planning/contracts/security.md` | Write operations impossible by guard and by credential; static scan finds no write verbs in client modules; citation URLs correct and self-citation blocked; Miro live verification pending (no token) | K1 | 7 |
-| K3 | v1 release hardening; full acceptance verification across all nine requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh` | All nine v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; v1 deployed to heavencloud plan | K2, P3, L3 | 8 |
+| PR | Content | Files | Acceptance | Depends on | Target hour | Status |
+|----|---------|-------|------------|------------|-------------|--------|
+| K1 | Initialize TypeScript/Express backend scaffold; configure Node.js 22 runtime; establish read-only GitHub access | `src/cmd/pluto/**`, `tsconfig.json`, `.nvmrc`, `scripts/build.sh`, `src/github/app.ts` | Backend builds and runs locally; Node.js 22 pinned; read-only GitHub credential verified (`GET` 200, write attempt 403) | — | 5 | ✅ Merged (PR #1, #2) |
+| K2 | Enforce the read-only boundary in code: guard the GitHub and Miro clients, prove no write operation is reachable, build the citation layer, verify Miro read access | `src/guardrails/**`, `src/citations/**`, `src/github/**`, `src/miro/**`, `tests/**`, `.planning/contracts/security.md` | Write operations impossible by guard and by credential; static scan finds no write verbs in client modules; citation URLs correct and self-citation blocked; Miro live verification pending (no token) | K1 | 7 | ◐ Code merged (PR #3, #7); live Miro check pending |
+| K3 | v1 release hardening; full acceptance verification across all seven active requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh`, shared integration files | All seven active v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; announcer safety verified; v1 deployed to heavencloud plan | K2, P3, L3 | 8 | ⬜ Pending |
 
 **Cross-cutting responsibilities (Khushi):**
-- Owns overall architecture, integration, shared interfaces, Miro MCP setup, and final technical decisions
+- Owns overall architecture, integration, shared interfaces, Miro REST setup, and final technical decisions
 - Reviews and approves all three PRs (K, P, L) before merge
 - Resolves disagreements on shared contracts
 - Approves changes to shared contracts
+- **Owns final integration of shared command registration, Discord interaction routing, and shared worker startup** (`src/discord/bot.ts`, `src/discord/commands.ts`, `src/jobs/worker.ts`, `src/db/schema.ts`, `drizzle/migrations/`)
 - Updates `STATE.md` at phase transitions
 - Maintains `.planning/` source of truth
 - Handles release tagging
@@ -50,29 +52,81 @@ Git workflow and branch strategy for the Pluto v1 release. Nine capabilities shi
 
 ## Pragathi — Bot Development (`feat/pragathi`)
 
-| PR | Content | Files | Acceptance | Depends on | Target hour |
-|----|---------|-------|------------|------------|-------------|
-| P1 | Connect Discord bot via discord.js v14; join DevNation server; index selected Discord channels; implement /optout command to exclude member messages from indexing | `src/cmd/pluto/**`, `src/discord/**`, `src/optout/**`, `tests/discord/` | Discord bot connected and joined; admin-selected channels indexed; non-selected channels excluded; opted-out members' messages excluded from search and answers | K1 | 5 |
-| P2 | Implement `/ask`; index all public-org GitHub READMEs, issues, PRs, commits, contributors, and eligible text/source files; ground answers in indexed content | `src/cmd/pluto/**`, `src/ask/**`, `src/search/**`, `tests/ask/`, `tests/search/` | `/ask` answers from indexed sources with original citations; all public Ajiet-DevNation repositories and API pages are included; repo-specific questions stay scoped to that repo; private repositories and excluded/sensitive files remain out; missing credentials fail reindex visibly | P1, L1 | 7 |
-| P3 | Generate /digest weekly summaries; generate meeting summaries; extract action items with owners and due dates; implement /meeting actions command with mark-complete | `src/cmd/pluto/**`, `src/digest/**`, `src/meetings/**`, `tests/digest/**, tests/meetings/` | Weekly digest summarizes indexed GitHub/Discord/decisions and delivers to Discord; meeting transcripts summarized; action items extracted with owners and due dates; /meeting actions lists pending tasks; action items can be marked complete | P2, L2 | 6 |
+| PR | Content | Files | Acceptance | Depends on | Target hour | Status |
+|----|---------|-------|------------|------------|-------------|--------|
+| P1 | Connect Discord bot via discord.js v14; join DevNation server; index selected Discord channels; implement `/optout` command to exclude member messages from indexing | `src/cmd/pluto/**`, `src/discord/**`, `src/optout/**`, `tests/discord/` | Discord bot connected and joined; admin-selected channels indexed; non-selected channels excluded; opted-out members' messages excluded from search and answers | K1 | 5 | ✅ Merged and live-verified (PR #9) |
+| P2 | Implement `/ask`; index all public-org GitHub READMEs, issues, PRs, commits, contributors, and eligible text/source files; ground answers in indexed content | `src/cmd/pluto/**`, `src/ask/**`, `src/search/**`, `tests/ask/`, `tests/search/` | `/ask` answers from indexed sources with one supporting citation; all public Ajiet-DevNation repositories and API pages are included; repo-specific questions stay scoped to that repo; private repositories and excluded/sensitive files remain out; missing credentials fail reindex visibly | P1, L1 | 7 | ✅ Merged (PR #10, #14); full-corpus reindex and live Discord acceptance pending |
+| P3 | Implement weekly `/digest` summaries from indexed project activity and deliver them on the agreed schedule. **No meeting summaries, transcript-derived action items or `/meeting actions`.** | `src/digest/**`, `tests/digest/**`; command registration coordinated with Khushi in `src/discord/commands.ts` | `/digest` is guild-scoped; summarizes the intended weekly period; includes relevant indexed GitHub and Discord activity, including `#decisions` messages as evidence; no invented content; empty periods handled; persistent scheduling with no duplicate digests; privacy/opt-out/bot-author restrictions preserved; existing commands unaffected; tests and build pass | P2, L1 | 6 | ⬜ Pending (current assignment) |
+
+**P3 acceptance criteria (authoritative):**
+1. `/digest` can be invoked through the agreed guild-scoped Discord command.
+2. The digest summarizes the intended weekly period.
+3. Relevant GitHub and Discord activity is included.
+4. Relevant messages from `#decisions` remain available as source evidence.
+5. No unsupported details are generated.
+6. Empty periods produce a sensible response.
+7. Delivery scheduling is persistent and does not create duplicate digests.
+8. Existing Discord privacy, opt-out and bot-author restrictions are preserved.
+9. Existing commands and bot behavior remain unaffected.
+10. Tests and build pass.
+
+**P3 boundaries:**
+- Pragathi may consume `#decisions` messages from the existing indexed store; she must **not** build `/decisions` and must **not** depend on a Likhith-owned `decisions` service module.
+- No dependency on newly uploaded meeting audio or transcripts.
+- Do not remove decision records or exclude the `#decisions` channel.
+- Reuse existing retrieval, database and job-queue interfaces. Do not fork or replace the command registry or worker startup; export a digest module and request Khushi's integration.
 
 **Contract ownership (Pragathi):**
-- Proposes and implements Discord and bot-command contracts
-- Reviews shared interfaces before dependent implementation begins
+- Proposes Discord contract changes; Khushi approves. Shared interaction routing is Khushi's integration responsibility.
 
 ---
 
 ## Likhith — Bot Development (`feat/likhith`)
 
-| PR | Content | Files | Acceptance | Depends on | Target hour |
-|----|---------|-------|------------|------------|-------------|
-| L1 | Provision Neon Postgres with pgvector and tsvector; connect via Drizzle ORM; configure pg-boss job queue; index GitHub issues from Ajiet-DevNation public repos | `src/db/**`, `src/jobs/**`, `scripts/migrate/**`, `tests/db/` | Neon Postgres provisioned and connected; pg-boss configured for background indexing jobs; GitHub issues indexed and searchable | K1 | 5 |
-| L2 | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon | `src/upload/**`, `src/transcription/**`, `src/db/**`, `src/jobs/**`, `tests/upload/**, tests/transcription/` | Users can upload meeting transcripts and audio; audio transcribed via Whisper; transcripts stored and indexed in Neon alongside GitHub and Discord content | L1 | 6 |
-| L3 | Implement /decisions searchable project decisions; expose a `decisions` module for /digest; fix meeting embedding to use the budgeted client; verify no Discord history edits; verify no private repo/channel indexing. (PR notifications cancelled 2026-11-15; action items moved to P3.) | `src/decisions/**`, `src/discord/**`, `src/db/schema.ts`, `src/db/index-meeting-transcripts.ts`, `src/jobs/worker.ts`, `src/search/embedding-units.ts`, `tests/decisions/**` | /decisions returns searchable decisions with source citations and a no-evidence message; `decisions` module exported for /digest; meeting embedding uses the budgeted client and handles 429; no Discord history edits; no private indexing | L2, P2 | 7 |
+| PR | Content | Files | Acceptance | Depends on | Target hour | Status |
+|----|---------|-------|------------|------------|-------------|--------|
+| L1 | Provision Neon Postgres with pgvector and tsvector; connect via Drizzle ORM; configure pg-boss job queue; index GitHub issues from Ajiet-DevNation public repos | `src/db/**`, `src/jobs/**`, `scripts/migrate/**`, `tests/db/` | Neon Postgres provisioned and connected; pg-boss configured for background indexing jobs; GitHub issues indexed and searchable | K1 | 5 | ✅ Complete (PR #4, #8, #12) |
+| L2 | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon | `src/upload/**`, `src/transcription/**`, `src/db/**`, `src/jobs/**`, `tests/upload/**`, `tests/transcription/**` | Users can upload meeting transcripts and audio; audio transcribed via Whisper; transcripts stored and indexed in Neon alongside GitHub and Discord content | L1 | 6 | ✅ Merged historically (PR #11, #12); **deferred from active v1** — code and tables retained, no new user workflow |
+| L3 | **Build the complete Automatic Meeting Announcer**: detect `#meeting-plans` announcements, parse date/time, confirm with the announcer, persist `meeting_events`, schedule durable pg-boss reminders, deliver to `#pluto`, and test the full lifecycle. **No `/decisions`, meeting embedding fixes, transcripts or `/meeting` command.** | `src/meetings/**`, `tests/meetings/**`, `.planning/contracts/meeting.md`; new migration under `drizzle/migrations/`; coordinated additions to `src/db/schema.ts` and `src/jobs/worker.ts`; no direct replacement of `src/discord/bot.ts` or `src/discord/commands.ts` | See the 15 acceptance criteria below | L1, P1 | 7 | ⬜ Pending (current assignment) |
+
+**L3 acceptance criteria (authoritative):**
+1. Meeting announcements are detected only in `#meeting-plans`.
+2. Actual `@everyone` and `@here` mentions are checked correctly through Discord mention metadata.
+3. Bot-authored and unrelated messages are ignored.
+4. Supported date/time expressions are parsed correctly.
+5. Ambiguous or missing information requires clarification.
+6. Confirmation is required before scheduling.
+7. Confirmed meetings are persisted in `meeting_events`.
+8. Reminder jobs are durable across restarts.
+9. One-hour reminders are delivered to `#pluto`.
+10. Cancellation invalidates scheduled reminders.
+11. Rescheduling invalidates the previous schedule.
+12. Duplicate event creation and concurrent delivery are controlled.
+13. Failures are logged safely and recovered where possible.
+14. Existing `/ask` and `/optout` behavior remains unaffected.
+15. Unit and integration tests pass.
+
+**L3 scope details:**
+- Detection is independent of the ordinary Discord indexing pipeline. Do not change existing intake filters or the startup backfill contract.
+- Channel IDs come from `.planning/config.json`. Do not hardcode `#meeting-plans` or `#pluto`.
+- Require meeting-related language **and** an actual mention. Ignore bot authors and other channels.
+- Use deterministic date/time parsing with `Asia/Kolkata`; interpret relative dates from the original message's `createdAt`.
+- Confirmation UI: show title, date, time, timezone, reminder time and original announcement link, with confirm/cancel controls and a controlled reschedule path. Only the original announcer or an authorized moderator may act.
+- Reminder queue: `send-meeting-reminder`, payload `{ meetingId, eventVersion }`. Register the worker with `boss.work`; creating the queue alone is insufficient.
+- No new slash command; no `@everyone`/`@here` repeat; never edit/delete the original announcement; no voice recording.
+- Document the realistic delivery guarantee (at-least-once). Do not claim exactly-once Discord delivery.
+
+**Explicitly not in L3:**
+- `/decisions`
+- Meeting-transcript embedding fixes
+- New upload or transcription workflows
+- Transcript summaries, action items, `/meeting actions`
+- Voice recording
 
 **Contract ownership (Likhith):**
-- Proposes and implements database and job-queue contracts
+- Proposes and implements database, background-job and meeting contracts
 - Reviews shared interfaces before dependent implementation begins
+- Coordinates any `bot.ts` / `commands.ts` / `worker.ts` / schema change with Khushi before implementation
 
 ---
 
@@ -94,35 +148,52 @@ The following contracts must be documented and agreed by all three bot members b
 
 | # | Contract | Owner | Must Include | Status |
 |---|----------|-------|--------------|--------|
-| 1 | Database schema | Likhith proposes; Khushi approves | Tables, columns, relationships, indexes, migrations, naming conventions | Pending validation |
+| 1 | Database schema | Likhith proposes; Khushi approves | Tables, columns, relationships, indexes, migrations, naming conventions, `meeting_events` | Draft in `contracts/database.md`; approval pending |
 | 2 | API contracts | Khushi owns | Endpoints, request/response formats, validation, errors | Pending validation |
-| 3 | Discord contracts | Pragathi proposes; Khushi approves | Bot command interfaces, channel configuration, permissions | Pending validation |
+| 3 | Discord contracts | Pragathi proposes; Khushi approves | Bot command interfaces, channel configuration, permissions, meeting-announcer detection/interaction rules | Approved; announcer behavior added 2026-11-17 |
 | 4 | GitHub contracts | Khushi owns | GitHub App access, webhook/event payloads, repository allowlist | Drafted in `contracts/github.md`; review pending |
-| 5 | Miro MCP contracts | Khushi proposes; Khushi approves | Miro MCP server connection, board allowlist, read-only enforcement, board/comment/text/diagram access | Pending validation |
-| 6 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Approved; GitHub corpus scope updated for P2 |
-| 7 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling | Approved (`contracts/background-jobs.md`) |
-| 8 | Meeting contracts | Pragathi proposes; Khushi approves | Upload, transcription, summary, action-item formats | Pending validation |
+| 5 | Miro contracts | Khushi owns | Miro REST connection, board allowlist, read-only enforcement, board/comment/text/diagram access | Pending validation |
+| 6 | Search contracts | Khushi owns | Document/chunk formats, embedding dimensions, retrieval, citation references | Approved; consumers updated 2026-11-17 |
+| 7 | Background jobs | Likhith proposes; Khushi approves | Job names, payloads, retries, idempotency, scheduling, reminder recovery | Approved; `send-meeting-reminder` added 2026-11-17 |
+| 8 | Meeting contract | Likhith proposes; Khushi approves | Detection, parsing, confirmation, event lifecycle, reminders, cancellation/rescheduling, tests, exclusions | Drafted in `contracts/meeting.md`; review pending |
 | 9 | Security contracts | Khushi owns | Read-only boundaries, visibility enforcement, opt-out behavior | Active/approved for K2 (`contracts/security.md`) |
 
 **Contract review rule:** All three must review shared interfaces before dependent implementation begins. Khushi resolves disagreements and approves changes to shared contracts.
 
 ---
 
+## Shared-File Coordination
+
+Both features touch common infrastructure. These files are **Khushi-owned integration points**; feature owners must not independently replace their contents.
+
+| Shared file | Final owner | Rule |
+|-------------|-------------|------|
+| `src/discord/bot.ts` | Khushi | Khushi wires detection and command handlers. Likhith/Pragathi export handlers or service interfaces; they do not rewrite the startup flow or listener registration. |
+| `src/discord/commands.ts` | Khushi | One command registry. P3 adds `/digest` through a reviewed patch; L3 adds no slash command. No one replaces the registry wholesale. |
+| `src/jobs/worker.ts` | Khushi | Khushi integrates worker registration. Likhith supplies `send-meeting-reminder` registration and startup reconciliation; Pragathi supplies digest scheduling. Do not overwrite existing GitHub/transcript startup code. |
+| `src/db/schema.ts` | Khushi approves; Likhith proposes | Likhith adds the `meeting_events` Drizzle definition. Pragathi reads existing tables and adds no competing event schema. |
+| `drizzle/migrations/` | Khushi approves; feature owner authors | One new migration per feature, never edit an already-applied migration. The `meeting_events` migration is Likhith's. |
+
+**Integration contract:** Each developer builds an isolated module with exported interfaces, tests and clear integration instructions. Khushi performs the final merge into `bot.ts`, `commands.ts`, `worker.ts`, `schema.ts` and the migration sequence.
+
+---
+
 ## Dependency and Integration Sequence
 
 ### Phase A — Before Any Coding (Contracts First)
-All shared contracts (1–8 above) must be drafted and reviewed by all three members before anyone begins dependent implementation. Khushi approves final versions.
+
+All shared contracts (1–9 above) must be drafted and reviewed by all three members before dependent implementation begins. Khushi approves final versions.
 
 Prerequisite order:
-1. Database schema (Likhith proposes, Khushi approves) — must be done before L1, P2, L2 depend on it
-2. API contracts (Khushi owns) — must be done before K1, P1, L1 build against them
-3. Discord contracts (Pragathi proposes, Khushi approves) — must be done before P1
-4. GitHub contracts (Khushi owns) — must be done before K1
-5. Miro MCP contracts (Khushi proposes, Khushi approves) — must be done before K1
-6. Search contracts (Khushi owns) — must be done before P2, L2
-7. Background jobs (Likhith proposes, Khushi approves) — must be done before L1, P3
-8. Meeting contracts (Pragathi proposes, Khushi approves) — must be done before L2, P3
-9. Security contracts (Khushi owns) — must be done before K2, all PRs
+1. Database schema (Likhith proposes, Khushi approves) — before L1, L3, P2, P3
+2. API contracts (Khushi owns) — before K1, P1, L1
+3. Discord contracts (Pragathi proposes, Khushi approves) — before P1, and for announcer routing before L3
+4. GitHub contracts (Khushi owns) — before K1
+5. Miro contracts (Khushi owns) — before K1
+6. Search contracts (Khushi owns) — before P2, P3
+7. Background jobs (Likhith proposes, Khushi approves) — before L1, L3, P3
+8. Meeting contract (Likhith proposes, Khushi approves) — before L3
+9. Security contracts (Khushi owns) — before K2 and all PRs
 
 ### Phase B — Implementation Order with Dependencies
 
@@ -130,34 +201,39 @@ Prerequisite order:
 |------|-----|-------|------------|----------------------|
 | 1 | K1 | Khushi | GitHub contract, API contract, DB schema | Backend scaffold builds locally; Node.js 22 pinned; read-only GitHub credential verified |
 | 2 | L1 | Likhith | K1, DB schema, background jobs contract | Neon + pg-boss connected; issues indexed |
-| 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; /optout working |
-| 4 | L2 | Likhith | L1, meeting contract, search contract | Audio uploaded, transcribed, indexed in Neon |
-| 5 | P2 | Pragathi | P1, L1, search contract | /ask returns cited answers |
-| 6 | L3 | Likhith | L2, P2 | /decisions searchable; decisions module exported for /digest |
-| 7 | P3 | Pragathi | P2, L2 | /digest delivered; /meeting actions working |
-| 8 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
-| 9 | K3 | Khushi | K2, P3, L3 | All nine capabilities tested; v1 deployed to heavencloud plan |
+| 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; `/optout` working |
+| 4 | P2 | Pragathi | P1, L1, search contract | `/ask` returns grounded answers with one supporting source |
+| 5 | L3 | Likhith | L1, P1, meeting contract, background jobs, DB schema | Announcer detects, confirms, persists, schedules, reminds one hour before; cancellation/rescheduling verified; shared integration signed off by Khushi |
+| 6 | P3 | Pragathi | P2, L1, search contract, background jobs | `/digest` produced on the agreed schedule with grounded content; no duplicate digests |
+| 7 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
+| 8 | K3 | Khushi | K2, P3, L3 | All seven active capabilities tested; v1 deployed to heavencloud plan |
+
+**Note:** L2 is historically merged (PR #11, #12) but is **not** in the v1 critical path. Its upload/transcription user workflow is deferred. It must not be treated as a prerequisite for L3 or P3.
 
 ### Phase C — Integration Checkpoints (Catch Incompatible Implementations Early)
 
 | Checkpoint | When | Participants | What Is Verified |
 |------------|------|--------------|------------------|
 | CP1: Contract sign-off | Before step 1 | Khushi, Pragathi, Likhith | All 9 shared contracts documented and approved |
-| CP2: DB + backend integration | After L1, before P2 | Khushi, Likhith | Neon schema matches API expectations; migrations apply cleanly |
-| CP3: Discord + backend integration | After P1, before P2 | Khushi, Pragathi | Discord commands route through backend; /optout enforced in retrieval |
-| CP4: Search + retrieval integration | After L2, before P2 | Khushi, Pragathi, Likhith | Embeddings stored correctly; /ask citations resolve to indexed chunks |
-| CP5: Jobs + digest integration | After L1, before P3 | Khushi, Pragathi, Likhith | pg-boss jobs schedule and run; /digest produced on cadence |
-| CP6: Pre-release integration | Before K3 | All three | All nine capabilities work together; read-only boundary holds end-to-end |
+| CP2: DB + backend integration | After L1, before P2/L3 | Khushi, Likhith | Neon schema matches API expectations; migrations apply cleanly; `meeting_events` design fits the same migration runner |
+| CP3: Discord + backend integration | After P1, before P2/L3 | Khushi, Pragathi | Discord commands route through backend; `/optout` enforced in retrieval; existing intake unchanged |
+| CP4: Search + retrieval integration | After P2, before P3 | Khushi, Pragathi, Likhith | Embeddings stored correctly; `/ask` citations resolve; `/digest` can reuse retrieval |
+| CP5: Jobs + announcer integration | After L1/P1, before L3 merge | Khushi, Likhith | `meeting_events` migration applies; `send-meeting-reminder` queue is created **and** a worker is registered; reminder posts only to `#pluto`; cancellation/rescheduling invalidate jobs; restart recovery works |
+| CP6: Jobs + digest integration | After P2, before P3 merge | Khushi, Pragathi | Digest command registration is reviewed; scheduling is persistent; repeated runs do not duplicate digests |
+| CP7: Pre-release integration | Before K3 | All three | All seven active capabilities work together; read-only boundary, no-mass-mention and no-voice rules hold end-to-end |
 
 ### Phase D — Final Integration and Release Verification Checklist (K3)
 
-- [ ] All nine v1 requirements implemented and mapped to phases
+- [ ] All **seven** active v1 requirements implemented and mapped to phases
 - [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no Miro writes, no private indexing, no unsupported answers
-- [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, Miro board URL, meeting transcript)
+- [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, Miro board URL)
+- [ ] Meeting announcer: unique source announcement identity; event versioning; cancellation/rescheduling; no `@everyone`/`@here` repeat; no voice recording; no original-announcement edits
+- [ ] Reminder delivery guarantee documented and tested (at-least-once; no exactly-once claim)
 - [ ] All acceptance criteria for K1–K3, P1–P3, L1–L3 verified and marked in REQUIREMENTS.md traceability
 - [ ] `STATE.md` updated with final phase progress
 - [ ] v1 release deployed to heavencloud plan
-- [ ] Smoke test on heavencloud plan: /ask, /decisions, /digest, /meeting actions, /optout, Miro board search all functional
+- [ ] Smoke test on heavencloud plan: `/ask`, `/digest`, announcer detect/confirm/cancel/reschedule with a one-hour reminder, `/optout`, Miro board search all functional
+- [ ] Legacy L2 upload code is present but not presented as an active v1 workflow
 - [ ] Rollback plan documented if deployment fails
 
 ---
@@ -165,7 +241,7 @@ Prerequisite order:
 ## PR Lifecycle
 
 1. Person creates their feature branch from `main` (`feat/khushi`, `feat/pragathi`, or `feat/likhith`)
-2. Person completes all three work packages on their branch, updates `STATE.md`, commits
+2. Person completes the active work packages on their branch, updates `STATE.md`, commits
 3. Person syncs branch with latest `main` and runs relevant tests
 4. Person opens one PR targeting `main` (K, P, or L) with linked requirements (REQ-IDs), updated `STATE.md`, and verification notes
 5. Khushi reviews and approves (or requests changes)
@@ -180,30 +256,44 @@ Prerequisite order:
 
 | Risk | Description | Mitigation |
 |------|-------------|------------|
-| **Khushi bottleneck** | Khushi has final approval on all three PRs plus cross-cutting architecture duties. If Khushi is unavailable, P and L PRs cannot merge. | Khushi should review PRs in a timely window; branch owners can prepare feedback responses in advance. |
-| **K3 depends on P3 and L3** | Khushi's final release PR (K3) cannot complete until both Pragathi and Likhith finish their last work packages. Any delay in P3 or L3 blocks the v1 release. | Integration checkpoint CP6 before K3; early warning if P3/L3 slip. |
-| **P2 depends on L1** | Pragathi's /ask work package (P2) needs Likhith's database + job queue (L1) first. If L1 slips, P2 is blocked. | CP2 checkpoint; Likhith prioritizes L1 early. |
-| **L3 depends on P2** | Likhith's final work package (L3) needs Pragathi's /ask (P2) for citation grounding. Circular-ish dependency between P2 and L3 via search contract. | Search contract (CP1) must be frozen early so both can implement against it independently. |
-| **Shared contract disagreements** | Disagreements on database schema, API formats, or search contracts could cause rework. | All three review contracts at CP1; Khushi has final decision authority. |
-| **Unresolved providers** | Miro token/MCP and the App-backed GitHub live test remain pending. Discord gateway ingestion and transcript-only audio have been decided. | Record decisions in their contracts; keep Miro and GitHub App live acceptance pending until verified. |
-| **Beginner onboarding** | All three members need clear responsibility documentation to avoid stepping on each other's work. | This PR-PLAN.md plus STATE.md handoff requirements; branch-per-person isolation. |
+| **Khushi bottleneck** | Khushi has final approval on all three PRs plus shared integration. If Khushi is unavailable, P and L PRs cannot merge. | Khushi reviews in a timely window; branch owners prepare feedback responses in advance. |
+| **K3 depends on P3 and L3** | Khushi's final release PR (K3) cannot complete until Pragathi's digest and Likhith's announcer finish. Any delay blocks v1. | CP7 before K3; early warning if P3/L3 slip. |
+| **Shared-file collisions** | L3 touches `worker.ts`/`schema.ts`/migrations, P3 touches the command registry, and both need `bot.ts` routing. Independent replacement would break existing `/ask`/`/optout`. | Khushi owns final integration; isolated modules; one command registry; one migration per feature; CP5/CP6 reviews. |
+| **P3 depends on P2** | `/digest` needs P2's indexed corpus and retrieval. If P2's full reindex slips, digest quality suffers. | CP4; digest must handle empty/partial periods honestly. |
+| **Announcer date/time ambiguity** | Relative dates ("tomorrow"), missing AM/PM, and timezone mistakes could schedule the wrong reminder. | Deterministic parser, `Asia/Kolkata`, relative to original `createdAt`, explicit clarification, and tests for past/invalid/<1-hour cases. |
+| **Reminder duplication or missed delivery** | A crash between Discord send and database update can duplicate a reminder; a failed send can miss one. | pg-boss retries, versioned events, conditional DB claim, startup reconciliation, honest at-least-once documentation. Never use in-memory `setTimeout`. |
+| **Announcer incorrectly treats conversation as an event** | Ordinary discussion about a meeting could trigger a false event. | Require an actual mention **and** meeting language; require confirmation before scheduling; ignore bot authors/other channels. |
+| **Legacy L2 confusion** | Upload/transcription code exists in the repository, so someone may assume it is active v1 work. | STATE/PR-PLAN mark it legacy/deferred; no active acceptance criteria; do not delete it. |
+| **Decisions data mistaken for the command** | Removing `/decisions` could be misread as removing `#decisions`. | `#decisions` stays in the five-channel allowlist; contracts and requirements state it remains indexed evidence. |
+| **Unresolved providers** | Miro token and App-backed GitHub live verification remain pending. | Record decisions in contracts; keep live acceptance pending until verified. |
+| **Beginner onboarding** | All three members need clear responsibility documentation to avoid stepping on each other's work. | This PR-PLAN.md plus STATE.md handoff requirements; branch-per-person isolation; shared-file ownership table. |
 
 ---
 
 ## Unresolved / Pending
 
-- Miro token, MCP connection, board allowlist, and live read verification — pending
-- GitHub App auth live verification and full public-repository reindex — pending
-- Contracts #2 (API), #5 (Miro), and #8 (Meeting) — pending
+- L3 (Automatic Meeting Announcer) implementation — pending; tomorrow's assignment for Likhith
+- P3 (weekly `/digest`) implementation — pending; assignment for Pragathi
+- `contracts/meeting.md` — drafted 2026-11-17; Khushi approval pending
 - Database contract #1 approval status — pending confirmation by Khushi
-- UI & showcase member names: pending — branches to be created when they join
+- Contracts #2 (API) and #5 (Miro) — pending
+- Miro token, approved board IDs, and live read verification — pending (no shared DevNation Miro workspace exists)
+- GitHub App auth live verification and full public-repository reindex — pending
+- P2 full-corpus reindex, `content_hash` backfill and live Discord acceptance — pending manual approval
+- UI & showcase member names — pending; branches to be created when they join
+- Legacy L2 code disposition (keep vs. remove) — post-v1 decision; not part of this documentation change
+- Whether to reintroduce `/decisions`, transcript uploads or transcript summaries after v1 — post-v1 decision; not committed
+- `.planning/config.json` still records `all_ten_capabilities_in_v1: true` and a pending R2/audio-storage decision. These are stale but intentionally unchanged because this documentation task forbids editing `config.json`; Khushi must approve a config update
 
 **Constraints confirmed:**
-- Nine agreed capabilities remain in v1. PRNT-01 (PR notifications) was cancelled by Khushi on 2026-11-15; none are postponed.
+- **Seven** active capabilities remain in v1: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02, OPTO-01.
+- PRNT-01 (PR notifications) was cancelled by Khushi on 2026-11-15.
+- INDEX-04, MEET-01 and DECI-01 are deferred/removed from active v1 as of 2026-11-17.
 - Hosting is heavencloud plan. Kerit Cloud is not referenced anywhere.
+- No new infrastructure (Redis, Docker, external schedulers) without approval.
 - Unresolved technical decisions are explicitly marked as pending validation.
 - No confirmed provider capabilities are invented.
 
 ---
 
-*Last updated: 2026-11-12 after initialization*
+*Last updated: 2026-11-17 — revised v1 scope. L3 is the complete Automatic Meeting Announcer; P3 is weekly `/digest` only; shared integration remains with Khushi; active v1 is seven requirements.*

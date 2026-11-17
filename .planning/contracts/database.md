@@ -1,8 +1,8 @@
 # Database schema contract
 
 Owner: Likhith proposes; Khushi approves.
-Status: Draft — pending Khushi approval.
-Consumers: L1 (storage + indexing), L2 (meeting transcripts), L3 (/decisions, notifications), P2 (/ask retrieval), P3 (/digest).
+Status: Draft — pending Khushi approval (revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
+Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P2 (`/ask` retrieval), P3 (`/digest`).
 
 ## Purpose
 
@@ -75,7 +75,9 @@ Source: `src/db/schema.ts`, migrations `0000_nifty_stryfe.sql` + `0001_dear_ceri
 Migration `0001_dear_cerise.sql` alters `github_id` columns from `integer` to `bigint`
 because GitHub node ids exceed `integer` range (observed value: 2627377453).
 
-## Planned tables
+## Additional tables
+
+`discord_messages` below remains planned/not created (P1 uses a JSON store). `meeting_transcripts` is implemented but legacy/deferred. `meeting_events` is the active v1 addition for L3.
 
 ### `discord_messages`
 
@@ -101,9 +103,13 @@ Indexes:
 
 ### `meeting_transcripts`
 
-Stored meeting transcripts from uploaded audio or text files. Created by L2.
-Audio is transcribed via Cloudflare Workers AI Whisper and only the transcript
-text is stored — no audio files are retained (Cloudflare R2 is out of v1).
+**Legacy/deferred (not an active v1 workflow).** Stored meeting transcripts from
+uploaded audio or text files. Merged by L2 (PR #11, #12) and retained in the
+repository. Audio was transcribed via Cloudflare Workers AI Whisper and only the
+transcript text is stored — no audio files are retained (Cloudflare R2 was never
+used). The upload/transcription user workflow is deferred from active v1
+(2026-11-17); do not drop this table or its existing rows as part of the meeting
+announcer work.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|-------|
@@ -122,14 +128,61 @@ Indexes:
 - `meeting_transcripts_source_idx` (btree on `source`)
 - `meeting_transcripts_transcribed_at_idx` (btree on `transcribed_at`)
 
+### `meeting_events`
+
+**Active v1 — L3 Automatic Meeting Announcer.** Persisted confirmed meeting
+events and their reminder delivery state. Defined here first; implemented by a
+new Drizzle migration. No second event table or competing identity system is
+allowed without documenting why.
+
+| Column | Type | Nullable | Notes |
+|--------|------|----------|-------|
+| `id` | uuid | NO | primary key, default `gen_random_uuid()` |
+| `guild_id` | text | NO | Discord guild snowflake |
+| `channel_id` | text | NO | source channel; must be the configured `#meeting-plans` ID |
+| `source_message_id` | text | NO | original Discord announcement snowflake |
+| `source_message_url` | text | NO | link to the original announcement |
+| `created_by` | text | NO | announcing member's Discord user ID |
+| `title` | varchar(500) | NO | meeting title/description |
+| `start_at` | timestamptz | NO | timezone-aware meeting start |
+| `timezone` | varchar(64) | NO | default `'Asia/Kolkata'`; check constraint |
+| `status` | varchar(20) | NO | `pending` \| `confirmed` \| `cancelled` \| `completed` |
+| `event_version` | integer | NO | default `1`; incremented on reschedule/cancel |
+| `reminder_sent_at` | timestamptz | YES | set only after Discord accepts the reminder |
+| `reminder_message_id` | text | YES | resulting `#pluto` message ID, where available |
+| `reminder_claimed_at` | timestamptz | YES | proposed delivery-claim timestamp for concurrency control; final approval pending |
+| `created_at` | timestamptz | NO | default `now()` |
+| `updated_at` | timestamptz | NO | default `now()`, updated on change |
+
+Constraints and indexes:
+- `meeting_events_source_message_unique` — **unique** on `(guild_id, channel_id, source_message_id)`. The same Discord announcement cannot create duplicate events.
+- `meeting_events_status_start_at_idx` — btree on `(status, start_at)` for due/confirmed-event lookup and startup reconciliation.
+- `meeting_events_start_at_idx` — btree on `start_at`.
+- Check constraint on `status` for the four allowed values.
+- Check constraint that `timezone = 'Asia/Kolkata'` (or a documented allowlist if this ever expands).
+
+Lifecycle:
+- `pending` → `confirmed` on authorization; `cancelled` from pending/confirmed; `completed` after the meeting start/reminder handling.
+- `event_version` starts at `1` and increments on every reschedule or cancellation. Reminder jobs carry the version they were scheduled for; a mismatch makes the job obsolete.
+- `reminder_sent_at` and `reminder_message_id` are delivery tracking, not proof of exactly-once delivery. See `contracts/background-jobs.md` for the honest at-least-once guarantee.
+
+Migration expectations:
+- Add `drizzle/migrations/<timestamp>_meeting_events.sql`; use `CREATE TABLE IF NOT EXISTS`, the unique constraint, checks and indexes.
+- Do not edit an applied migration.
+- Do not drop or rewrite `meeting_transcripts` or existing meeting `search_chunks` rows.
+- Apply through `scripts/migrate/index.ts`; re-runs must be idempotent.
+
 ## Search chunk table
 
 ### `search_chunks`
 
-Searchable chunks backing `/ask`, `/decisions`, and `/digest`. The table is created
+Searchable chunks backing `/ask` and `/digest`. The table is created
 by `drizzle/migrations/0004_search_chunks.sql` and represented in
 `src/db/schema.ts`. Embeddings and generated full-text vectors are stored here per
-`contracts/search.md`. Chunks from meeting transcripts use `source_type = 'meeting'`.
+`contracts/search.md`. Existing chunks from meeting transcripts use
+`source_type = 'meeting'` and are legacy/deferred: no new transcript ingestion is
+active in v1, and the announcer does not write chunks. `#decisions` messages are
+ordinary `source_type = 'discord'` chunks and remain eligible evidence.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|-------|
@@ -228,14 +281,23 @@ cannot contain a NUL byte, so the separator must be concatenated as `bytea`;
 - Each migration file is run at most once
 - Migrations that alter existing columns (e.g. `0001_dear_cerise.sql`) are safe to
   skip if already applied
+- L3 adds one new migration for `meeting_events`. It must not modify or drop the
+  existing transcript tables or `search_chunks`.
+- No migration is created by the 2026-11-17 documentation task; this section
+  records the implementation requirement.
 
 ## Idempotency rule
 
-Re-indexing upserts on `github_id` (issues) and `message_id` (discord_messages).
-Re-runs must not create duplicates.
+Re-indexing upserts on `github_id` (issues) and message identity for Discord.
+Re-runs must not create duplicates. Meeting events are idempotent on
+`(guild_id, channel_id, source_message_id)` and reminder delivery is guarded by
+`event_version` plus a conditional claim. Re-detecting the same announcement
+must not create a second event.
 
 ## What is not in this contract
 
 - Chunk size / overlap tuning (after P2 has real query data)
 - Reranking (not in v1)
-- Miro MCP table structure (pending token and live verification)
+- Miro table structure (pending token and live verification)
+- Transcript-derived summary or action-item tables (deferred with MEET-01)
+- A second meeting-event table or alternative event identity (not permitted without documented justification)
