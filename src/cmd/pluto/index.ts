@@ -6,7 +6,12 @@ import { createSearchRuntimeFromEnv } from '../../search/runtime';
 import { EmbeddingDeferredError } from '../../search/embedding-errors';
 
 import { uploadRouter } from '../../upload/index';
-import { startBackgroundJobs } from '../../jobs/worker';
+import { startBackgroundJobs, ensureMeetingReminderQueue } from '../../jobs/worker';
+import { getDiscordOutputChannelId } from '../../config';
+import { createMeetingDb } from '../../meetings/db';
+import { createMeetingRepository } from '../../meetings/repository';
+import { startMeetingAnnouncer } from '../../meetings/index';
+import { reconcileMeetingReminders } from '../../meetings/reconciliation';
 
 dotenv.config();
 
@@ -27,14 +32,15 @@ const server = app.listen(PORT, () => {
 });
 
 let shutdownBot: (() => Promise<void>) | undefined;
+let shutdownMeetingAnnouncer: (() => Promise<void>) | undefined;
 
 async function start(): Promise<void> {
   const baseStore = createDefaultStore();
   const search = createSearchRuntimeFromEnv();
 
-  if (DATABASE_URL) {
-    await startBackgroundJobs(DATABASE_URL, search?.indexer);
-  }
+  const boss = DATABASE_URL
+    ? await startBackgroundJobs(DATABASE_URL, search?.indexer)
+    : undefined;
 
   if (search) {
     // P1 records predate search_chunks; bring them over once before intake
@@ -57,6 +63,53 @@ async function start(): Promise<void> {
     askService: search?.askService,
   });
   shutdownBot = bot.shutdown;
+
+  if (DATABASE_URL && boss) {
+    const botUserId = bot.client.user?.id;
+    if (!botUserId) {
+      throw new Error('Discord client is not ready; cannot start the meeting announcer');
+    }
+
+    const meetingRepository = createMeetingRepository(createMeetingDb(DATABASE_URL));
+    const outputChannelId = getDiscordOutputChannelId();
+    const sendReminder = async (
+      channelId: string,
+      content: string,
+    ): Promise<{ messageId?: string } | null> => {
+      const channel = await bot.client.channels.fetch(channelId);
+      if (!channel || !channel.isSendable()) {
+        throw new Error(
+          `Meeting reminder target ${channelId} is not a sendable channel visible to the bot`,
+        );
+      }
+      const message = await channel.send({
+        content,
+        allowedMentions: { parse: [] },
+      });
+      return { messageId: message.id };
+    };
+
+    // The queue must exist before anything schedules a reminder. The worker
+    // itself is registered by startMeetingAnnouncer, which owns the listener
+    // and worker lifecycle together.
+    await ensureMeetingReminderQueue(boss);
+
+    const announcer = startMeetingAnnouncer({
+      client: bot.client,
+      repository: meetingRepository,
+      boss,
+      botUserId,
+      isOptedOut: (guildId, userId) => bot.store.isOptedOut(guildId, userId),
+      sendReminder,
+      outputChannelId,
+    });
+    shutdownMeetingAnnouncer = announcer.shutdown;
+
+    await reconcileMeetingReminders({
+      repository: meetingRepository,
+      boss,
+    });
+  }
 }
 
 start().catch((error: unknown) => {
@@ -69,6 +122,9 @@ start().catch((error: unknown) => {
 async function shutdown(signal: string): Promise<void> {
   console.log(`Received ${signal}; shutting down Pluto`);
   server.close();
+  if (shutdownMeetingAnnouncer) {
+    await shutdownMeetingAnnouncer();
+  }
   if (shutdownBot) {
     await shutdownBot();
   }

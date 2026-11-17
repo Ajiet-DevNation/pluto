@@ -2,9 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import dotenv from 'dotenv';
 import { createMeetingDb } from '../../src/meetings/db.js';
 import { createMeetingRepository } from '../../src/meetings/repository.js';
 import { meetingEvents } from '../../src/meetings/schema.js';
+
+// These are integration tests against a real PostgreSQL database. Load the
+// same local .env the application entrypoints use; an exported DATABASE_URL
+// still takes precedence because dotenv does not override existing values.
+dotenv.config({ quiet: true });
 
 const MIGRATION_PATH = path.join(process.cwd(), 'drizzle/migrations/0008_meeting_events.sql');
 
@@ -24,7 +30,7 @@ async function getDb(): Promise<any | null> {
       const db = createMeetingDb(url);
       // Apply the migration first so the table exists on a fresh database.
       const sql = fs.readFileSync(MIGRATION_PATH, 'utf8');
-      await (db as any).client.query(sql);
+      await db.$client.query(sql);
       // Now verify the table is queryable.
       await db.select().from(meetingEvents).limit(1);
       return db;
@@ -58,7 +64,7 @@ async function cleanupRepo(db: any, sourceMessageIds: string[]) {
   const repo = createMeetingRepository(db);
   for (const id of sourceMessageIds) {
     try {
-      await (db as any).client.query(
+      await db.$client.query(
         'DELETE FROM meeting_events WHERE source_message_id = $1',
         [id],
       );
@@ -216,11 +222,12 @@ test('listUnremindedFuture returns only confirmed, unsent, future events', async
       title: 'Future', startAt: future, timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
     });
     ids.push(m1!.sourceMessageId);
-    await repo.create({
+    const m2 = await repo.create({
       guildId: 'g', channelId: 'c', sourceMessageId: uniqueId('m-past'),
       sourceMessageUrl: 'https://discord.com/channels/g/c/m-past', createdBy: 'u1',
       title: 'Past', startAt: past, timezone: 'Asia/Kolkata', status: 'confirmed', eventVersion: 1,
     });
+    ids.push(m2!.sourceMessageId);
     const m3 = await repo.create({
       guildId: 'g', channelId: 'c', sourceMessageId: uniqueId('m-sent'),
       sourceMessageUrl: 'https://discord.com/channels/g/c/m-sent', createdBy: 'u1',
@@ -245,14 +252,14 @@ test('schema has status and timezone constraints', async (t) => {
   await withDb(t, async (db) => {
     // Attempt to insert an invalid status — should fail the check constraint.
     await assert.rejects(
-      (db as any).client.query(
+      db.$client.query(
         `INSERT INTO meeting_events (id, guild_id, channel_id, source_message_id, source_message_url, created_by, title, start_at, timezone, status, event_version) VALUES (gen_random_uuid(), 'g', 'c', 'm-bad-status', 'https://x', 'u1', 't', now(), 'Asia/Kolkata', 'invalid_status', 1)`,
       ),
       /violates check constraint/,
     );
     // Attempt to insert a wrong timezone — should fail the check constraint.
     await assert.rejects(
-      (db as any).client.query(
+      db.$client.query(
         `INSERT INTO meeting_events (id, guild_id, channel_id, source_message_id, source_message_url, created_by, title, start_at, timezone, status, event_version) VALUES (gen_random_uuid(), 'g', 'c', 'm-bad-tz', 'https://x', 'u1', 't', now(), 'UTC', 'confirmed', 1)`,
       ),
       /violates check constraint/,
@@ -263,12 +270,12 @@ test('schema has status and timezone constraints', async (t) => {
 test('unique source-message index prevents duplicates at SQL level', async (t) => {
   await withDb(t, async (db) => {
     const msgId = uniqueId('m-sql-unique');
-    await (db as any).client.query(
+    await db.$client.query(
       `INSERT INTO meeting_events (id, guild_id, channel_id, source_message_id, source_message_url, created_by, title, start_at, timezone, status, event_version) VALUES (gen_random_uuid(), 'g', 'c', $1, 'https://x', 'u1', 't', now(), 'Asia/Kolkata', 'confirmed', 1)`,
       [msgId],
     );
     await assert.rejects(
-      (db as any).client.query(
+      db.$client.query(
         `INSERT INTO meeting_events (id, guild_id, channel_id, source_message_id, source_message_url, created_by, title, start_at, timezone, status, event_version) VALUES (gen_random_uuid(), 'g', 'c', $1, 'https://x', 'u1', 't', now(), 'Asia/Kolkata', 'confirmed', 1)`,
         [msgId],
       ),

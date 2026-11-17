@@ -12,6 +12,7 @@ class FakeRepo implements MeetingRepository {
   event: any;
   claims = 0;
   markSentCalls = 0;
+  markCompletedCalls = 0;
   constructor(event: any) { this.event = { ...event }; }
   async getById(id: string) { return id === MEETING_ID ? this.event : null; }
   async create() { return null; }
@@ -35,7 +36,12 @@ class FakeRepo implements MeetingRepository {
     this.event = { ...this.event, reminderSentAt: new Date(), reminderMessageId: messageId };
     return this.event;
   }
-  async markCompleted() { return null; }
+  async markCompleted(id: string) {
+    this.markCompletedCalls += 1;
+    if (id !== MEETING_ID || !this.event) return null;
+    this.event = { ...this.event, status: 'completed' };
+    return this.event;
+  }
   async listUnremindedFuture() { return []; }
 }
 
@@ -100,7 +106,36 @@ test('worker delivers a reminder and persists sent state', async () => {
   const e = await repo.getById(MEETING_ID);
   assert.ok(e!.reminderSentAt);
   assert.equal(e!.reminderMessageId, 'msg-100');
+  assert.equal(e!.status, 'completed');
+  assert.equal(repo.markCompletedCalls, 1);
   assert.equal(repo.claims, 1);
+});
+
+test('late reminder job skips delivery and marks the event completed', async () => {
+  const { repo, boss, sent } = await makeHandler();
+  repo.event = {
+    ...repo.event,
+    startAt: new Date(Date.now() - 60_000),
+  };
+
+  await boss.run('send-meeting-reminder', [job(MEETING_ID, 1)]);
+
+  assert.equal(sent.length, 0);
+  assert.equal(repo.claims, 0, 'late event should not be claimed for delivery');
+  assert.equal(repo.markCompletedCalls, 1);
+  assert.equal((await repo.getById(MEETING_ID))!.status, 'completed');
+});
+
+test('reminder strips mass-mention text from the event title', async () => {
+  const { repo, boss, sent } = await makeHandler();
+  repo.event = { ...repo.event, title: '@everyone Team standup @here' };
+
+  await boss.run('send-meeting-reminder', [job(MEETING_ID, 1)]);
+
+  assert.equal(sent.length, 1);
+  assert.ok(!sent[0].content.includes('@everyone'));
+  assert.ok(!sent[0].content.includes('@here'));
+  assert.ok(sent[0].content.includes('Team standup'));
 });
 
 test('obsolete version job is a no-op and does not send', async () => {

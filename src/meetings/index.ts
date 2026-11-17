@@ -78,68 +78,113 @@ export function startMeetingAnnouncer(deps: MeetingAnnouncerDeps): StartedMeetin
     logger: log,
   });
 
-  // --- Gateway detection listener (own error boundary inside detectMeetingAnnouncement) ---
-  client.on(Events.MessageCreate, async (message: Message) => {
-    const announcementMessage = message as unknown as AnnouncementMessage;
-    const result = await detectMeetingAnnouncement(announcementMessage, detectionOpts);
-    if (!result.isCandidate) {
-      return;
-    }
+  // --- Gateway detection listener ---
+  // Detection has its own error boundary. The rest of the handler is wrapped
+  // too: a parse, database, or pg-boss failure must never become an unhandled
+  // rejection that could take down the shared Discord gateway loop.
+  const onMessageCreate = async (message: Message): Promise<void> => {
+    try {
+      const announcementMessage = message as unknown as AnnouncementMessage;
+      const result = await detectMeetingAnnouncement(announcementMessage, detectionOpts);
+      if (!result.isCandidate) {
+        return;
+      }
 
-    // Parse deterministically, anchored to the original message createdAt.
-    const parsed = parseMeeting(message.content, message.createdAt, {
-      now: () => new Date(),
-    });
-
-    if (parsed.kind !== 'ok' || !parsed.startAt) {
-      // Missing / ambiguous / invalid / past: post a simple explanation.
-      // Do not create an event or schedule anything.
-      const clarification = parsed.clarification ?? 'I could not parse the meeting date/time.';
+      // Parse deterministically, anchored to the original message createdAt.
+      let parsed: ReturnType<typeof parseMeeting>;
       try {
-        const textChannel = message.channel as TextChannel;
-        await textChannel.send(`<@${message.author.id}> ${clarification}`);
+        parsed = parseMeeting(message.content, message.createdAt, {
+          now: () => new Date(),
+        });
       } catch (error) {
-        log.error('Failed to send clarification reply', {
+        log.error('Meeting announcement parsing failed', {
           messageId: message.id,
           error: error instanceof Error ? error.message : String(error),
         });
+        return;
       }
-      return;
-    }
 
-    // Create a confirmed event (idempotent on unique source identity).
-    const sourceUrl = `https://discord.com/channels/${message.guildId}/${message.channelId}/${message.id}`;
-    const created = await repository.create({
-      guildId: message.guildId!,
-      channelId: message.channelId,
-      sourceMessageId: message.id,
-      sourceMessageUrl: sourceUrl,
-      createdBy: message.author.id,
-      title: parsed.title ?? message.content.trim(),
-      startAt: parsed.startAt,
-      timezone: parsed.timezone,
-      status: 'confirmed',
-      eventVersion: 1,
-    });
+      if (parsed.kind !== 'ok' || !parsed.startAt) {
+        // Missing / ambiguous / invalid / past: post a simple explanation.
+        // Do not create an event or schedule anything.
+        const clarification = parsed.clarification ?? 'I could not parse the meeting date/time.';
+        try {
+          const textChannel = message.channel as TextChannel;
+          await textChannel.send(`<@${message.author.id}> ${clarification}`);
+        } catch (error) {
+          log.error('Failed to send clarification reply', {
+            messageId: message.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+        return;
+      }
 
-    if (!created) {
-      log.error('Failed to persist meeting event', {
+      // Create a confirmed event (idempotent on unique source identity).
+      const sourceUrl = `https://discord.com/channels/${message.guildId}/${message.channelId}/${message.id}`;
+      let created: Awaited<ReturnType<MeetingRepository['create']>>;
+      try {
+        created = await repository.create({
+          guildId: message.guildId!,
+          channelId: message.channelId,
+          sourceMessageId: message.id,
+          sourceMessageUrl: sourceUrl,
+          createdBy: message.author.id,
+          title: parsed.title ?? message.content.trim(),
+          startAt: parsed.startAt,
+          timezone: parsed.timezone,
+          status: 'confirmed',
+          eventVersion: 1,
+        });
+      } catch (error) {
+        log.error('Failed to persist meeting event', {
+          messageId: message.id,
+          sourceMessageId: message.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return;
+      }
+
+      if (!created) {
+        log.error('Failed to persist meeting event', {
+          messageId: message.id,
+          sourceMessageId: message.id,
+        });
+        return;
+      }
+
+      // Schedule the reminder (no-op if meeting already started). If this
+      // fails, the event stays confirmed and unsent so startup reconciliation
+      // can schedule it again.
+      try {
+        await scheduleReminder(boss, created.id, created.eventVersion, created.startAt);
+      } catch (error) {
+        log.error('Failed to schedule meeting reminder; reconciliation will retry', {
+          messageId: message.id,
+          meetingId: created.id,
+          eventVersion: created.eventVersion,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return;
+      }
+
+      log.info('Meeting detected, event confirmed, reminder scheduled', {
         messageId: message.id,
-        sourceMessageId: message.id,
+        meetingId: created.id,
+        channelId: message.channelId,
+        startAt: created.startAt,
       });
-      return;
+    } catch (error) {
+      // Defensive: detection and the individual steps above already catch
+      // their own failures, but no announcer error may escape the gateway.
+      log.error('Meeting announcer handler failed', {
+        messageId: message.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
+  };
 
-    // Schedule the reminder (no-op if meeting already started).
-    await scheduleReminder(boss, created.id, created.eventVersion, created.startAt);
-
-    log.info('Meeting detected, event confirmed, reminder scheduled', {
-      messageId: message.id,
-      meetingId: created.id,
-      channelId: message.channelId,
-      startAt: created.startAt,
-    });
-  });
+  client.on(Events.MessageCreate, onMessageCreate);
 
   // --- Register the durable reminder worker ---
   registerMeetingReminderWorker(boss, {
@@ -151,7 +196,7 @@ export function startMeetingAnnouncer(deps: MeetingAnnouncerDeps): StartedMeetin
 
   return {
     shutdown: async () => {
-      return undefined;
+      client.off(Events.MessageCreate, onMessageCreate);
     },
   };
 }

@@ -82,17 +82,33 @@ export function registerMeetingReminderWorker(
             continue;
           }
 
-          // 4. Verify no reminder has already been sent.
+          // 4. A previously sent reminder completes the event. This also
+          // repairs status if an earlier worker persisted delivery but failed
+          // while making the completion transition.
           if (event.reminderSentAt) {
-            logger.warn('Reminder job: reminder already sent, discarding', {
+            const completed = await repository.markCompleted(meetingId);
+            logger.info('Reminder job: reminder already sent; event completion checked', {
               jobId: job.id,
               meetingId,
               reminderSentAt: event.reminderSentAt,
+              completed: Boolean(completed),
             });
             continue;
           }
 
-          // 5. Claim delivery with a conditional update (10-minute claim expiry).
+          // 5. Do not send a stale reminder after the meeting has begun.
+          if (event.startAt.getTime() <= Date.now()) {
+            const completed = await repository.markCompleted(meetingId);
+            logger.info('Reminder job: meeting already started; delivery skipped', {
+              jobId: job.id,
+              meetingId,
+              startAt: event.startAt,
+              completed: Boolean(completed),
+            });
+            continue;
+          }
+
+          // 6. Claim delivery with a conditional update (10-minute claim expiry).
           const claimed = await repository.claim(meetingId, eventVersion);
           if (!claimed) {
             logger.warn('Reminder job: claim lost or expired, yielding', {
@@ -103,13 +119,25 @@ export function registerMeetingReminderWorker(
             continue;
           }
 
+          // The meeting may have started while the claim update was in flight.
+          if (event.startAt.getTime() <= Date.now()) {
+            const completed = await repository.markCompleted(meetingId);
+            logger.info('Reminder job: meeting started before delivery; delivery skipped', {
+              jobId: job.id,
+              meetingId,
+              startAt: event.startAt,
+              completed: Boolean(completed),
+            });
+            continue;
+          }
+
           logger.info('Reminder job: claim won, preparing delivery', {
             jobId: job.id,
             meetingId,
             eventVersion,
           });
 
-          // 6. Build reminder content and send to #pluto.
+          // 7. Build reminder content and send to #pluto.
           const content = buildReminderContent(event);
           let sendError: Error | null = null;
           let result: { messageId?: string } | null = null;
@@ -134,11 +162,18 @@ export function registerMeetingReminderWorker(
             throw new Error('sendReminder returned no result');
           }
 
-          // 7. Persist reminder_sent_at and reminder_message_id.
+          // 8. Persist reminder_sent_at and reminder_message_id.
           // This is conditional (only sets if not already sent) so a retry
           // after a partial failure cannot create a duplicate delivery record.
           try {
-            await repository.markSent(meetingId, result.messageId ?? '');
+            const marked = await repository.markSent(meetingId, result.messageId ?? '');
+            if (!marked) {
+              logger.warn('Reminder job: event was not updated with delivery state', {
+                jobId: job.id,
+                meetingId,
+                eventVersion,
+              });
+            }
           } catch (error) {
             // Discord accepted the message but PostgreSQL failed to record
             // delivery. Do not retry: retrying would risk a duplicate reminder
@@ -148,6 +183,27 @@ export function registerMeetingReminderWorker(
               meetingId,
               eventVersion,
               reminderMessageId: result.messageId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+
+          // The contract treats an event as completed once its reminder has
+          // been delivered. This is best-effort after Discord accepts the send:
+          // retrying a completion-write failure must not duplicate the message.
+          try {
+            const completed = await repository.markCompleted(meetingId);
+            if (!completed) {
+              logger.warn('Reminder job: delivered reminder but event was not marked completed', {
+                jobId: job.id,
+                meetingId,
+                eventVersion,
+              });
+            }
+          } catch (error) {
+            logger.error('Reminder job: reminder delivered but event completion was not persisted', {
+              jobId: job.id,
+              meetingId,
+              eventVersion,
               error: error instanceof Error ? error.message : String(error),
             });
           }
@@ -184,6 +240,13 @@ function buildReminderContent(event: {
   timezone: string;
   sourceMessageUrl: string;
 }): string {
+  // The parsed title may contain the original announcement text, including
+  // the @everyone/@here that was required to trigger detection. Never repeat
+  // those mass-mention tokens in a reminder.
+  const title = event.title
+    .replace(/@(everyone|here)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   const start = new Date(event.startAt);
   const kolkata = new Date(start.getTime() + (5 * 60 * 60 + 30 * 60) * 1000);
   const hh = String(kolkata.getUTCHours()).padStart(2, '0');
@@ -191,7 +254,7 @@ function buildReminderContent(event: {
   const day = String(kolkata.getUTCDate()).padStart(2, '0');
   const month = String(kolkata.getUTCMonth() + 1).padStart(2, '0');
   const year = kolkata.getUTCFullYear();
-  return `**Meeting reminder** — ${event.title}
+  return `**Meeting reminder** — ${title || 'Meeting'}
 
 Starts at ${day}/${month}/${year} ${hh}:${mm} ${event.timezone}.
 Original announcement: ${event.sourceMessageUrl}

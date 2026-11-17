@@ -87,31 +87,24 @@ Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities 
 |----|---------|-------|------------|------------|-------------|--------|
 | L1 | Provision Neon Postgres with pgvector and tsvector; connect via Drizzle ORM; configure pg-boss job queue; index GitHub issues from Ajiet-DevNation public repos | `src/db/**`, `src/jobs/**`, `scripts/migrate/**`, `tests/db/` | Neon Postgres provisioned and connected; pg-boss configured for background indexing jobs; GitHub issues indexed and searchable | K1 | 5 | ✅ Complete (PR #4, #8, #12) |
 | L2 | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon | `src/upload/**`, `src/transcription/**`, `src/db/**`, `src/jobs/**`, `tests/upload/**`, `tests/transcription/**` | Users can upload meeting transcripts and audio; audio transcribed via Whisper; transcripts stored and indexed in Neon alongside GitHub and Discord content | L1 | 6 | ✅ Merged historically (PR #11, #12); **deferred from active v1** — code and tables retained, no new user workflow |
-| L3 | **Build the complete Automatic Meeting Announcer**: detect `#meeting-plans` announcements, parse date/time, confirm with the announcer, persist `meeting_events`, schedule durable pg-boss reminders, deliver to `#pluto`, and test the full lifecycle. **No `/decisions`, meeting embedding fixes, transcripts or `/meeting` command.** | `src/meetings/**`, `tests/meetings/**`, `.planning/contracts/meeting.md`; new migration under `drizzle/migrations/`; coordinated additions to `src/db/schema.ts` and `src/jobs/worker.ts`; no direct replacement of `src/discord/bot.ts` or `src/discord/commands.ts` | See the 15 acceptance criteria below | L1, P1 | 7 | ⬜ Pending (current assignment) |
+| L3 | **Build the Automatic Meeting Announcer MVP**: detect eligible `#meeting-plans` announcements, parse date/time, auto-persist valid future meetings, schedule durable pg-boss reminders, deliver to `#pluto`, and test the lifecycle. No confirmation/cancel/reschedule controls, slash command, `/decisions`, transcript work, or `/meeting actions`. | `src/meetings/**`, `tests/meetings/**`, migration `0008_meeting_events.sql`, shared startup integration in `src/cmd/pluto/index.ts` and `src/jobs/worker.ts` | See MEET-02 acceptance criteria in `.planning/REQUIREMENTS.md` | L1, P1 | 7 | ◐ Implemented, integrated & test-guild verified; production/deployment acceptance pending |
 
-**L3 acceptance criteria (authoritative):**
-1. Meeting announcements are detected only in `#meeting-plans`.
-2. Actual `@everyone` and `@here` mentions are checked correctly through Discord mention metadata.
-3. Bot-authored and unrelated messages are ignored.
-4. Supported date/time expressions are parsed correctly.
-5. Ambiguous or missing information requires clarification.
-6. Confirmation is required before scheduling.
-7. Confirmed meetings are persisted in `meeting_events`.
-8. Reminder jobs are durable across restarts.
-9. One-hour reminders are delivered to `#pluto`.
-10. Cancellation invalidates scheduled reminders.
-11. Rescheduling invalidates the previous schedule.
-12. Duplicate event creation and concurrent delivery are controlled.
-13. Failures are logged safely and recovered where possible.
-14. Existing `/ask` and `/optout` behavior remains unaffected.
-15. Unit and integration tests pass.
+**L3 MVP acceptance criteria (authoritative: `.planning/REQUIREMENTS.md` → MEET-02):**
+1. Announcements are detected only in configured `#meeting-plans`, from human authors, with actual Discord mention metadata and meeting-related language.
+2. Supported date/time expressions are parsed deterministically in `Asia/Kolkata`, anchored to the announcement timestamp; ambiguous or invalid input gets a clarification.
+3. Valid future events are auto-scheduled without confirmation, then persisted with unique source identity.
+4. Durable pg-boss jobs survive restarts through startup reconciliation and a registered worker.
+5. Reminders go to configured `#pluto` without repeating mass mentions.
+6. Duplicate event creation and concurrent delivery are controlled; delivery is honestly documented as at-least-once.
+7. Failures are handled safely; existing `/ask`, `/optout`, and indexing behavior remains unaffected.
+8. Unit and integration tests pass.
 
 **L3 scope details:**
 - Detection is independent of the ordinary Discord indexing pipeline. Do not change existing intake filters or the startup backfill contract.
 - Channel IDs come from `.planning/config.json`. Do not hardcode `#meeting-plans` or `#pluto`.
 - Require meeting-related language **and** an actual mention. Ignore bot authors and other channels.
 - Use deterministic date/time parsing with `Asia/Kolkata`; interpret relative dates from the original message's `createdAt`.
-- Confirmation UI: show title, date, time, timezone, reminder time and original announcement link, with confirm/cancel controls and a controlled reschedule path. Only the original announcer or an authorized moderator may act.
+- Valid future announcements are auto-scheduled; ambiguity receives a simple clarification. No confirmation, cancellation, rescheduling, or moderator-action UI exists in the MVP.
 - Reminder queue: `send-meeting-reminder`, payload `{ meetingId, eventVersion }`. Register the worker with `boss.work`; creating the queue alone is insufficient.
 - No new slash command; no `@everyone`/`@here` repeat; never edit/delete the original announcement; no voice recording.
 - Document the realistic delivery guarantee (at-least-once). Do not claim exactly-once Discord delivery.
@@ -203,7 +196,7 @@ Prerequisite order:
 | 2 | L1 | Likhith | K1, DB schema, background jobs contract | Neon + pg-boss connected; issues indexed |
 | 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; `/optout` working |
 | 4 | P2 | Pragathi | P1, L1, search contract | `/ask` returns grounded answers with one supporting source |
-| 5 | L3 | Likhith | L1, P1, meeting contract, background jobs, DB schema | Announcer detects, confirms, persists, schedules, reminds one hour before; cancellation/rescheduling verified; shared integration signed off by Khushi |
+| 5 | L3 | Likhith + Khushi integration | L1, P1, meeting contract, background jobs, DB schema | Announcer detects, parses, auto-persists, schedules, reminds one hour before; shared integration and test-guild end-to-end flow verified; production/deployment acceptance pending |
 | 6 | P3 | Pragathi | P2, L1, search contract, background jobs | `/digest` produced on the agreed schedule with grounded content; no duplicate digests |
 | 7 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
 | 8 | K3 | Khushi | K2, P3, L3 | All seven active capabilities tested; v1 deployed to heavencloud plan |
@@ -218,7 +211,7 @@ Prerequisite order:
 | CP2: DB + backend integration | After L1, before P2/L3 | Khushi, Likhith | Neon schema matches API expectations; migrations apply cleanly; `meeting_events` design fits the same migration runner |
 | CP3: Discord + backend integration | After P1, before P2/L3 | Khushi, Pragathi | Discord commands route through backend; `/optout` enforced in retrieval; existing intake unchanged |
 | CP4: Search + retrieval integration | After P2, before P3 | Khushi, Pragathi, Likhith | Embeddings stored correctly; `/ask` citations resolve; `/digest` can reuse retrieval |
-| CP5: Jobs + announcer integration | After L1/P1, before L3 merge | Khushi, Likhith | `meeting_events` migration applies; `send-meeting-reminder` queue is created **and** a worker is registered; reminder posts only to `#pluto`; cancellation/rescheduling invalidate jobs; restart recovery works |
+| CP5: Jobs + announcer integration | After L1/P1, before L3 merge | Khushi, Likhith | `meeting_events` migration applies; `send-meeting-reminder` queue is created **and** a worker is registered; reminder posts only to `#pluto`; restart recovery works. Test-guild integration verified; production/deployment acceptance pending. |
 | CP6: Jobs + digest integration | After P2, before P3 merge | Khushi, Pragathi | Digest command registration is reviewed; scheduling is persistent; repeated runs do not duplicate digests |
 | CP7: Pre-release integration | Before K3 | All three | All seven active capabilities work together; read-only boundary, no-mass-mention and no-voice rules hold end-to-end |
 
@@ -227,12 +220,12 @@ Prerequisite order:
 - [ ] All **seven** active v1 requirements implemented and mapped to phases
 - [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no Miro writes, no private indexing, no unsupported answers
 - [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, Miro board URL)
-- [ ] Meeting announcer: unique source announcement identity; event versioning; cancellation/rescheduling; no `@everyone`/`@here` repeat; no voice recording; no original-announcement edits
+- [ ] Meeting announcer: unique source announcement identity; event versioning; no `@everyone`/`@here` repeat; no voice recording; no original-announcement edits; no confirmation/cancel/reschedule controls in MVP
 - [ ] Reminder delivery guarantee documented and tested (at-least-once; no exactly-once claim)
 - [ ] All acceptance criteria for K1–K3, P1–P3, L1–L3 verified and marked in REQUIREMENTS.md traceability
 - [ ] `STATE.md` updated with final phase progress
 - [ ] v1 release deployed to heavencloud plan
-- [ ] Smoke test on heavencloud plan: `/ask`, `/digest`, announcer detect/confirm/cancel/reschedule with a one-hour reminder, `/optout`, Miro board search all functional
+- [ ] Smoke test on heavencloud plan: `/ask`, `/digest`, announcer auto-detection and reminder delivery, `/optout`, Miro board search all functional
 - [ ] Legacy L2 upload code is present but not presented as an active v1 workflow
 - [ ] Rollback plan documented if deployment fails
 
@@ -262,7 +255,7 @@ Prerequisite order:
 | **P3 depends on P2** | `/digest` needs P2's indexed corpus and retrieval. If P2's full reindex slips, digest quality suffers. | CP4; digest must handle empty/partial periods honestly. |
 | **Announcer date/time ambiguity** | Relative dates ("tomorrow"), missing AM/PM, and timezone mistakes could schedule the wrong reminder. | Deterministic parser, `Asia/Kolkata`, relative to original `createdAt`, explicit clarification, and tests for past/invalid/<1-hour cases. |
 | **Reminder duplication or missed delivery** | A crash between Discord send and database update can duplicate a reminder; a failed send can miss one. | pg-boss retries, versioned events, conditional DB claim, startup reconciliation, honest at-least-once documentation. Never use in-memory `setTimeout`. |
-| **Announcer incorrectly treats conversation as an event** | Ordinary discussion about a meeting could trigger a false event. | Require an actual mention **and** meeting language; require confirmation before scheduling; ignore bot authors/other channels. |
+| **Announcer incorrectly treats conversation as an event** | Ordinary discussion about a meeting could trigger a false event. | Require an actual mention **and** meeting language; ignore bot authors/other channels; only schedule after deterministic parsing yields a valid future date/time. |
 | **Legacy L2 confusion** | Upload/transcription code exists in the repository, so someone may assume it is active v1 work. | STATE/PR-PLAN mark it legacy/deferred; no active acceptance criteria; do not delete it. |
 | **Decisions data mistaken for the command** | Removing `/decisions` could be misread as removing `#decisions`. | `#decisions` stays in the five-channel allowlist; contracts and requirements state it remains indexed evidence. |
 | **Unresolved providers** | Miro token and App-backed GitHub live verification remain pending. | Record decisions in contracts; keep live acceptance pending until verified. |
@@ -272,7 +265,7 @@ Prerequisite order:
 
 ## Unresolved / Pending
 
-- L3 (Automatic Meeting Announcer) implementation — pending; tomorrow's assignment for Likhith
+- L3 implementation, shared startup integration, and real test-guild acceptance are verified; production/deployment acceptance — pending
 - P3 (weekly `/digest`) implementation — pending; assignment for Pragathi
 - `contracts/meeting.md` — drafted 2026-11-17; Khushi approval pending
 - Database contract #1 approval status — pending confirmation by Khushi
@@ -296,4 +289,4 @@ Prerequisite order:
 
 ---
 
-*Last updated: 2026-11-17 — revised v1 scope. L3 is the complete Automatic Meeting Announcer; P3 is weekly `/digest` only; shared integration remains with Khushi; active v1 is seven requirements.*
+*Last updated: 2026-11-18 — revised L3 status: implementation, shared integration, and test-guild acceptance complete; production/deployment acceptance and contract approvals pending. P3 is weekly `/digest` only; active v1 is seven requirements.*
