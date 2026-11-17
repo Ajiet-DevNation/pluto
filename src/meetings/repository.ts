@@ -95,7 +95,9 @@ export function createMeetingRepository(db: NodePgDatabase<typeof schema>): Meet
           reminderMessageId: messageId,
           updatedAt: new Date(),
         })
-        .where(eq(meetingEvents.id, id))
+        .where(
+          and(eq(meetingEvents.id, id), isNull(meetingEvents.reminderSentAt)),
+        )
         .returning();
       return rows[0] ?? null;
     },

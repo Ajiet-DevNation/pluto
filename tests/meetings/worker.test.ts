@@ -11,14 +11,11 @@ const MEETING_ID = 'evt-00000000-0000-0000-0000-000000000001';
 class FakeRepo implements MeetingRepository {
   event: any;
   claims = 0;
-  sends: Array<{ id: string; messageId: string }> = [];
+  markSentCalls = 0;
   constructor(event: any) { this.event = { ...event }; }
   async getById(id: string) { return id === MEETING_ID ? this.event : null; }
   async create() { return null; }
   async getBySource() { return null; }
-  async confirm() { return null; }
-  async cancel() { return null; }
-  async reschedule() { return null; }
   async claim(id: string, expectedVersion: number) {
     this.claims += 1;
     const e = this.event;
@@ -30,7 +27,11 @@ class FakeRepo implements MeetingRepository {
     return this.event;
   }
   async markSent(id: string, messageId: string) {
-    this.sends.push({ id, messageId });
+    this.markSentCalls += 1;
+    // Idempotent: only set if not already sent.
+    if (this.event.reminderSentAt) {
+      return null;
+    }
     this.event = { ...this.event, reminderSentAt: new Date(), reminderMessageId: messageId };
     return this.event;
   }
@@ -94,6 +95,8 @@ test('worker delivers a reminder and persists sent state', async () => {
   assert.equal(sent[0].channelId, '1570721649538502686');
   assert.ok(sent[0].content.includes('Team standup'));
   assert.ok(!sent[0].content.includes('@everyone') && !sent[0].content.includes('@here'));
+  assert.ok(sent[0].content.includes('Asia/Kolkata'));
+  assert.ok(sent[0].content.includes('Original announcement:'));
   const e = await repo.getById(MEETING_ID);
   assert.ok(e!.reminderSentAt);
   assert.equal(e!.reminderMessageId, 'msg-100');
@@ -132,4 +135,44 @@ test('Discord failure throws so pg-boss retries and claim can expire', async () 
   assert.equal(sent.length, 0);
   // reminder_sent_at must not be persisted on failure
   assert.equal((await repo.getById(MEETING_ID))!.reminderSentAt, null);
+});
+
+test('Discord send success but markSent failure: delivery logged, no retry, no duplicate', async () => {
+  const { repo, boss, sent } = await makeHandler({
+    sendReminder: async (channelId, content) => {
+      sent.push({ channelId, content });
+      return { messageId: 'msg-100' };
+    },
+  });
+  let attempts = 0;
+  const originalMarkSent = repo.markSent.bind(repo);
+  repo.markSent = async (id: string, messageId: string) => {
+    attempts += 1;
+    if (attempts === 1) {
+      throw new Error('PostgreSQL connection lost');
+    }
+    return originalMarkSent(id, messageId);
+  };
+
+  await boss.run('send-meeting-reminder', [job(MEETING_ID, 1)]);
+  // Discord send happened exactly once — no duplicate despite markSent failure.
+  assert.equal(sent.length, 1);
+  // markSent was attempted (failed once).
+  assert.equal(attempts, 1);
+  // reminderSentAt was NOT persisted (markSent failed).
+  assert.equal((await repo.getById(MEETING_ID))!.reminderSentAt, null);
+});
+
+test('concurrent delivery attempts: only one reminder is sent', async () => {
+  const { repo, boss, sent } = await makeHandler();
+  // Two jobs for the same meeting and version run sequentially in the test.
+  await boss.run('send-meeting-reminder', [
+    job(MEETING_ID, 1),
+    job(MEETING_ID, 1),
+  ]);
+  // Only one reminder should be sent — the second is a no-op.
+  assert.equal(sent.length, 1);
+  // The second job is caught by the pre-claim reminderSentAt check, so claim
+  // is only invoked once.
+  assert.equal(repo.claims, 1);
 });

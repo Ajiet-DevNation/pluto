@@ -7,6 +7,10 @@
  *
  * Idempotent: uses the singleton key so restarts never multiply jobs. Never
  * sends reminders itself — only schedules jobs for the worker to deliver.
+ *
+ * Returns a result object with the number of jobs scheduled and a list of
+ * events that failed to schedule, so startup integration can detect incomplete
+ * reconciliation and retry failed events safely.
  */
 
 import type { PgBoss } from 'pg-boss';
@@ -23,13 +27,23 @@ export interface ReconciliationDeps {
   };
 }
 
+export interface ReconciliationResult {
+  /** Number of events for which a reminder job was scheduled. */
+  scheduled: number;
+  /** Events that were eligible but failed to schedule. */
+  failed: Array<{
+    meetingId: string;
+    eventVersion: number;
+    error: string;
+  }>;
+}
+
 /**
- * Reconcile unreminded future confirmed events. Returns the number of jobs
- * scheduled/ensured.
+ * Reconcile unreminded future confirmed events.
  */
 export async function reconcileMeetingReminders(
   deps: ReconciliationDeps,
-): Promise<number> {
+): Promise<ReconciliationResult> {
   const { repository, boss } = deps;
   const logger = deps.logger ?? console;
 
@@ -39,6 +53,8 @@ export async function reconcileMeetingReminders(
   });
 
   let scheduled = 0;
+  const failed: ReconciliationResult['failed'] = [];
+
   for (const event of events) {
     try {
       const jobId = await scheduleReminder(
@@ -64,10 +80,16 @@ export async function reconcileMeetingReminders(
         });
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       logger.error('Startup reconciliation: failed to schedule reminder', {
         meetingId: event.id,
         eventVersion: event.eventVersion,
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
+      });
+      failed.push({
+        meetingId: event.id,
+        eventVersion: event.eventVersion,
+        error: message,
       });
     }
   }
@@ -75,6 +97,7 @@ export async function reconcileMeetingReminders(
   logger.info('Startup reconciliation: complete', {
     events: events.length,
     scheduled,
+    failed: failed.length,
   });
-  return scheduled;
+  return { scheduled, failed };
 }

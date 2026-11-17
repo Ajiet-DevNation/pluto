@@ -67,6 +67,23 @@ function toKolkataInstant(year: number, month: number, day: number, hour: number
   return Date.UTC(year, month - 1, day, hour, minute, 0, 0) - KOLKATA_OFFSET_MS;
 }
 
+/**
+ * Validate that (year, month, day) is a real calendar date, including leap
+ * years. Date.UTC would silently roll over invalid dates (for example
+ * 31 February becomes 3 March), so we must check explicitly.
+ */
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return false;
+  }
+  const daysInMonth = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= daysInMonth[month - 1];
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
 /** Convert a UTC instant back to its Asia/Kolkata wall-calendar components. */
 function toKolkataWall(instant: number) {
   const d = new Date(instant + KOLKATA_OFFSET_MS);
@@ -109,6 +126,9 @@ function extractTime(content: string): TimeResult {
     if (meridiem) {
       if (h < 1 || h > 12) {
         return { present: true, invalid: true, reason: 'hour-with-meridiem-out-of-range' };
+      }
+      if (min < 0 || min > 59) {
+        return { present: true, invalid: true, reason: 'minutes-out-of-range' };
       }
       let hour24 = h === 12 ? 0 : h;
       if (meridiem === 'PM') hour24 += 12;
@@ -196,6 +216,9 @@ function extractDate(content: string, anchor: Date): DateResult {
     if (day < 1 || day > 31) {
       return { present: true, invalid: true, reason: 'day-out-of-range' };
     }
+    if (!isValidCalendarDate(year, month, day)) {
+      return { present: true, invalid: true, reason: 'invalid-calendar-date' };
+    }
     return { present: true, year, month, day };
   }
 
@@ -208,6 +231,9 @@ function extractDate(content: string, anchor: Date): DateResult {
     const month = monthIndex(m2[2] as keyof typeof MONTHS)!;
     if (day < 1 || day > 31) {
       return { present: true, invalid: true, reason: 'day-out-of-range' };
+    }
+    if (!isValidCalendarDate(anchorWall.year, month, day)) {
+      return { present: true, invalid: true, reason: 'invalid-calendar-date' };
     }
     return { present: true, year: anchorWall.year, month, day };
   }
@@ -222,6 +248,9 @@ function extractDate(content: string, anchor: Date): DateResult {
     if (day < 1 || day > 31) {
       return { present: true, invalid: true, reason: 'day-out-of-range' };
     }
+    if (!isValidCalendarDate(anchorWall.year, month, day)) {
+      return { present: true, invalid: true, reason: 'invalid-calendar-date' };
+    }
     return { present: true, year: anchorWall.year, month, day };
   }
 
@@ -232,6 +261,9 @@ function extractDate(content: string, anchor: Date): DateResult {
     const month = Number(m4[2]);
     if (day < 1 || day > 31 || month < 1 || month > 12) {
       return { present: true, invalid: true, reason: 'invalid-numeric-date' };
+    }
+    if (!isValidCalendarDate(anchorWall.year, month, day)) {
+      return { present: true, invalid: true, reason: 'invalid-calendar-date' };
     }
     if (day <= 12 && month <= 12 && day !== month) {
       return { present: true, ambiguous: true, reason: 'numeric-date-order-ambiguous' };

@@ -115,3 +115,71 @@ test('weekday that is the message day is ambiguous', () => {
   assert.equal(parsed.kind, 'clarify');
   assert.ok(/ambiguous/.test(parsed.clarification!));
 });
+
+test('invalid minutes with meridiem (3:75 PM) is rejected', () => {
+  const parsed = parse('Today at 3:75 PM');
+  assert.equal(parsed.kind, 'clarify');
+  assert.ok(/time/.test(parsed.clarification!));
+});
+
+test('invalid calendar date 31 February is rejected', () => {
+  const parsed = parse('31 February at 10 AM');
+  assert.equal(parsed.kind, 'clarify');
+  assert.ok(/invalid/.test(parsed.clarification!));
+});
+
+test('invalid calendar date 31 April is rejected', () => {
+  const parsed = parse('31 April at 10 AM');
+  assert.equal(parsed.kind, 'clarify');
+  assert.ok(/invalid/.test(parsed.clarification!));
+});
+
+test('29 February 2027 (not a leap year) is rejected', () => {
+  const parsed = parse('February 29, 2027 at 10 AM');
+  assert.equal(parsed.kind, 'clarify');
+  assert.ok(/invalid/.test(parsed.clarification!));
+});
+
+test('29 February 2026 (not a leap year, explicit year) is rejected', () => {
+  const parsed = parse('February 29, 2026 at 10 AM');
+  assert.equal(parsed.kind, 'clarify');
+  assert.ok(/invalid/.test(parsed.clarification!));
+});
+
+test('29 February 2024 (leap year) is accepted', () => {
+  // Use "Month DD, YYYY" format so the year is captured (not anchored to 2026).
+  // Use a now before Feb 29, 2024 so the date is in the future.
+  const parsed = parse('February 29, 2024 at 10 AM', new Date('2024-02-01T00:00:00.000Z'));
+  assert.equal(parsed.kind, 'ok', `expected ok: ${parsed.clarification}`);
+  assert.equal(parsed.startAt!.getUTCFullYear(), 2024);
+  assert.equal(parsed.startAt!.getUTCMonth(), 1); // February
+  assert.equal(parsed.startAt!.getUTCDate(), 29);
+});
+
+test('boundary time 0:00 (midnight) is accepted', () => {
+  const parsed = parse('Tomorrow at 0:00');
+  assert.equal(parsed.kind, 'ok');
+  assert.equal(parsed.startAt!.getUTCHours(), 18); // Kolkata 0:00 = UTC 18:30 previous day
+  assert.equal(parsed.startAt!.getUTCMinutes(), 30);
+});
+
+test('boundary time 23:59 is accepted', () => {
+  const parsed = parse('Tomorrow at 23:59');
+  assert.equal(parsed.kind, 'ok');
+  assert.equal(parsed.startAt!.getUTCHours(), 18);
+  assert.equal(parsed.startAt!.getUTCMinutes(), 29);
+});
+
+test('12 PM converts to noon (12:00), not 24:00', () => {
+  const parsed = parse('Tomorrow at 12 PM');
+  assert.equal(parsed.kind, 'ok');
+  assert.equal(parsed.startAt!.getUTCHours(), 6); // Kolkata 12:00 = UTC 06:30
+  assert.equal(parsed.startAt!.getUTCMinutes(), 30);
+});
+
+test('12 AM converts to midnight (00:00)', () => {
+  const parsed = parse('Tomorrow at 12 AM');
+  assert.equal(parsed.kind, 'ok');
+  assert.equal(parsed.startAt!.getUTCHours(), 18); // Kolkata 00:00 = UTC 18:30 previous day
+  assert.equal(parsed.startAt!.getUTCMinutes(), 30);
+});

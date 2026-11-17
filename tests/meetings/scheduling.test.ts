@@ -17,14 +17,15 @@ class FakeBoss {
   }
 }
 
-function futureMs(minutesFromNow: number): Date {
-  return new Date(Date.now() + minutesFromNow * 60 * 1000);
+function futureMs(minutesFromNow: number, now: number): Date {
+  return new Date(now + minutesFromNow * 60 * 1000);
 }
 
 test('schedules a reminder one hour before start_at with singleton key', async () => {
   const boss = new FakeBoss();
-  const startAt = futureMs(90); // 90 min away -> reminder in 30 min
-  const jobId = await scheduleReminder(boss, MEETING_ID, VERSION, startAt);
+  const now = 1_700_000_000_000; // fixed clock
+  const startAt = futureMs(90, now); // 90 min away -> reminder in 30 min
+  const jobId = await scheduleReminder(boss, MEETING_ID, VERSION, startAt, { now: () => now });
   assert.equal(jobId, 'job-id');
   assert.equal(boss.sends.length, 1);
   assert.equal(boss.sends[0].queue, MEETING_REMINDER_QUEUE);
@@ -33,22 +34,24 @@ test('schedules a reminder one hour before start_at with singleton key', async (
   assert.equal(boss.sends[0].options.retryLimit, 3);
   assert.equal(boss.sends[0].options.retryBackoff, true);
   assert.equal(boss.sends[0].options.expireInSeconds, 600);
-  // startAfter ~30 minutes = 1800 seconds
+  // startAfter ~30 minutes = 1800 seconds (90 min - 60 min = 30 min)
   assert.ok(boss.sends[0].options.startAfter >= 1790 && boss.sends[0].options.startAfter <= 1810);
 });
 
 test('does not schedule when the meeting has already started', async () => {
   const boss = new FakeBoss();
-  const startAt = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
-  const jobId = await scheduleReminder(boss, MEETING_ID, VERSION, startAt);
+  const now = 1_700_000_000_000;
+  const startAt = new Date(now - 60 * 60 * 1000); // 1 hour ago
+  const jobId = await scheduleReminder(boss, MEETING_ID, VERSION, startAt, { now: () => now });
   assert.equal(jobId, null);
   assert.equal(boss.sends.length, 0);
 });
 
 test('schedules immediately when the meeting is less than one hour away', async () => {
   const boss = new FakeBoss();
-  const startAt = futureMs(10); // 10 min away -> reminder overdue -> startAfter 0
-  const jobId = await scheduleReminder(boss, MEETING_ID, VERSION, startAt);
+  const now = 1_700_000_000_000;
+  const startAt = futureMs(10, now); // 10 min away -> reminder overdue -> startAfter 0
+  const jobId = await scheduleReminder(boss, MEETING_ID, VERSION, startAt, { now: () => now });
   assert.equal(jobId, 'job-id');
   assert.equal(boss.sends[0].options.startAfter, 0);
 });

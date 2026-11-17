@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   reconcileMeetingReminders,
+  type ReconciliationResult,
 } from '../../src/meetings/reconciliation.js';
 import type { MeetingRepository } from '../../src/meetings/repository.js';
 
@@ -14,9 +15,6 @@ class FakeRepo implements MeetingRepository {
   async create() { return null; }
   async getBySource() { return null; }
   async getById() { return null; }
-  async confirm() { return null; }
-  async cancel() { return null; }
-  async reschedule() { return null; }
   async claim() { return null; }
   async markSent() { return null; }
   async markCompleted() { return null; }
@@ -30,17 +28,23 @@ class FakeRepo implements MeetingRepository {
 
 class FakeBoss {
   sends: Array<{ singletonKey: string }> = [];
+  failNext = false;
   async send(_q: string, _p: any, options: any): Promise<string | null> {
+    if (this.failNext) {
+      this.failNext = false;
+      throw new Error('pg-boss send failed');
+    }
     this.sends.push({ singletonKey: options.singletonKey });
     return 'job-id';
   }
 }
 
-async function makeDeps(events: any[]) {
+async function makeDeps(events: any[], failNext = false) {
   const repo = new FakeRepo(events);
   const boss = new FakeBoss();
-  const scheduled = await reconcileMeetingReminders({ repository: repo, boss });
-  return { repo, boss, scheduled };
+  boss.failNext = failNext;
+  const result: ReconciliationResult = await reconcileMeetingReminders({ repository: repo, boss });
+  return { repo, boss, result };
 }
 
 const now = Date.now();
@@ -50,13 +54,28 @@ test('reconciliation schedules reminders for confirmed unsent future events', as
   const events = [
     { id: MEETING_ID_1, eventVersion: 1, startAt: future, status: 'confirmed', reminderSentAt: null },
   ];
-  const { boss, scheduled } = await makeDeps(events);
-  assert.equal(scheduled, 1);
+  const { boss, result } = await makeDeps(events);
+  assert.equal(result.scheduled, 1);
+  assert.equal(result.failed.length, 0);
   assert.equal(boss.sends.length, 1);
   assert.equal(boss.sends[0].singletonKey, `meeting:${MEETING_ID_1}:v1`);
 });
 
-test('reconciliation is idempotent: singleton key prevents duplicate jobs', async () => {
+test('reconciliation reports partial failure when scheduling fails', async () => {
+  const events = [
+    { id: MEETING_ID_1, eventVersion: 1, startAt: future, status: 'confirmed', reminderSentAt: null },
+    { id: MEETING_ID_2, eventVersion: 1, startAt: future, status: 'confirmed', reminderSentAt: null },
+  ];
+  const { boss, result } = await makeDeps(events, true);
+  // First event fails, second succeeds.
+  assert.equal(result.scheduled, 1);
+  assert.equal(result.failed.length, 1);
+  assert.equal(result.failed[0].meetingId, MEETING_ID_1);
+  assert.equal(boss.sends.length, 1);
+  assert.equal(boss.sends[0].singletonKey, `meeting:${MEETING_ID_2}:v1`);
+});
+
+test('reconciliation is idempotent: repeated runs do not multiply jobs', async () => {
   const events = [
     { id: MEETING_ID_1, eventVersion: 1, startAt: future, status: 'confirmed', reminderSentAt: null },
   ];
@@ -71,8 +90,9 @@ test('reconciliation skips events already reminded', async () => {
   const events = [
     { id: MEETING_ID_1, eventVersion: 1, startAt: future, status: 'confirmed', reminderSentAt: new Date() },
   ];
-  const { boss, scheduled } = await makeDeps(events);
-  assert.equal(scheduled, 0);
+  const { boss, result } = await makeDeps(events);
+  assert.equal(result.scheduled, 0);
+  assert.equal(result.failed.length, 0);
   assert.equal(boss.sends.length, 0);
 });
 
@@ -81,8 +101,9 @@ test('reconciliation skips events that have already started', async () => {
   const events = [
     { id: MEETING_ID_1, eventVersion: 1, startAt: past, status: 'confirmed', reminderSentAt: null },
   ];
-  const { boss, scheduled } = await makeDeps(events);
-  assert.equal(scheduled, 0);
+  const { boss, result } = await makeDeps(events);
+  assert.equal(result.scheduled, 0);
+  assert.equal(result.failed.length, 0);
   assert.equal(boss.sends.length, 0);
 });
 
@@ -91,6 +112,5 @@ test('reconciliation never sends reminders directly (only schedules jobs)', asyn
     { id: MEETING_ID_1, eventVersion: 1, startAt: future, status: 'confirmed', reminderSentAt: null },
   ];
   const { boss } = await makeDeps(events);
-  // boss only records sends (schedule calls), no direct delivery content is sent here.
   assert.equal(boss.sends.length, 1);
 });

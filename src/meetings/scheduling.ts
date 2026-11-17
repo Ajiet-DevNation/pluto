@@ -20,6 +20,8 @@ export interface SchedulingOpts {
   expireInSeconds?: number;
   retryLimit?: number;
   retryBackoff?: boolean;
+  /** Injectable clock for testing. Defaults to Date.now. */
+  now?: () => number;
 }
 
 export function singletonKey(meetingId: string, eventVersion: number): string {
@@ -45,7 +47,7 @@ export function scheduleReminder(
   startAt: Date,
   opts: SchedulingOpts = {},
 ): Promise<string | null> {
-  const now = Date.now();
+  const now = (opts.now ?? (() => Date.now()))();
   const startMs = startAt.getTime();
 
   // If the meeting has already started, do not schedule.

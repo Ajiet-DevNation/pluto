@@ -111,13 +111,46 @@ export function registerMeetingReminderWorker(
 
           // 6. Build reminder content and send to #pluto.
           const content = buildReminderContent(event);
-          const result = await sendReminder(outputChannelId, content);
+          let sendError: Error | null = null;
+          let result: { messageId?: string } | null = null;
+          try {
+            result = await sendReminder(outputChannelId, content);
+          } catch (error) {
+            sendError = error instanceof Error ? error : new Error(String(error));
+          }
+
+          // If Discord send failed, throw so pg-boss retries. The claim
+          // expires after 10 minutes, allowing recovery.
+          if (sendError) {
+            logger.error('Reminder job: Discord send failed, retrying', {
+              jobId: job.id,
+              meetingId,
+              eventVersion,
+              error: sendError.message,
+            });
+            throw sendError;
+          }
           if (!result) {
             throw new Error('sendReminder returned no result');
           }
 
           // 7. Persist reminder_sent_at and reminder_message_id.
-          await repository.markSent(meetingId, result.messageId ?? '');
+          // This is conditional (only sets if not already sent) so a retry
+          // after a partial failure cannot create a duplicate delivery record.
+          try {
+            await repository.markSent(meetingId, result.messageId ?? '');
+          } catch (error) {
+            // Discord accepted the message but PostgreSQL failed to record
+            // delivery. Do not retry: retrying would risk a duplicate reminder
+            // in #pluto. Log clearly and acknowledge the job.
+            logger.error('Reminder job: Discord sent but delivery state not persisted', {
+              jobId: job.id,
+              meetingId,
+              eventVersion,
+              reminderMessageId: result.messageId,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
 
           logger.info('Reminder job: reminder delivered', {
             jobId: job.id,
@@ -152,9 +185,15 @@ function buildReminderContent(event: {
   sourceMessageUrl: string;
 }): string {
   const start = new Date(event.startAt);
+  const kolkata = new Date(start.getTime() + (5 * 60 * 60 + 30 * 60) * 1000);
+  const hh = String(kolkata.getUTCHours()).padStart(2, '0');
+  const mm = String(kolkata.getUTCMinutes()).padStart(2, '0');
+  const day = String(kolkata.getUTCDate()).padStart(2, '0');
+  const month = String(kolkata.getUTCMonth() + 1).padStart(2, '0');
+  const year = kolkata.getUTCFullYear();
   return `**Meeting reminder** — ${event.title}
 
-Starts at ${start.toISOString()} (${event.timezone}).
+Starts at ${day}/${month}/${year} ${hh}:${mm} ${event.timezone}.
 Original announcement: ${event.sourceMessageUrl}
 
 This is a one-time reminder from Pluto. No action required.`;
