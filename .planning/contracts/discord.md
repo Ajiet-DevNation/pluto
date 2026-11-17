@@ -2,8 +2,8 @@
 
 **Contract:** #3 — Discord (commands + channel configuration + permissions)
 **Owner:** Pragathi proposes; Khushi approves
-**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 consumes the retrieval/citation rules; `/ask` itself is specified by `contracts/search.md` and the P2 implementation.
-**Consumers:** P1 (Discord indexing, `/optout`), P2 (`/ask` retrieval/citations), P3 (`/digest`), L3 (`/decisions`), CP3.
+**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 consumes the retrieval/citation rules; `/ask` itself is specified by `contracts/search.md` and the P2 implementation. Meeting-announcer detection and interaction rules were added 2026-11-17 and defer to `contracts/meeting.md`.
+**Consumers:** P1 (Discord indexing, `/optout`), P2 (`/ask` retrieval/citations), P3 (`/digest`), L3 (meeting-announcer detection/interaction), CP3, CP5.
 **Sources:** `.planning/PR-PLAN.md` §Shared Technical Contracts; `.planning/config.json` → `planning.discord`; `contracts/security.md`; `contracts/search.md`.
 
 ---
@@ -22,9 +22,11 @@
 
 ### Out of scope
 
-- `/ask`, `/digest`, `/decisions`, meeting summaries/action items (P2, P3, L3).
+- `/ask`, `/digest` (P2, P3).
+- Meeting transcript uploads, transcripts, summaries, action items and `/meeting actions` (deferred with L2/MEET-01). The `/decisions` command is removed from active v1; `#decisions` remains an indexed channel.
+- The automatic meeting announcer's detection/confirmation behaviour is specified in `contracts/meeting.md`. This contract only defines its Discord-channel, mention, authorization and output rules.
 - Embeddings, chunking and vector storage (search contract / L1; P2 integrates).
-- Message edits/deletes, reactions, threads, attachments/OCR, voice.
+- Embeds, attachments/OCR, reactions, threads, voice and voice-channel indexing.
 - DMs, webhook intake, global commands, sharding, multi-guild support.
 - Any write to Discord history. New messages and interaction replies only.
 
@@ -43,6 +45,11 @@
 | D7 | **Fail closed.** Invalid configuration, an inaccessible allowlisted channel, or an ambiguous message is skipped or aborts startup — never widened to "everything visible". |
 | D8 | **`.env` is never edited, printed, logged or committed.** |
 | D9 | **Read-only boundary holds.** Read only allowlisted channels; write only new messages/replies. |
+| D10 | **Meeting detection is scoped.** Only the configured `#meeting-plans` channel and only human-authored messages that carry an actual Discord `@everyone`/`@here` mention **and** meeting-related language. Text-only lookalikes are not mentions. |
+| D11 | **Announcer output is scoped.** Reminders post only to `#pluto`, never repeat `@everyone`/`@here`, never edit/delete the original announcement, and never broaden the allowlist. |
+| D12 | **Announcer detection is independent of indexing.** A detection failure must not stop ordinary indexing, and indexing must not be treated as meeting detection. |
+| D13 | **Only the original announcer or an authorized moderator may confirm, cancel or reschedule.** No member may change another member's event. |
+| D14 | **No voice.** Do not join, listen to, record or index voice channels. |
 
 ---
 
@@ -168,6 +175,19 @@ With no cursor, `after=0` reads the channel's full available history. v1 has no 
 
 `messageUpdate`/`messageDelete` are ignored in v1. Edited messages keep their originally indexed text. The bot never edits or deletes history.
 
+### 5.5 Meeting-announcer detection (MEET-02)
+
+The meeting announcer is a separate consumer of the gateway stream. It does not alter §5.2 intake or the startup backfill.
+
+1. **Channel:** only the ID configured for `#meeting-plans` in `.planning/config.json`. Never infer it from `excluded_channels` and never hardcode it.
+2. **Author:** `author.bot === false` and not the bot itself.
+3. **Mention:** require an actual `@everyone`/`@here` mention from Discord metadata (`message.mentions.everyone === true` in discord.js). Do not accept `@everyone`/`@here` text without mention metadata.
+4. **Language:** require meeting-related language in addition to the mention, so ordinary mentions are not treated as events.
+5. **Scope:** ignore other channels, DMs, system messages and empty messages.
+6. **Independence:** dispatch detection through its own error boundary. A detection error is logged and does not affect indexing; an indexing error does not affect detection.
+7. **No event without confirmation:** detection only produces a candidate. Confirmation, cancellation and rescheduling behaviour and authorization are defined in `contracts/meeting.md`.
+8. **Decisions and other channels:** `#decisions` remains an ordinary indexed channel; its messages are evidence for `/ask` and `/digest`, not meeting announcements.
+
 ---
 
 ## 6. Index record and storage
@@ -280,11 +300,13 @@ Behavior:
 
 ### 8.3 Interactions
 
-- Only `isChatInputCommand()` with `commandName === 'optout'` is handled in P1; other interactions are ignored.
+- P1 handles `isChatInputCommand()` with `commandName === 'optout'`; P2 adds `commandName === 'ask'`. Other interactions are ignored unless a reviewed handler exists.
+- Meeting-announcer controls use message components/modals, not a slash command. Likhith exports the handler; Khushi wires it into the shared interaction router so `/ask` and `/optout` keep working.
 - Missing/foreign guild is rejected ephemerally.
 - Replies are ephemeral; long work may `deferReply` first.
 - Handler errors are logged without content/tokens and return the generic message.
-- The handler never reports success unless the opt-out record was written.
+- The opt-out handler never reports success unless the opt-out record was written.
+- Announcer confirm/cancel/reschedule responses must verify that the interacting member is the original announcer or an authorized moderator before changing anything.
 
 ---
 
@@ -304,7 +326,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 
 | Channel | Permissions |
 |---------|-------------|
-| 4 allowlisted channels | View Channel, Read Message History |
+| 5 allowlisted channels | View Channel, Read Message History |
 | `#pluto` | View Channel, Send Messages, Embed Links |
 | Guild | Use Application Commands |
 
@@ -321,6 +343,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 ## 10. Security, logging and failure behavior
 
 - Only `channel.send` to `#pluto` and interaction replies are writes. No edit/delete/pin/reaction/thread APIs, no webhooks.
+- The meeting announcer may post only a new reminder message to `#pluto`; it never edits/deletes the original announcement and never repeats `@everyone`/`@here`.
 - Logs may contain guild/channel/message IDs, counts, cursors and error codes. Never tokens, `.env` values or message content.
 - One runtime channel failure is logged and isolated; startup configuration/access/registration failures are fatal.
 - `.env` is never opened, modified, echoed or committed.
@@ -333,7 +356,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 
 - `node:test` + `node:assert/strict`; no live Discord calls in the suite; tests use fakes/temp dirs and require no `.env` secrets.
 - Baseline before P1: **44 passing tests**. P1 adds 67 tests; after merging current `main` (47 tests) the branch records **114 pass, 0 fail**.
-- Coverage includes: all four allowlisted channels; `#core-secrets` and other non-allowlisted channels; `#pluto`; bot/webhook/self/system/empty messages; opt-out at index time; record mapping; citation URL; command metadata; guild-scope registration; opt-out handler states; persistence; backfill cursor/pagination/retry/isolation; static scans for the exclusion list, global commands and history writes.
+- Coverage includes: all five allowlisted channels; `#core-secrets` and other non-allowlisted channels; `#pluto`; bot/webhook/self/system/empty messages; opt-out at index time; record mapping; citation URL; command metadata; guild-scope registration; opt-out handler states; persistence; backfill cursor/pagination/retry/isolation; static scans for the exclusion list, global commands and history writes.
 
 ### 11.2 Commands (Windows / PowerShell)
 
@@ -347,6 +370,8 @@ Do **not** run `bash scripts/test.sh`; the npm `test` script is bash-only and br
 Pass criteria: **≥ 44 tests pass, 0 fail**, `npm run build` clean. P1 currently records **114 pass, 0 fail**, build clean.
 
 ### 11.3 Live verification (recorded in the PR)
+
+The P1 live verification below is historical (2026-11-14); `#decisions` was added to the allowlist on 2026-11-15.
 
 Verified live on **2026-11-14** in DevNation (`1422593925658579036`) as `pluto#6497` (application/member `1570482371298467860`):
 
@@ -400,4 +425,5 @@ Live guild verification is no longer open: it was completed on 2026-11-14 and is
 - Only Khushi approves this contract or changes to it.
 - Channel allowlist, output channel and guild are configuration; no code change required.
 - A behaviour not described here is not implemented until it is added here first.
+- The meeting-announcer rules in §5.5 and §8.3 were added 2026-11-17. Their full behaviour is owned by `contracts/meeting.md`; a change to detection, confirmation or reminder delivery must update both contracts.
 - Changes are recorded in `.planning/STATE.md` at the phase transition.

@@ -1,7 +1,19 @@
 # Search contract
 
-Owner: Khushi owns. Approved 2026-11-13.
-Consumers: L1/L2 (storage + indexing), P2 (`/ask`), P3 (`/digest`), L3 (`/decisions`).
+Owner: Khushi owns. Approved 2026-11-13; consumer list revised 2026-11-17.
+Consumers: L1 (storage + indexing), L2 (legacy transcript indexing, deferred), P2 (`/ask`), P3 (`/digest`), L3 (meeting-announcer date/time parsing does **not** use retrieval; it only stores events).
+
+## Scope note (2026-11-17)
+
+- `#decisions` remains an ordinary indexed Discord channel. Its human-authored
+  messages are evidence for `/ask` and `/digest`; there is no `/decisions`
+  command and no separate decisions service module.
+- Meeting transcript content (`source_type = 'meeting'`) is legacy/deferred.
+  Existing chunks remain searchable if present, but no new upload or transcript
+  ingestion workflow is active in v1.
+- The Automatic Meeting Announcer does not add chunks and does not depend on this
+  retrieval contract. Its deterministic date/time parsing is defined in
+  `contracts/meeting.md`.
 
 ## Purpose
 

@@ -23,6 +23,7 @@
 - No edits or deletions of existing messages or history.
 - Posting new messages (answers, notifications, digests) is permitted.
 - No indexing of channels outside the configured allowlist.
+- The meeting announcer reads only `#meeting-plans`, posts only to `#pluto`, and never edits or deletes the original announcement.
 
 ### Scope
 - Only public Ajiet-DevNation repositories are indexed.
@@ -54,13 +55,15 @@ The boundary holds only if both layers hold. Neither is sufficient alone.
 - `/optout` excludes a member's messages from indexing and retrieval.
 - Enforced as a filter at retrieval time and skipped at index time.
 - Source messages are never deleted or modified.
-- Opted-out content must not appear in `/ask` answers, `/decisions` results, or citations.
+- Opted-out content must not appear in `/ask` answers, `/digest` output, or citations.
 
 ## 4. Evidence-only answers
 
 - `/ask` answers only from retrieved indexed chunks.
 - If retrieval returns no chunk above the relevance threshold, respond with the standard no-evidence message.
 - The model must never fall back to general knowledge.
+- `#decisions` messages are ordinary indexed evidence for `/ask` and `/digest`; there is no `/decisions` command.
+- Meeting transcript chunks are legacy/deferred. The standard no-evidence message text is unchanged because legacy transcript rows may still exist; no new transcript ingestion is active in v1.
 
 Standard no-evidence message:
 
@@ -68,15 +71,16 @@ Standard no-evidence message:
 
 ## 5. Citations
 
-- Product decision 2026-11-14: `/ask` answers are displayed without visible source links, source footers, or citation markers. Evidence grounding, opt-out filtering and blocked-channel filtering still apply before generation.
+- Product decision 2026-11-16 (superseding the 2026-11-14 answer-only decision): `/ask` displays **one best supporting source** below the answer. The search layer retains full internal evidence for grounding, audit, opt-out and blocked-channel filtering. The model must not write URLs or citation markers into the answer text.
 - Supported formats:
   - GitHub: commit, pull request, or issue URL
   - Discord: `https://discord.com/channels/{guild}/{channel}/{message}`
   - Miro: board URL
-  - Meeting: link to the stored transcript
+  - Meeting transcript: link to the stored transcript (legacy/deferred data only)
 - The bot's own output channel (`#pluto`) and prior bot answers are never used as citations. This is enforced in code by `CitationPolicy.blockedChannelIds`, not by convention.
 - **Bot-authored messages are never indexed or cited, in any channel.** The rule is about authorship, not location. `#pluto` is blocked because it contains only bot output; other channels are filtered by `author.bot` at index time.
 - `#pluto-bot` is excluded from v1 retrieval as an operational log channel. Revisit post-v1 with a bot-author filter if its human discussion proves worth searching.
+- The meeting announcer posts only a new reminder in `#pluto`. It never edits or deletes the original announcement, never becomes a citation source, and never repeats `@everyone`/`@here`.
 
 ## 6. Secrets
 
@@ -103,8 +107,8 @@ Standard no-evidence message:
 
 | Item | Status |
 |------|--------|
-| Miro access | `pending` — no token, no MCP server, no board allowlist. Client implemented against the read-only REST API with mocked tests; live verification deferred. |
+| Miro access | `pending` — no token and no approved board allowlist. Client implemented against the read-only REST API with mocked tests; live verification deferred. |
 | GitHub App | `pending` — requires Ajiet-DevNation org owner. Interim read-only fine-grained PAT in use. |
-| Discord indexing method (webhooks vs polling) | `pending` |
+| Discord indexing method (webhooks vs polling) | **resolved** — discord.js gateway `MessageCreate` + one startup backfill per allowlisted channel; no webhooks (`contracts/discord.md`). |
 | Cloudflare Workers AI credential owner | **resolved** — provisioned by Khushi, 2026-11-13. Workers AI: Read token, verified against live API. Details in `config.json`. |
-| Cloudflare R2 audio storage | `pending` |
+| Cloudflare R2 audio storage | **not used** — L2 transcript-only flow is legacy/deferred; the audio buffer is discarded and no R2 persistence exists. |

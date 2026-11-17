@@ -1,11 +1,11 @@
 # Pluto — Project State
 
 ## Project Reference
-See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
+See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 
-**Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro, meetings), always cited to their original source, and never generated from unsupported general knowledge.
+**Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** Phase 2 `/ask` remediation on `feature/phase-2-retrieval` (2026-11-16). The IVFFlat recall defect, dead full-text path, repository-scope bug, missing exact issue/PR lookup, duplicate evidence, answer URL leak, version hallucination, dedupe-before-filter bug, contributor detection gap, evaluation integrity gaps and multi-repository scoping were fixed and validated locally. A follow-up round added on-demand GitHub contributor lookup, one visible supporting source per answer (product decision 2026-11-16), prompt-leakage cleanup, and comparison purpose/limitation disclosure. The verified `/ask` evaluation gate passes 9/9; remaining unverified failures are mostly entries whose source files are absent from the current corpus (`dn-orbit` README/`package.json`, `pluto` `package.json`), with occasional live-model variance on `readme-pluto-purpose` and `cross-which-repo-uses-next`. A full GitHub reindex, a `content_hash` backfill, and any production index rebuild still require manual approval. P2 is merged to `main` (`298e557`, PR #10). Cleanup PR #13 (`fix/pre-l3-cleanup`) is merged to `main` (`f335152`). Scope changed on 2026-11-15: PR notifications (PRNT-01) are cancelled, and action items belong to P3. Remaining before K3: L3 (Likhith: `/decisions` and the meeting embedding fix), P3 (Pragathi: meeting summaries, action items, `/meeting actions`, `/digest`), and INDEX-03 (Miro REST, blocked on token).
+**Current focus:** Revised v1 scope (2026-11-17) on `docs/update-v1-scope`. **Seven capabilities are active in v1**: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. The `/decisions` command and the transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`) are removed from active v1; `#decisions` remains in the five-channel allowlist and is indexed evidence for `/ask` and `/digest`, and the legacy L2 code/tables are retained. **L3 (Likhith) is the complete Automatic Meeting Announcer**, covering detection, parsing, confirmation, `meeting_events` persistence, durable pg-boss reminders and tests. **P3 (Pragathi) is weekly `/digest` only.** P2 is merged to `main` (`298e557`, PR #10) and the retrieval audit is merged (`2ff2871`, PR #14); full-corpus reindex and live Discord acceptance remain pending. P1 is merged and live-verified (PR #9). L1 is complete. L2 is historically merged but deferred from active v1. Remaining before K3: L3, P3, INDEX-03 (Miro REST, blocked on token), and P2 live acceptance.
 
 ## Team
 - Project Lead: Khushi
@@ -18,8 +18,9 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 - Job Queue: pg-boss
 - GitHub Integration: Read-only GitHub App via Octokit App auth (implementation/live verification pending)
 - Miro Integration: Read-only Miro REST v2, GET only, `boards:read`; typed board content and connectors are in scope, hand-drawn ink is not readable as text. MCP and OCR are dropped.
-- AI & Embeddings: Cloudflare Workers AI (bge-base-en-v1.5, instruct model, Whisper)
-- Audio Storage: None in v1; transcript-only ingestion
+- AI & Embeddings: Cloudflare Workers AI (bge-base-en-v1.5, instruct model); Whisper code retained for legacy L2, not an active v1 workflow
+- Audio Storage: None in v1. The legacy L2 upload path discards audio after transcription; no active upload workflow
+- Meeting Announcer: deterministic date/time parsing in `Asia/Kolkata`; durable reminders through pg-boss
 
 ## Read-Only Boundary
 - No writes to GitHub repositories
@@ -33,14 +34,14 @@ See: .planning/PROJECT.md (updated 2026-11-12 after initialization)
 |-------|--------|--------------|----------|
 | Phase 1: Foundation & GitHub & Miro Indexing | ◐ Partial (GitHub code in place; App auth live check and Miro verification pending) | INDEX-01, INDEX-03 | 6/8 |
 | Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
-| Phase 3: Meeting Transcript & Audio Ingestion | ✅ Implemented (L2 merged; acceptance verification tracked) | INDEX-04 | 4/4 |
-| Phase 4: /ask Q&A with Citations | ◐ In progress (retrieval audit fixed IVFFlat/FTS/scoping; full-corpus reindex and live acceptance pending) | ASK-01 | 3/4 |
-| Phase 5: /decisions | ○ Pending | DECI-01 | 0/1 |
-| Phase 6: /digest Weekly Summaries | ○ Pending | DIGE-01 | 0/3 |
-| Phase 7: Meeting Summaries & Action Items | ○ Pending | MEET-01 | 0/4 |
-| Phase 8: Hardening & v1 Release | ○ Pending | All | 0/5 |
+| Phase 3: /ask Q&A with Citations | ◐ In progress (P2 and retrieval audit merged; full-corpus reindex and live acceptance pending) | ASK-01 | 3/5 |
+| Phase 4: /digest Weekly Summaries | ○ Pending (P3 — Pragathi) | DIGE-01 | 0/10 |
+| Phase 5: Automatic Meeting Announcer | ○ Pending (L3 — Likhith) | MEET-02 | 0/15 |
+| Phase 6: Hardening & v1 Release | ○ Pending | All active v1 (7) | 0/6 |
 
-## Phase 2 `/ask` Retrieval Audit (2026-11-16)
+**Deferred / not active v1 phases:** transcript upload and ingestion (INDEX-04), transcript summaries/action items/`/meeting actions` (MEET-01), and the `/decisions` command (DECI-01). L2's upload code remains in the repository but is not in the v1 critical path.
+
+## `/ask` Retrieval Audit (2026-11-16)
 
 Branch: `feature/phase-2-retrieval` (no commits, no merges, no pushes made).
 
@@ -267,11 +268,11 @@ Files changed in this hardening pass: `src/ask/command.ts`,
 | K2 | Khushi | ◐ Code merged (PR #3, #7); live Miro check pending | Read-only guards, citations, evidence gate, and tests are merged. Miro REST token, approved board IDs, and live read verification are outstanding; there is no shared DevNation Miro workspace yet. |
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
 | L1 | Likhith | ✅ Complete (PR #4 + #8, migration fix #12) | Neon/Drizzle, pg-boss, public issue indexing, scheduled worker, idempotent migrations, tests, `vector(768)`/`tsvector` migration. Latest `main` tests/build pass. |
-| L2 | Likhith | ✅ Complete | Build audio file upload endpoint; transcribe via Cloudflare Workers AI Whisper; store transcripts in Neon (transcript-only, no R2); index meeting transcript content in Neon. Depends on L1. |
-| L3 | Likhith | ⬜ Pending | Depends on L2, P2. |
+| L2 | Likhith | ✅ Merged historically (PR #11, #12); ⏸ **deferred from active v1** | Upload endpoint, Whisper transcription, `meeting_transcripts` storage and transcript chunk indexing exist in the repository. No new upload/transcription user workflow is active in v1. The code and tables must not be deleted; L2 is not a prerequisite for L3 or P3. |
+| L3 | Likhith | ⬜ Pending (current assignment) | **Automatic Meeting Announcer, end-to-end.** Detect announcements in `#meeting-plans`, parse date/time deterministically in `Asia/Kolkata`, confirm with the original announcer/moderator, persist `meeting_events`, schedule durable `send-meeting-reminder` jobs, deliver one reminder to `#pluto`, handle cancellation/rescheduling/restarts, and test the lifecycle. Depends on L1 and P1; not on L2 or P2. |
 | P1 | Pragathi | ✅ Merged and live-verified (PR #9) | Discord allowlist intake, startup backfill, bot-author exclusion, guild-scoped `/optout`; live verification passed. |
-| P2 | Pragathi / Khushi takeover fix | ✅ Merged (PR #10, `298e557`); retrieval audit on `feature/phase-2-retrieval` | `/ask`, repo-scoped retrieval, one visible supporting source, App/PAT auth, and paginated public-repository indexing for READMEs, issues, PRs, commits, contributor identities, and eligible source files. 2026-11-16 retrieval audit fixed IVFFlat probes, full-text query construction, exact issue/PR lookup, dedupe and answer guards; a follow-up round added on-demand contributor lookup, prompt-leakage cleanup, and comparison disclosure. Full reindex and live Discord acceptance are still pending. |
-| P3 | Pragathi | ⬜ Pending | Depends on P2, L2. |
+| P2 | Pragathi / Khushi takeover fix | ✅ Merged (PR #10 `298e557`; retrieval audit PR #14 `2ff2871`) | `/ask`, repo-scoped retrieval, one visible supporting source, App/PAT auth, and paginated public-repository indexing for READMEs, issues, PRs, commits, contributor identities, and eligible source files. Retrieval audit fixed IVFFlat probes, full-text query construction, exact issue/PR lookup, dedupe and answer guards. Full reindex and live Discord acceptance are still pending. |
+| P3 | Pragathi | ⬜ Pending (current assignment) | **Weekly `/digest` only.** Summarize the intended weekly period from indexed GitHub and Discord activity, include `#decisions` messages as evidence, ground every claim in indexed records, handle empty periods, deliver on a persistent non-duplicating schedule, preserve privacy/opt-out/bot-author rules, and test. No meeting summaries, transcript action items or `/meeting actions`. Depends on P2 and L1. |
 
 ### Credentials inventory
 
@@ -285,7 +286,7 @@ Values are never recorded here — only existence, owner, scope and expiry.
 | Neon `DATABASE_URL` | ✅ Active | Likhith | Dev database, pgvector | — |
 | Miro access token | ❌ Missing | — | Board read | — |
 | Cloudflare Workers AI | ✅ Active | Khushi | Workers AI: Read (account-wide); bge-base-en-v1.5 (768), llama-3.1-8b-instruct, whisper-large-v3-turbo | Token has no TTL — roll quarterly |
-| Cloudflare R2 | ⛔ Not used in v1 | — | Transcript-only audio flow; no audio persistence | — |
+| Cloudflare R2 | ⛔ Not used in v1 | — | Legacy L2 transcript-only flow; no audio persistence | — |
 
 ## Discord Channel Policy
 
@@ -323,6 +324,8 @@ At the start of each development session:
 - Pending/unresolved decisions are marked `"pending"` in `PROJECT.md` Key Decisions and `config.json`, and are not assumed resolved across sessions.
 
 ## Unresolved / Pending Items
+- **L3 Automatic Meeting Announcer implementation — pending** (Likhith's current assignment)
+- **P3 weekly `/digest` implementation — pending** (Pragathi's current assignment)
 - P2 full-corpus live reindex using the GitHub App; verify all public repos are enumerated and private repos/files remain excluded
 - `content_hash` backfill for the 7,880 pre-migration rows (production write; SQL prepared in `contracts/database.md`)
 - IVFFlat index rebuild — not required for the runtime fix; any rebuild needs manual approval and `CREATE INDEX CONCURRENTLY` outside a transaction
@@ -330,12 +333,21 @@ At the start of each development session:
 - Miro REST access token and approved board IDs — **pending** (no shared DevNation Miro workspace exists)
 - Team/mentor agreement on posting five lines of meeting notes in `#meeting-plans` after each meeting — **pending**
 - Cleanup PR #13 (`fix/pre-l3-cleanup`) — merged to `main` (`f335152`)
-- API contract #2, Miro contract #5, and Meeting contract #8 — pending
-- Database contract #1 approval status — pending confirmation by Khushi
-- Audio storage — decided: not needed for v1, transcript-only (audio goes directly to Whisper, buffer discarded)
+- API contract #2 and Miro contract #5 — pending
+- Meeting contract #8 — drafted in `contracts/meeting.md` on 2026-11-17; **Khushi approval pending**
+- Database contract #1 approval status — pending confirmation by Khushi; `meeting_events` definition added 2026-11-17
+- Audio storage — **legacy L2 only**: no active v1 upload workflow; retained code discards the audio buffer and stores no R2/disk audio
 - CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_AI_TOKEN — verified working via Live API check; need values in each .env for local runs
-- UPLOAD_TOKEN — static upload auth token for v1; needs value in each .env
+- UPLOAD_TOKEN — only needed if the legacy L2 upload route is run; not part of active v1 acceptance
 - UI & showcase team members — joining after bot completion (pending)
+- Legacy L2 disposition (keep vs. eventually remove) — post-v1 decision; do not delete as part of the announcer work
+- Reintroducing `/decisions`, transcript uploads or transcript summaries — post-v1 decision; not committed
+
+### Known discrepancies (documented, not fixed)
+
+- `.planning/config.json` still contains `planning.timeline.all_ten_capabilities_in_v1: true` and `planning.credentials.cloudflare_r2: "pending decision — audio storage"`. Both are stale relative to the seven-capability scope and the deferred transcript workflow. They were intentionally **not** edited because this task forbids changing `config.json`; Khushi must approve a config update. Channel IDs and the five-channel allowlist in that file are correct and unchanged.
+- The existing `index-github-issues` and `index-transcript` queues are created without a registered `boss.work` processor; GitHub indexing currently runs through a 30-minute in-process interval. This is pre-existing and is recorded in `contracts/background-jobs.md`. The new `send-meeting-reminder` queue must register a real worker rather than copying that gap.
+- The legacy L2 upload route exists as an HTTP endpoint; there is no Discord `/meeting upload` command and no active upload workflow. This is why L2 is documented as legacy/deferred rather than an active v1 capability.
 
 ## Decisions (2026-11-13)
 
@@ -357,27 +369,53 @@ At the start of each development session:
 | Bot-authored messages | Rejected at intake; stored records carry `author_is_bot=false` and are never retrieved or cited | `contracts/discord.md` |
 | P1 persistence | Atomic JSON at `PLUTO_DATA_DIR` (default `~/.pluto`); Neon swap at P2 | `contracts/discord.md` |
 | `/optout` reversibility | One-way in v1; `/optin` deferred to a later contract change | `contracts/discord.md` |
-| Background job queues | `index-github-issues` (startup + 30min) + `index-transcript` (on upload); singleton, retryLimit 3, retryBackoff | `contracts/background-jobs.md` |
-| Upload auth | Static `UPLOAD_TOKEN` bearer token for v1; per-user auth deferred to P3 | `contracts/database.md` (L2 contract) |
-| Transcript storage | `meeting_transcripts` table + `search_chunks` chunks with `vector(768)` + `search_vector` tsvector | `contracts/database.md` (L2 contract), `contracts/search.md` |
-| Audio persistence | None — audio buffer discarded after Whisper; no R2, no disk | `contracts/database.md` (L2 scope decision) |
-| Citation URL for transcripts | `sourceUrl` from upload (e.g., Discord message link); gap tracked as pending if no real URL | `contracts/database.md` (L2 contract) |
+| Background job queues | `index-github-issues` (startup + 30min), `index-transcript` (legacy), `send-meeting-reminder` (added 2026-11-17); singleton, retryLimit 3, retryBackoff | `contracts/background-jobs.md` |
+| Upload auth | Static `UPLOAD_TOKEN` bearer token for the **legacy L2** upload route; no active v1 user workflow | `contracts/database.md` (L2 contract) |
+| Transcript storage | **Legacy/deferred:** `meeting_transcripts` table + `search_chunks` chunks with `vector(768)` + `search_vector` tsvector | `contracts/database.md` (L2 contract), `contracts/search.md` |
+| Audio persistence | None — legacy audio buffer discarded after Whisper; no R2, no disk; not active v1 | `contracts/database.md` (L2 scope decision) |
+| Citation URL for transcripts | **Legacy/deferred:** `sourceUrl` from upload; no new transcript citations in active v1 | `contracts/database.md` (L2 contract) |
 | GitHub corpus scope | All public Ajiet-DevNation repos; README, issues, PRs, commits, and eligible text/source files; no private repos; paginated | `contracts/github.md`, `contracts/search.md` |
 
 ## Scope decisions (2026-11-15)
 
 | Decision | Value | Recorded in |
 |----------|-------|-------------|
-| PR notifications (PRNT-01) | **Cancelled for v1.** The Takoyaki bot already posts PR notices in the server; Pluto would duplicate them. PRs stay indexed for `/ask` and `/decisions` | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md` |
-| Action items | Owned by **P3 (Pragathi)**; L3 does not include them | `PR-PLAN.md`, `PROJECT.md` |
-| v1 capability count | **Nine** (was ten) | `REQUIREMENTS.md`, `ROADMAP.md` |
-| #decisions channel | Created 2026-11-15 in the public Information category; added to the allowlist for decision capture. #core-general and #event-ideation were rejected as private Core Channels | `config.json`, `contracts/discord.md` |
+| PR notifications (PRNT-01) | **Cancelled for v1.** The Takoyaki bot already posts PR notices in the server; Pluto would duplicate them. PRs stay indexed for `/ask` and `/digest` | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md` |
+| Action items | **Superseded 2026-11-17.** No longer active v1; transcript-derived action items are deferred with L2/MEET-01. The 2026-11-15 P3 ownership decision is historical only. | `PR-PLAN.md`, `PROJECT.md` |
+| v1 capability count | **Nine on 2026-11-15; revised to seven on 2026-11-17** | `REQUIREMENTS.md`, `ROADMAP.md` |
+| #decisions channel | Created 2026-11-15 in the public Information category; added to the allowlist for decision capture. **The `/decisions` command was removed from active v1 on 2026-11-17; the channel remains indexed evidence.** #core-general and #event-ideation were rejected as private Core Channels | `config.json`, `contracts/discord.md` |
+
+## Scope decisions (2026-11-17)
+
+| Decision | Value | Recorded in |
+|----------|-------|-------------|
+| `/decisions` command | **Removed from active v1.** `#decisions` remains in the five-channel allowlist; its human-authored messages are evidence for `/ask` and `/digest`. No decisions service module is required. | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md`, `contracts/search.md` |
+| Transcript upload and transcription | **Deferred from active v1.** L2 code, `meeting_transcripts` and existing chunks are retained and must not be deleted. | `PROJECT.md`, `REQUIREMENTS.md`, `contracts/database.md` |
+| Meeting summaries, action items and `/meeting actions` | **Deferred (MEET-01).** No active assignment; do not implement from the old PR plan. | `PROJECT.md`, `REQUIREMENTS.md`, `PR-PLAN.md` |
+| Voice recording | **Out of scope.** Do not join, listen to, record or index voice channels. | `PROJECT.md`, `contracts/meeting.md`, `contracts/discord.md` |
+| Automatic Meeting Announcer | **New MEET-02, owned end-to-end by L3 (Likhith).** Detection, parsing, confirmation, persistence, scheduling, delivery and tests. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `contracts/meeting.md` |
+| Active v1 capability count | **Seven** (was nine). PRNT-01 cancelled; INDEX-04 and MEET-01 deferred; DECI-01 removed from active v1. | `REQUIREMENTS.md`, `ROADMAP.md` |
+| Meeting timezone | **`Asia/Kolkata`**, with relative dates resolved from the original announcement's `createdAt`. | `contracts/meeting.md` |
+| Date/time parsing | **Deterministic, testable parsing.** No new AI provider; ambiguous input asks the announcer to clarify. | `contracts/meeting.md` |
+| Reminder delivery | **Durable pg-boss queue `send-meeting-reminder`, at-least-once delivery.** No in-memory `setTimeout`; no exactly-once claim. | `contracts/background-jobs.md`, `contracts/meeting.md` |
+| Shared-file integration | **Khushi owns final integration** of `src/discord/bot.ts`, `src/discord/commands.ts`, `src/jobs/worker.ts`, `src/db/schema.ts` and `drizzle/migrations/`. Feature owners supply isolated modules. | `PR-PLAN.md` |
+| Channel policy | **Unchanged:** exactly five indexed channels including `#decisions`; `#pluto` is never indexed; no allowlist broadening for the announcer. | `config.json`, `contracts/discord.md` |
 
 ## Citation and channel safety rules
 - `#pluto` is never indexed: the bot must not cite its own answers.
 - The self-citation rule is about **bot-authored messages in any channel**, not only `#pluto`.
 - `#pluto-bot` is excluded from v1 retrieval: operational noise, not project knowledge.
 
+## Meeting-announcer safety rules (2026-11-17)
+- Detection reads only `#meeting-plans`; reminders post only to `#pluto`.
+- An actual Discord `@everyone`/`@here` mention **and** meeting-related language are required.
+- Bot-authored and other-channel messages are ignored.
+- Reminders never repeat `@everyone`/`@here`.
+- The original announcement is never edited or deleted.
+- Only the original announcer or an authorized moderator may confirm, cancel or reschedule.
+- No voice-channel recording or indexing.
+- The five-channel indexing allowlist is unchanged; `#pluto` remains excluded.
+
 ---
 
-*Last updated: 2026-11-16 — Phase 2 `/ask` follow-up plus pre-smoke hardening on `feature/phase-2-retrieval`. Added on-demand GitHub contributor lookup, one visible supporting source (superseding the answer-only decision), prompt-leakage cleanup, comparison purpose/limitation disclosure, Discord 2,000-character safe truncation, honest 403 rate-limit versus access-error handling, and contributor cache disclosure. 273 tests pass; build clean; `git diff --check` clean; verified eval gate 9/9; last answer eval 18/23 with corpus-gap failures. Live Cloudflare/Discord smoke was intentionally not run. No commits, merges, pushes or PRs were created.*
+*Last updated: 2026-11-17 — revised v1 scope. Active v1 is seven capabilities: INDEX-01/02/03, ASK-01, DIGE-01, MEET-02 and OPTO-01. `/decisions` and the transcript upload/summary/action-item pipeline are deferred/removed from active scope; `#decisions` remains indexed evidence and legacy L2 code/tables are retained. L1 complete, L2 merged but deferred, P1 merged/live-verified, P2 merged with live acceptance pending, L3 and P3 are the current assignments. Documentation only — no application source, tests, migrations, config, commits, merges or pushes were made.*
