@@ -12,11 +12,51 @@ import { fetchWithRetry } from '../http/retry';
 
 export class GitHubReadError extends Error {
   readonly status?: number;
+  /** True when GitHub reported a primary or secondary rate limit. */
+  readonly rateLimited: boolean;
 
-  constructor(message: string, status?: number) {
+  constructor(
+    message: string,
+    status?: number,
+    options: { rateLimited?: boolean } = {},
+  ) {
     super(message);
     this.name = 'GitHubReadError';
     this.status = status;
+    this.rateLimited = options.rateLimited ?? false;
+  }
+}
+
+/**
+ * GitHub uses 403 for both permission failures and rate limits. Prefer the
+ * response headers, then the error message, to keep the distinction honest.
+ */
+export function isRateLimitedGitHubResponse(
+  response: Response,
+  details = '',
+): boolean {
+  if (response.status === 429) return true;
+  if (response.status !== 403) return false;
+  if (response.headers.get('x-ratelimit-remaining') === '0') return true;
+  if (response.headers.get('retry-after')) return true;
+  return /rate limit|secondary rate limit|abuse detection/i.test(details);
+}
+
+async function githubErrorDetails(response: Response): Promise<string | undefined> {
+  try {
+    const text = (await response.text()).trim();
+    if (!text) return undefined;
+    try {
+      const parsed = JSON.parse(text) as { message?: unknown };
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message.trim().slice(0, 300);
+      }
+    } catch {
+      // Fall back to raw text.
+    }
+    return text.slice(0, 300);
+  } catch {
+    return undefined;
   }
 }
 
@@ -284,13 +324,20 @@ export function createGitHubReader(options: GitHubReaderOptions): GitHubReader {
       retryableStatus: (retryResponse) =>
         retryResponse.status === 429 ||
         retryResponse.status >= 500 ||
-        (retryResponse.status === 403 && retryResponse.headers.get('x-ratelimit-remaining') === '0'),
+        (retryResponse.status === 403 &&
+          (retryResponse.headers.get('x-ratelimit-remaining') === '0' ||
+            Boolean(retryResponse.headers.get('retry-after')))),
     });
 
     if (!response.ok) {
+      const details = await githubErrorDetails(response);
+      const rateLimited = isRateLimitedGitHubResponse(response, details);
       throw new GitHubReadError(
-        `GitHub read failed: ${path} returned ${response.status}`,
+        details
+          ? `GitHub read failed: ${path} returned ${response.status}: ${details}`
+          : `GitHub read failed: ${path} returned ${response.status}`,
         response.status,
+        { rateLimited },
       );
     }
 

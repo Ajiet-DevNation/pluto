@@ -32,6 +32,8 @@ Requires Node.js 22 or newer (see `.nvmrc`).
 | `npm start` | Run the compiled server |
 | `npm run dev` | Watch mode via tsx |
 | `npm test` | Run the test suite (`node:test` via tsx) |
+| `npm run eval:ask` | Live answer-quality evaluation; writes `tmp/eval-ask-report.json` |
+| `npm run eval:retrieval -- --allow-cloudflare` | Live retrieval-quality evaluation; uses a dedicated read-only database connection and verifies the read-only settings before querying. Requires explicit Cloudflare opt-in and writes `tmp/eval-retrieval-report.json`. When enabled, curated-question embeddings can consume Cloudflare usage. |
 
 ## Health check
 

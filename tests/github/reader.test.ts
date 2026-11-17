@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGitHubReader, GitHubReadError } from '../../src/github/reader';
+import { createGitHubReader, GitHubReadError, isRateLimitedGitHubResponse } from '../../src/github/reader';
 import { ReadOnlyViolation } from '../../src/guardrails/read-only';
 
 interface RecordedCall {
@@ -126,6 +126,86 @@ test('non-2xx responses throw GitHubReadError with the status', async () => {
       return true;
     },
   );
+});
+
+test('403 permission errors are not mislabeled as rate limits', async () => {
+  const { impl } = fakeFetch({ message: 'Resource not accessible by integration' }, 403);
+  const reader = createGitHubReader({ token: 't', fetchImpl: impl });
+
+  await assert.rejects(
+    () => reader.listContributors('Ajiet-DevNation', 'private-repo'),
+    (error: unknown) => {
+      assert.ok(error instanceof GitHubReadError);
+      assert.equal(error.status, 403);
+      assert.equal(error.rateLimited, false);
+      assert.match(error.message, /Resource not accessible by integration/);
+      return true;
+    },
+  );
+});
+
+test('403 rate-limit messages are identified without headers', async () => {
+  const { impl } = fakeFetch({ message: 'API rate limit exceeded for installation.' }, 403);
+  const reader = createGitHubReader({ token: 't', fetchImpl: impl });
+
+  await assert.rejects(
+    () => reader.listContributors('Ajiet-DevNation', 'pluto'),
+    (error: unknown) => {
+      assert.ok(error instanceof GitHubReadError);
+      assert.equal(error.status, 403);
+      assert.equal(error.rateLimited, true);
+      return true;
+    },
+  );
+});
+
+test('GitHub rate limits are identified from headers and message details', () => {
+  assert.equal(
+    isRateLimitedGitHubResponse(
+      new Response(null, { status: 403, headers: { 'x-ratelimit-remaining': '0' } }),
+    ),
+    true,
+  );
+  assert.equal(
+    isRateLimitedGitHubResponse(
+      new Response(null, { status: 403, headers: { 'retry-after': '5' } }),
+    ),
+    true,
+  );
+  assert.equal(
+    isRateLimitedGitHubResponse(new Response(null, { status: 403 }), 'API rate limit exceeded'),
+    true,
+  );
+  assert.equal(
+    isRateLimitedGitHubResponse(
+      new Response(null, { status: 403 }),
+      'Resource not accessible by integration',
+    ),
+    false,
+  );
+  assert.equal(isRateLimitedGitHubResponse(new Response(null, { status: 429 })), true);
+});
+
+test('secondary rate-limit 403 responses with retry-after are retried', async () => {
+  let calls = 0;
+  const fetchImpl = (async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Response(JSON.stringify({ message: 'secondary rate limit' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json', 'retry-after': '0' },
+      });
+    }
+    return new Response(JSON.stringify(REPO), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as unknown as typeof fetch;
+  const reader = createGitHubReader({ token: 't', fetchImpl });
+
+  const repo = await reader.getRepo('Ajiet-DevNation', 'pluto');
+  assert.equal(repo.fullName, 'Ajiet-DevNation/pluto');
+  assert.equal(calls, 2);
 });
 
 test('rejects a write method through the guard', () => {

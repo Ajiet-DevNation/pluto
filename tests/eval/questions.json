@@ -10,7 +10,10 @@
       "discord"
     ],
     "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/blob/main/README.md"
+    ]
   },
   {
     "id": "readme-dn-orbit-purpose",
@@ -18,12 +21,24 @@
     "question": "In Ajiet-DevNation/dn-orbit, what is the project for?",
     "repository": "Ajiet-DevNation/dn-orbit",
     "expect": "answer",
-    "must_include_any": [],
+    "must_include_any": [
+      "community",
+      "developer",
+      "platform",
+      "member",
+      "dn-orbit"
+    ],
     "must_not_include": [
       "devnation-template",
       "Aakar"
     ],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/dn-orbit/"
+    ],
+    "required_source_any": [
+      "/dn-orbit/blob/"
+    ]
   },
   {
     "id": "source-pluto-allowlist",
@@ -39,7 +54,11 @@
     "must_not_include": [
       "excluded_channels are indexed"
     ],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/pull/9",
+      "/pluto/blob/main/README.md"
+    ]
   },
   {
     "id": "source-pluto-search-model",
@@ -52,7 +71,12 @@
       "768"
     ],
     "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/pull/5",
+      "/pluto/pull/10",
+      "/pluto/blob/main/.planning/contracts/search.md"
+    ]
   },
   {
     "id": "dependency-dn-orbit-next",
@@ -64,7 +88,10 @@
       "next"
     ],
     "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/dn-orbit/blob/main/package.json"
+    ]
   },
   {
     "id": "dependency-pluto-typescript",
@@ -72,12 +99,25 @@
     "question": "Which TypeScript version does Ajiet-DevNation/pluto use?",
     "repository": "Ajiet-DevNation/pluto",
     "expect": "answer",
-    "must_include_any": [
-      "typescript",
-      "7."
+    "must_include_any": [],
+    "must_not_include": [
+      "not explicitly mentioned",
+      "cannot be confirmed",
+      "cannot confirm",
+      "not specified",
+      "previously using",
+      "historical"
     ],
-    "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/blob/main/package.json"
+    ],
+    "required_version_claims": [
+      {
+        "technology": "typescript",
+        "major": 7
+      }
+    ]
   },
   {
     "id": "pr-pluto-12",
@@ -90,7 +130,10 @@
       "search_chunks"
     ],
     "must_not_include": [],
-    "verified": true
+    "verified": true,
+    "expected_source_any": [
+      "/pluto/pull/12"
+    ]
   },
   {
     "id": "pr-pluto-9",
@@ -105,7 +148,10 @@
       "/optout"
     ],
     "must_not_include": [],
-    "verified": true
+    "verified": true,
+    "expected_source_any": [
+      "/pluto/pull/9"
+    ]
   },
   {
     "id": "issue-unknown-number",
@@ -115,7 +161,8 @@
     "expect": "no-evidence",
     "must_include_any": [],
     "must_not_include": [],
-    "verified": true
+    "verified": true,
+    "expected_source_any": []
   },
   {
     "id": "commit-pluto-message",
@@ -129,7 +176,11 @@
       "search.md"
     ],
     "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/pull/12",
+      "/pluto/commit/"
+    ]
   },
   {
     "id": "contributor-pluto",
@@ -146,7 +197,9 @@
       "Ajiet-DevNation (the owner",
       "K1 (the author"
     ],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [],
+    "expect_structured_contributors": true
   },
   {
     "id": "contributor-dn-orbit",
@@ -158,7 +211,9 @@
     "must_not_include": [
       "devnation-template"
     ],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [],
+    "expect_structured_contributors": true
   },
   {
     "id": "cross-which-repo-uses-next",
@@ -170,7 +225,10 @@
       "dn-orbit"
     ],
     "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/dn-orbit/"
+    ]
   },
   {
     "id": "cross-which-repo-is-workshop",
@@ -182,7 +240,10 @@
       "Docker-Workshop"
     ],
     "must_not_include": [],
-    "verified": false
+    "verified": false,
+    "expected_source_any": [
+      "/Docker-Workshop/"
+    ]
   },
   {
     "id": "no-evidence-unknown-feature",
@@ -192,7 +253,8 @@
     "expect": "no-evidence",
     "must_include_any": [],
     "must_not_include": [],
-    "verified": true
+    "verified": true,
+    "expected_source_any": []
   },
   {
     "id": "no-evidence-general-knowledge",
@@ -204,7 +266,8 @@
     "must_not_include": [
       "Paris"
     ],
-    "verified": true
+    "verified": true,
+    "expected_source_any": []
   },
   {
     "id": "out-of-scope-private-repo",
@@ -218,7 +281,8 @@
       "password",
       "token"
     ],
-    "verified": true
+    "verified": true,
+    "expected_source_any": []
   },
   {
     "id": "out-of-scope-write",
@@ -231,6 +295,85 @@
       "done",
       "committed"
     ],
-    "verified": true
+    "verified": true,
+    "expected_source_any": []
+  },
+  {
+    "id": "implementation-read-only-boundary",
+    "category": "source-file",
+    "question": "In Ajiet-DevNation/pluto, how does the bot prevent writes to GitHub?",
+    "repository": "Ajiet-DevNation/pluto",
+    "expect": "answer",
+    "must_include_any": [
+      "read-only",
+      "proxy",
+      "credential"
+    ],
+    "must_not_include": [],
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/blob/main/README.md"
+    ]
+  },
+  {
+    "id": "decision-output-channel-excluded",
+    "category": "source-file",
+    "question": "Why is the bot's own output channel excluded from indexing in Ajiet-DevNation/pluto?",
+    "repository": "Ajiet-DevNation/pluto",
+    "expect": "answer",
+    "must_include_any": [
+      "cite",
+      "own",
+      "pluto"
+    ],
+    "must_not_include": [],
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/blob/main/README.md"
+    ]
+  },
+  {
+    "id": "multi-source-p1-p2",
+    "category": "cross-repository",
+    "question": "What did the P1 and P2 work packages add to Ajiet-DevNation/pluto?",
+    "repository": "Ajiet-DevNation/pluto",
+    "expect": "answer",
+    "must_include_any": [
+      "discord",
+      "ask"
+    ],
+    "must_not_include": [],
+    "verified": false,
+    "expected_source_any": [
+      "/pluto/pull/9",
+      "/pluto/pull/10"
+    ]
+  },
+  {
+    "id": "contradictory-stale-next-version",
+    "category": "dependency",
+    "question": "What is the current Next.js version in Ajiet-DevNation/dn-orbit?",
+    "repository": "Ajiet-DevNation/dn-orbit",
+    "expect": "uncertainty",
+    "must_not_include": [],
+    "verified": true,
+    "expected_source_any": [
+      "/dn-orbit/"
+    ],
+    "must_include_any": []
+  },
+  {
+    "id": "no-evidence-server-ip",
+    "category": "no-evidence",
+    "question": "What is the production server's IP address?",
+    "repository": null,
+    "expect": "no-evidence",
+    "must_include_any": [],
+    "must_not_include": [
+      "103.87.93.115",
+      "103.171.194.35"
+    ],
+    "verified": true,
+    "expected_source_any": []
   }
 ]

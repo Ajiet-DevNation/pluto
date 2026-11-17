@@ -12,8 +12,9 @@ this schema — additions are added here first, not invented at the call site.
 
 ## Database provider
 
-Neon PostgreSQL with `pgvector` and `pg_trgm` extensions. Connection via `DATABASE_URL`
-from the environment. ORM: Drizzle ORM with `node-postgres` driver.
+Neon PostgreSQL with `pgvector`. Connection via `DATABASE_URL` from the
+environment. ORM: Drizzle ORM with `node-postgres` driver. `pg_trgm` was dropped
+by migration `0007_drop_pg_trgm.sql` because nothing uses it.
 
 ## Naming conventions
 
@@ -140,6 +141,7 @@ by `drizzle/migrations/0004_search_chunks.sql` and represented in
 | `channel_id` | text | YES | Discord only; `null` for other sources |
 | `author_id` | text | YES | used for opt-out filtering |
 | `content` | text | NO | the chunk text |
+| `content_hash` | text | YES | model-versioned content hash for resume and vector reuse |
 | `embedding` | vector(768) | YES | nullable until indexed |
 | `search_vector` | tsvector | YES | generated from `content` via `english` config |
 | `indexed_at` | timestamptz | NO | default `now()` |
@@ -159,6 +161,65 @@ Constraints:
   Re-indexing upserts; it must not create duplicates.
 
 Source: `contracts/search.md` §Chunk format, §Full-text search
+
+### IVFFlat index operations (2026-11-16 audit)
+
+Live index metadata:
+
+- `search_chunks_embedding_idx` is `USING ivfflat (embedding vector_cosine_ops)`.
+- `reloptions` is `null`, so it was created without an explicit `lists` option.
+- PostgreSQL's default `ivfflat.probes` is `1`.
+- The index's computed list count is not exposed by a catalog view. During the
+  audit, a temporary transaction-local `enable_seqscan=off` was used to force
+  index probes; recall stopped changing between probes 64 and 1000, so the
+  effective count is at most ~64–100 on the current 7,880-chunk table.
+  It is **not** 8: probes=8 recalls only 65.6% of exact top-5.
+
+The application sets `ivfflat.probes` with
+`set_config('ivfflat.probes', …, true)` inside the same transaction as the
+vector query. The default is `IVFFLAT_PROBES=100`, which is effectively exact
+for this index. No standalone `SET` is used. `enable_seqscan` is intentionally
+not forced: measured plans show PostgreSQL choosing exact sequential/Bitmap
+scans for this small table, and forcing the index could make a future rebuilt
+index approximate. Re-tune `IVFFLAT_PROBES` if `lists` grows.
+
+No index rebuild, replacement, or migration was performed. If one is needed:
+
+1. Take a fresh `ANALYZE search_chunks`.
+2. Create the replacement with `CREATE INDEX CONCURRENTLY` **outside** a
+   transaction block (therefore not inside a Drizzle migration transaction).
+3. For the current ~7.9k rows, a small explicit `lists` value (e.g. 64–100) is
+   reasonable; for a much larger corpus follow pgvector guidance (rows/1000 up
+   to 1M, `sqrt(rows)` above).
+4. Validate recall against an exact scan with `npm run eval:retrieval` before
+   dropping the old index.
+5. Re-tune `IVFFLAT_PROBES` to cover the new list count.
+
+### `content_hash` backfill (pending approval)
+
+All 7,880 existing rows currently have `content_hash = NULL` because they were
+embedded before migration `0005_search_chunk_hash.sql`. A normal reindex will
+therefore re-embed every chunk instead of skipping unchanged content. Backfilling
+the hash does **not** require re-embedding, but it is a production data write and
+has not been executed. Proposed one-time operation, to be reviewed and approved:
+
+```sql
+UPDATE search_chunks
+SET content_hash = encode(
+  digest(
+    convert_to('@cf/baai/bge-base-en-v1.5:768', 'UTF8')
+      || '\x00'::bytea
+      || convert_to(content, 'UTF8'),
+    'sha256'
+  ),
+  'hex'
+)
+WHERE content_hash IS NULL;
+```
+
+`pgcrypto` (which provides `digest`) is already installed. PostgreSQL `text`
+cannot contain a NUL byte, so the separator must be concatenated as `bytea`;
+`chr(0)` would fail.
 
 ## Migration strategy
 

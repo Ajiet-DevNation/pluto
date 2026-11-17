@@ -8,6 +8,7 @@
 
 import type { AnswerGenerator, EmbeddingClient } from './types';
 import { fetchWithRetry } from '../http/retry';
+import { SYSTEM_PROMPT } from './prompt';
 import { EmbeddingQuotaExceededError, AnswerQuotaExceededError, nextUtcDay } from './embedding-errors';
 
 export const EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
@@ -164,10 +165,7 @@ export class CloudflareAnswerGenerator implements AnswerGenerator {
           messages: [
             {
               role: 'system',
-              content:
-                'You are Pluto, a project assistant. Answer only from the supplied evidence. ' +
-                'If the evidence does not answer the question, say that you cannot find evidence. ' +
-                'Never use outside knowledge. Cite evidence items as [1], [2], etc.',
+              content: SYSTEM_PROMPT,
             },
             { role: 'user', content: prompt },
           ],
