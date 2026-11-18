@@ -37,7 +37,6 @@ class FakeHelpInteraction implements HelpInteraction {
 
 test('/help lists every guild-scoped command with examples', () => {
   for (const command of [
-    '`/ask',
     '`/digest',
     '`/upcoming meetings`',
     '`/upcoming events`',
@@ -50,6 +49,7 @@ test('/help lists every guild-scoped command with examples', () => {
   }
   assert.ok(HELP_CONTENT.includes('Examples'));
   assert.ok(HELP_CONTENT.length <= 2_000);
+  assert.equal(HELP_CONTENT.includes('/ask'), false);
   assert.equal(HELP_CONTENT.includes('/resource'), false);
   assert.equal(HELP_CONTENT.includes('/upcoming all'), false);
 });

@@ -2,8 +2,8 @@
 
 **Contract:** #3 — Discord (commands + channel configuration + permissions)
 **Owner:** Pragathi proposes; Khushi approves
-**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 consumes the retrieval/citation rules; `/ask` itself is specified by `contracts/search.md` and the P2 implementation. Meeting-announcer detection and interaction rules were added 2026-11-17 and defer to `contracts/meeting.md`. P3 activity and event commands were added 2026-11-18 and defer to `contracts/database.md`.
-**Consumers:** P1 (Discord indexing, `/optout`), P2 (`/ask` retrieval/citations), P3 (`/digest`, `/upcoming`, `/event`, `/help`), L3 (meeting-announcer detection/interaction), CP3, CP5.
+**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 `/ask` was merged historically but its command and handler were removed from active v1 on 2026-11-18; the retrieval engine is retained for a future re-enable. Meeting-announcer detection and interaction rules were added 2026-11-17 and defer to `contracts/meeting.md`. P3 activity and event commands were added 2026-11-18 and defer to `contracts/database.md`.
+**Consumers:** P1 (Discord indexing, `/optout`), P3 (`/digest`, `/upcoming`, `/event`, `/help`), L3 (meeting-announcer detection/interaction), CP3, CP5.
 **Sources:** `.planning/PR-PLAN.md` §Shared Technical Contracts; `.planning/config.json` → `planning.discord`; `contracts/security.md`; `contracts/search.md`.
 
 ---
@@ -22,7 +22,7 @@
 
 ### Out of scope
 
-- `/ask` (P2). P3 adds `/digest`, `/upcoming`, `/event`, and `/help`; see §8.3.
+- `/ask` (P2) was removed from active v1 on 2026-11-18. The command/handler are gone; the retrieval engine is retained for a future re-enable. P3 adds `/digest`, `/upcoming`, `/event`, and `/help`; see §8.3.
 - Meeting transcript uploads, transcripts, summaries, action items and `/meeting actions` (deferred with L2/MEET-01). The `/decisions` command is removed from active v1; `#decisions` remains an indexed channel.
 - The automatic meeting announcer's detection/confirmation behaviour is specified in `contracts/meeting.md`. This contract only defines its Discord-channel, mention, authorization and output rules.
 - Embeddings, chunking and vector storage (search contract / L1; P2 integrates).
@@ -187,7 +187,7 @@ The meeting announcer is a separate consumer of the gateway stream. It does not 
 5. **Scope:** ignore other channels, DMs, system messages and empty messages.
 6. **Independence:** dispatch detection through its own error boundary. A detection error is logged and does not affect indexing; an indexing error does not affect detection.
 7. **No event without confirmation:** detection only produces a candidate. Confirmation, cancellation and rescheduling behaviour and authorization are defined in `contracts/meeting.md`.
-8. **Decisions and other channels:** `#decisions` remains an ordinary indexed channel; its messages are evidence for `/ask` and `/digest`, not meeting announcements.
+8. **Decisions and other channels:** `#decisions` remains an ordinary indexed channel; its messages are evidence for `/digest` and a future `/ask`, not meeting announcements.
 
 ---
 
@@ -326,10 +326,10 @@ Rules:
 
 ### 8.4 Interactions
 
-- P1 handles `isChatInputCommand()` with `commandName === 'optout'`; P2 adds `commandName === 'ask'`; P3 adds `digest`, `upcoming`, `event`, and `help`. Other interactions are ignored unless a reviewed handler exists.
-- Meeting-announcer controls use message components/modals, not a slash command. Likhith exports the handler; Khushi wires it into the shared interaction router so `/ask` and `/optout` keep working.
+- P1 handles `isChatInputCommand()` with `commandName === 'optout'`; P3 adds `digest`, `upcoming`, `event`, and `help`. The `/ask` handler was removed on 2026-11-18. Other interactions are ignored unless a reviewed handler exists.
+- Meeting-announcer controls use message components/modals, not a slash command. Likhith exports the handler; Khushi wires it into the shared interaction router so `/optout` keeps working.
 - Missing/foreign guild is rejected ephemerally.
-- Replies are public for `/digest`, `/upcoming`, `/help`, and successful `/ask` answers. `/optout`, the `/event add` confirmation, and wrong-guild/error messages remain ephemeral. Long work may `deferReply` first.
+- Replies are public for `/digest`, `/upcoming`, and `/help`. `/optout`, the `/event add`/`/event cancel` confirmations, and wrong-guild/error messages remain ephemeral. Long work may `deferReply` first.
 - Handler errors are logged without content/tokens and return the generic message.
 - The opt-out handler never reports success unless the opt-out record was written.
 - Announcer confirm/cancel/reschedule responses must verify that the interacting member is the original announcer or an authorized moderator before changing anything.
@@ -455,6 +455,7 @@ Live guild verification is no longer open: it was completed on 2026-11-14 and is
 - The meeting-announcer rules in §5.5 and §8.4 were added 2026-11-17. Their full behaviour is owned by `contracts/meeting.md`; a change to detection, confirmation or reminder delivery must update both contracts.
 - P3 activity and event commands were added 2026-11-18. `/event add` writes one `events` row and posts one public record in `#events`; `/digest` is on demand and adds no scheduler. Changes must update `contracts/database.md` and `contracts/background-jobs.md` where applicable.
 - The 12-hour time-input/display change in §8.3 was approved by Khushi on 2026-11-18; 24-hour input remains accepted for compatibility.
+- `/ask` and ASK-01 were removed from active v1 on 2026-11-18. The command and handler are removed from §8; the retrieval engine remains available for a future re-enable.
 - The public `/digest`, `/upcoming`, and `/help` replies in §8.3/§8.4 were approved by Khushi on 2026-11-18. `/optout` and the `/event add` confirmation remain ephemeral.
 - The every-member `/event add` change in §8.3 and §9.3 was approved by Khushi on 2026-11-18.
 - `/event cancel` was approved by Khushi on 2026-11-18. Cancellation sets `status = 'cancelled'`, posts one public notice, and never edits/deletes the original `#events` record.

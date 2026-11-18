@@ -34,8 +34,6 @@ import {
   type OptOutStore,
 } from './types';
 import { handleOptOutInteraction, type OptOutInteraction } from '../optout/command';
-import { handleAskInteraction, type AskInteraction } from '../ask/command';
-import type { AskService } from '../search/ask';
 import {
   handleDigestInteraction,
   type DigestInteraction,
@@ -72,7 +70,6 @@ export interface StartDiscordBotOptions {
   env?: NodeJS.ProcessEnv;
   policy?: DiscordPolicy;
   store?: BotStore;
-  askService?: Pick<AskService, 'ask'>;
   activity?: ActivityServices;
 }
 
@@ -95,12 +92,6 @@ async function replyUnavailable(
     });
   }
 }
-
-const unavailableAskService: Pick<AskService, 'ask'> = {
-  async ask(): Promise<never> {
-    throw new Error('/ask is not configured (search credentials are missing)');
-  },
-};
 
 export function createDiscordClient(): Client {
   return new Client({
@@ -254,8 +245,6 @@ export async function startDiscordBot(
     void handleMessageCreate(message, context);
   });
 
-  const askService = options.askService ?? unavailableAskService;
-
   const postPublicRecord = async (
     content: string,
   ): Promise<{ messageId?: string } | null> => {
@@ -277,18 +266,6 @@ export async function startDiscordBot(
   };
 
   client.on(Events.InteractionCreate, (interaction) => {
-    if (interaction.isChatInputCommand() && interaction.commandName === 'ask') {
-      void handleAskInteraction(interaction as unknown as AskInteraction, {
-        guildId: policy.guildId,
-        askService,
-      }).catch((error: unknown) => {
-        defaultLogger.error('Unhandled /ask interaction error', {
-          error: errorMessage(error),
-        });
-      });
-      return;
-    }
-
     if (interaction.isChatInputCommand() && interaction.commandName === 'digest') {
       if (!options.activity?.digest) {
         void replyUnavailable(interaction, ACTIVITY_MESSAGES.digestUnavailable);

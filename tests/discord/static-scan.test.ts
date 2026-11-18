@@ -6,7 +6,6 @@ import { join, relative, resolve } from 'node:path';
 const SCANNED_DIRECTORIES = [
   'src/discord',
   'src/optout',
-  'src/ask',
   'src/search',
   'src/digest',
   'src/upcoming',

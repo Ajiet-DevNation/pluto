@@ -1,5 +1,9 @@
 # /ask evaluation contract
 
+> ASK-01 and the `/ask` command were removed from active v1 on 2026-11-18. This
+> contract and its evaluation tooling are retained for a possible future
+> re-enable of the retrieval engine.
+
 **Owner:** Khushi approves; P2 owner maintains the question set.
 **Status:** Draft — expected answers are filled in only after a reviewer checks the live GitHub source.
 **Applies to:** P2 `/ask`, every later change to indexing or retrieval.

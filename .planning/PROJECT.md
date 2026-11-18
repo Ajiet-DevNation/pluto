@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Pluto is a read-only Discord knowledge assistant for the DevNation developer community at AJIET. It connects information from public GitHub repositories, selected Discord channels, and Miro boards into one searchable place accessible through Discord. Members can ask questions and receive answers with source citations, view on-demand project activity snapshots and upcoming meetings/events, and rely on an automatic meeting announcer that detects meeting announcements in `#meeting-plans` and posts a reminder in `#pluto` one hour before the meeting.
+Pluto is a read-only Discord knowledge assistant for the DevNation developer community at AJIET. It connects information from public GitHub repositories, selected Discord channels, and Miro boards into one searchable place accessible through Discord. Members can view on-demand project activity snapshots and upcoming meetings/events, add or cancel club events, and rely on an automatic meeting announcer that detects meeting announcements in `#meeting-plans` and posts a reminder in `#pluto` one hour before the meeting.
 
 ## Core Value
 
@@ -19,8 +19,7 @@ Make community information easier to find, understand, and manage — with answe
 - [ ] Index public GitHub repositories belonging to Ajiet-DevNation (read-only)
 - [ ] Index selected Discord channels (allowlist only; `#decisions` messages remain indexed evidence)
 - [ ] Index Miro boards via REST v2 (read-only) — boards, comments, texts, diagrams, and other board content
-- [ ] `/ask` — answer questions with citations to original sources
-- [ ] `/digest` + `/upcoming` + `/event add` + `/help` — on-demand deterministic activity snapshots, upcoming meetings/events, manual event creation with a public `#events` record, and command discoverability
+- [ ] `/digest` + `/upcoming` + `/event add` + `/event cancel` + `/help` — on-demand deterministic activity snapshots, upcoming meetings/events, manual event creation/cancellation with public `#events` records, and command discoverability
 - [ ] Automatic Meeting Announcer — detect `#meeting-plans` announcements, confirm date/time, and remind one hour before the meeting
 - [ ] `/optout` — allow members to opt out of message indexing
 
@@ -30,7 +29,8 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 
 | Capability | Status | Reason | Preserved |
 |------------|--------|--------|-----------|
-| `/decisions` command (DECI-01) | Removed from active v1 (2026-11-17) | The focused v1 keeps decisions as indexed evidence rather than a separate command | `#decisions` remains in the five-channel allowlist; its human-authored messages are available to `/ask` and `/digest` |
+| `/decisions` command (DECI-01) | Removed from active v1 (2026-11-17) | The focused v1 keeps decisions as indexed evidence rather than a separate command | `#decisions` remains in the five-channel allowlist; its human-authored messages are available to `/digest` and a future `/ask` |
+| `/ask` grounded Q&A (ASK-01) | Removed from active v1 (2026-11-18) | Live answer path is not working reliably; deferred for a possible future re-enable | `/ask` command/handler removed; retrieval/indexing engine, schema, contracts, eval scripts and tests retained |
 | Meeting transcript/audio upload (INDEX-04) | Deferred (2026-11-17) | v1 prioritises the automatic announcer; uploads are not required for it | L2 upload/transcription code, `meeting_transcripts`, and `search_chunks` rows remain |
 | Transcript summaries, action-item extraction, `/meeting actions` (MEET-01) | Deferred (2026-11-17) | Depends on transcript uploads, which are deferred | No active assignment; do not implement from the old PR plan |
 | Voice-channel recording | Out of scope for v1 | Not required for the announcer; adds privacy and infrastructure risk | None planned |
@@ -67,16 +67,17 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 - **[Date parsing]**: Deterministic, testable parsing in application code. No new AI provider is introduced to infer dates or times; ambiguous input asks the announcer to clarify
 - **[Audio storage]**: No active v1 audio ingestion. The legacy L2 upload path discards the audio buffer after transcription; no R2 or disk persistence. This is not part of active v1 acceptance
 - **[Read-only]**: No writes to GitHub repos or Discord history; no private repo/channel indexing; no unsupported general knowledge — hard compliance boundary
-- **[Timeline]**: Prioritize quality over the original end-of-week target; all seven active v1 capabilities must ship in v1 (PRNT-01 cancelled 2026-11-15; transcript and `/decisions` features deferred 2026-11-17)
+- **[Timeline]**: Prioritize quality over the original end-of-week target; all six active v1 capabilities must ship in v1 (PRNT-01 cancelled 2026-11-15; ASK-01 and `/ask` removed 2026-11-18; transcript and `/decisions` features deferred 2026-11-17)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| All ten capabilities in v1 | Initial user requirement — no features excluded from first release | Superseded 2026-11-15 (nine) and 2026-11-17 (seven active; transcript and `/decisions` capabilities deferred) |
+| All ten capabilities in v1 | Initial user requirement — no features excluded from first release | Superseded 2026-11-15 (nine), 2026-11-17 (seven active) and 2026-11-18 (six active; ASK-01 removed) |
 | Drop automatic PR notifications (PRNT-01) | Takoyaki bot already posts PR notices in the server; Pluto would duplicate them in the channel | — Decided 2026-11-15 (Khushi) |
 | Automatic Meeting Announcer replaces the transcript pipeline | A focused reminder feature is reliably deliverable and directly useful; transcript ingestion, summaries and action items depend on uploads that are not ready | — Decided 2026-11-17 (Khushi) |
-| Remove `/decisions` command but keep `#decisions` indexed | Decisions remain valuable evidence for `/ask` and `/digest`; a separate command is not needed in v1 | — Decided 2026-11-17 (Khushi) |
+| Remove `/decisions` command but keep `#decisions` indexed | Decisions remain valuable evidence for `/digest` and a future `/ask`; a separate command is not needed in v1 | — Decided 2026-11-17 (Khushi) |
+| Remove `/ask` command and ASK-01 from active v1 | The live answer path is not working reliably; keep the retrieval/indexing engine and evidence for a possible future re-enable | — Decided 2026-11-18 |
 | Defer transcript uploads, summaries, action items, `/meeting actions` and voice recording | Keeps v1 focused on the announcer and activity/event awareness; existing L2 code and tables are retained | — Decided 2026-11-17 (Khushi) |
 | L3 owns the announcer end-to-end; P3 owns the activity/event-awareness commands | One clear owner per feature; no duplicated implementation | — Decided 2026-11-17 (Khushi) |
 | Simplify `/digest` and add event awareness | An on-demand deterministic snapshot is simpler, cheaper and safer than an AI-written weekly digest. `/upcoming` and `/event add` cover club event awareness without channel scanning. `/resource` and `/upcoming all` are out of scope. | — Decided 2026-11-18 (Khushi) |
@@ -92,7 +93,7 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 
 ---
 
-*Last updated: 2026-11-18 — P3 scope revised: weekly AI digest replaced by an on-demand deterministic `/digest`, plus `/upcoming meetings`, `/upcoming events`, `/event add`, and `/help`. Active v1 remains seven capabilities.*
+*Last updated: 2026-11-18 — `/ask` and ASK-01 removed from active v1; the `/ask` command and handler are removed and the retrieval/indexing engine is retained for a possible future re-enable. Active v1 is six capabilities: INDEX-01/02/03, DIGE-01, MEET-02 and OPTO-01. P3 activity/event awareness is complete and live-verified; PR #18 is open for Khushi review/merge.*
 
 ## Evolution
 

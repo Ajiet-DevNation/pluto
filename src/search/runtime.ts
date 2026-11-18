@@ -37,6 +37,7 @@ export interface SearchRuntime {
   baseStore: JsonDiscordStore;
   searchStore: PostgresSearchStore;
   indexer: SearchIndexer;
+  /** Retained for a future ASK-01 re-enable; no `/ask` command is registered. */
   askService: AskService;
   /** Index records already persisted by P1 before `search_chunks` existed. */
   syncDiscord(records: readonly DiscordIndexRecord[]): Promise<void>;

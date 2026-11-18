@@ -98,7 +98,6 @@ async function start(): Promise<void> {
 
   const bot = await startDiscordBot({
     store: botStore,
-    askService: search?.askService,
     activity: {
       digest: digestService,
       upcoming: upcomingRepository,

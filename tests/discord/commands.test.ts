@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  askCommand,
   commandPayloads,
   digestCommand,
   eventCommand,
@@ -27,16 +26,6 @@ test('/optout is guild-only and needs no member permission', () => {
     (json as { default_member_permissions?: string }).default_member_permissions,
     undefined,
   );
-});
-
-test('/ask is guild-only and requires a question', () => {
-  const json = askCommand.toJSON();
-
-  assert.equal(json.name, 'ask');
-  assert.equal((json as { dm_permission?: boolean }).dm_permission, false);
-  assert.equal(json.options?.length, 1);
-  assert.equal(json.options?.[0].name, 'question');
-  assert.equal(json.options?.[0].required, true);
 });
 
 test('/digest is guild-only with a 1–30 day option defaulting to 7', () => {
@@ -119,11 +108,10 @@ test('/help is guild-only and takes no options', () => {
   assert.deepEqual(json.options ?? [], []);
 });
 
-test('commandPayloads contains the six v1 guild commands', () => {
+test('commandPayloads contains the five active guild commands', () => {
   const payloads = commandPayloads();
   assert.deepEqual(payloads.map((payload) => payload.name), [
     'optout',
-    'ask',
     'digest',
     'upcoming',
     'event',
@@ -147,7 +135,6 @@ test('registerGuildCommands registers through the supplied guild manager', async
   assert.equal(calls, 1);
   assert.deepEqual(received?.map((payload) => payload.name), [
     'optout',
-    'ask',
     'digest',
     'upcoming',
     'event',

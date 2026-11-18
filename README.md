@@ -2,7 +2,10 @@
 
 Read-only Discord knowledge assistant for the DevNation community at AJIET.
 Indexes public GitHub repositories, selected Discord channels, Miro boards and
-meeting transcripts, and answers questions with citations to the original source.
+meeting records, provides deterministic activity digests and upcoming-event
+awareness, and runs an automatic meeting announcer. The `/ask` command is
+currently removed from active v1; its retrieval/indexing engine is retained for
+a possible future re-enable.
 
 ## Stack
 
@@ -32,7 +35,7 @@ Requires Node.js 22 or newer (see `.nvmrc`).
 | `npm start` | Run the compiled server |
 | `npm run dev` | Watch mode via tsx |
 | `npm test` | Run the test suite (`node:test` via tsx) |
-| `npm run eval:ask` | Live answer-quality evaluation; writes `tmp/eval-ask-report.json` |
+| `npm run eval:ask` | Retained future `/ask` engine evaluation; the Discord command is not registered in active v1. Writes `tmp/eval-ask-report.json` |
 | `npm run eval:retrieval -- --allow-cloudflare` | Live retrieval-quality evaluation; uses a dedicated read-only database connection and verifies the read-only settings before querying. Requires explicit Cloudflare opt-in and writes `tmp/eval-retrieval-report.json`. When enabled, curated-question embeddings can consume Cloudflare usage. |
 
 ## Health check

@@ -1,5 +1,9 @@
 # GitHub indexing coverage
 
+> ASK-01 and the `/ask` command were removed from active v1 on 2026-11-18.
+> Indexing coverage remains relevant to `/digest` and to a possible future
+> re-enable of the retrieval engine.
+
 **Owner:** Khushi approves; P2 owner implements.
 **Status:** Draft. Describes what P2 indexes today, what it does not, and the order of the next steps.
 **Related:** `contracts/github.md`, `contracts/search.md`, `contracts/evaluation.md`

@@ -1,10 +1,10 @@
 # Requirements: Pluto
 
 **Defined:** 2026-11-12
-**Revised:** 2026-11-17
+**Revised:** 2026-11-18
 **Core Value:** Make community information easier to find, understand, and manage — with answers based only on actual project records, always cited to their original source, and never generated from unsupported general knowledge.
 
-Seven Pluto capabilities belong to the first official release (v1). The 2026-11-17 revision removed the `/decisions` command from active v1, deferred the transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`), and added the Automatic Meeting Announcer (MEET-02). Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. Deferred and cancelled capabilities are listed below; none are deleted from the repository.
+Six Pluto capabilities belong to the first official release (v1). The 2026-11-18 revision removed the `/ask` command and ASK-01 from active v1 because the live answer path is not working reliably; the retrieval/indexing engine, schema, contracts and tests are retained for a possible future re-enable. The 2026-11-17 revision removed the `/decisions` command from active v1, deferred the transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`), and added the Automatic Meeting Announcer (MEET-02). Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. Deferred and removed capabilities are listed below; none are deleted from the repository.
 
 ## v1 Requirements
 
@@ -29,7 +29,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     2. Typed board content (such as text boxes, cards, and frame titles) and connectors are indexed and searchable; hand-drawn ink is not treated as text because Miro does not convert handwriting to text
     3. No write operations are performed on Miro, and only approved public/shared boards are indexed
 
-### Q&A
+### Q&A (removed from active v1)
 
 - [ ] **ASK-01**: Answer questions through /ask from indexed evidence, display one best supporting source, and keep citation markers out of the answer text (product decision 2026-11-16, superseding the 2026-11-14 answer-only decision)
   - Acceptance Criteria:
@@ -39,7 +39,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     4. No unsupported general knowledge is used in answers
     5. Contributor questions use the on-demand read-only GitHub contributors API, report anonymous contributions honestly, and never guess names from commits or PRs
     6. Internal prompt instructions never appear in the answer text
-  - 2026-11-16 status: retrieval and grounding fixes implemented and locally validated. Verified eval gate 9/9; full-corpus reindex and live Discord acceptance still pending, so the requirement is not marked complete.
+  - 2026-11-18 status: **removed from active v1.** The `/ask` command and handler are removed from the bot because the live answer path is not working reliably. The retrieval/indexing engine, `src/search/ask.ts`, evaluation scripts, schema and tests are retained for a possible future re-enable. `#decisions` remains indexed evidence for `/digest`.
 
 ### Project Activity & Events
 
@@ -58,7 +58,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     10. Opt-out, privacy, bot-author, and existing-command behavior remain unchanged.
     11. Tests and build pass.
     12. `/event cancel` is available to every member; creators can cancel their own events, and Manage Events can cancel any event. Cancellation marks the row cancelled, posts one public cancellation notice, never edits or deletes the original `#events` record, and is idempotent.
-  - 2026-11-18 status: **complete** — deterministic digest, upcoming meetings/events, every-member manual events with cancellation, public activity replies, 12-hour input/display, and help are implemented, tested and live-verified. 434 tests pass, build is clean, and `0009_events` is recorded in the dev database. Guild command registration is verified; `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display passed live acceptance. The 12-hour input/display change, every-member `/event add`, public replies, and `/event cancel` were approved by Khushi on 2026-11-18. The P3 PR (#18) is open for Khushi review/merge; DIGE-01 is not marked merged until that completes. `/ask` routes correctly but its live answer check is blocked by the separate P2 Cloudflare AI allowance issue.
+  - 2026-11-18 status: **complete** — deterministic digest, upcoming meetings/events, every-member manual events with cancellation, public activity replies, 12-hour input/display, and help are implemented, tested and live-verified. 421 tests pass, build is clean, and `0009_events` is recorded in the dev database. Guild command registration is verified; `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display passed live acceptance. The 12-hour input/display change, every-member `/event add`, public replies, and `/event cancel` were approved by Khushi on 2026-11-18. The P3 PR (#18) is open for Khushi review/merge; DIGE-01 is not marked merged until that completes. `/ask` routes correctly but its live answer check is blocked by the separate P2 Cloudflare AI allowance issue.
 
 ### Meetings
 
@@ -79,7 +79,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     9. One-hour reminders are delivered to `#pluto` without repeating `@everyone` or `@here`
     10. Duplicate event creation and concurrent delivery are controlled
     11. Failures are logged safely and recovered where possible; the delivery guarantee is documented honestly
-    12. Existing `/ask` and `/optout` behavior remains unaffected
+    12. Existing `/optout` and Discord indexing behavior remains unaffected
     13. Unit and integration tests pass
 
 ### Opt-Out
@@ -99,8 +99,9 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 |----|---------|--------|--------|-----------|
 | INDEX-04 | Accept uploaded meeting transcripts and audio | Deferred 2026-11-17 | The announcer does not need uploads; v1 avoids a new user-facing transcription workflow | L2 code, `meeting_transcripts` table and existing transcript chunks remain |
 | MEET-01 | Transcript-derived meeting summaries, action items with owners/due dates, `/meeting actions` | Deferred 2026-11-17 | Depends on deferred transcript uploads | No active assignment; old acceptance criteria are historical only |
-| DECI-01 | Searchable project decisions through `/decisions` | Removed from active v1 2026-11-17 | Decisions remain useful as indexed evidence; a dedicated command is not in the focused v1 | `#decisions` stays in the allowlist and is used by `/ask` and `/digest` |
-| PRNT-01 | Automatic GitHub PR notifications | Cancelled 2026-11-15 | Takoyaki already posts PR notices | PRs remain indexed for `/ask` and `/digest` |
+| ASK-01 | `/ask` grounded Q&A with citations | Removed from active v1 2026-11-18 | Live answer path is not working reliably; deferred for a possible future re-enable | `/ask` command handler removed; retrieval/indexing engine, `src/search/ask.ts`, schema, contracts and tests retained |
+| DECI-01 | Searchable project decisions through `/decisions` | Removed from active v1 2026-11-17 | Decisions remain useful as indexed evidence; a dedicated command is not in the focused v1 | `#decisions` stays in the allowlist and is used by `/digest` |
+| PRNT-01 | Automatic GitHub PR notifications | Cancelled 2026-11-15 | Takoyaki already posts PR notices | PRs remain indexed for `/digest` and a future `/ask` |
 | — | Voice-channel recording, automatic user-facing Whisper transcription, `/meetings`, `/meeting upload` | Not active v1 | Out of the focused announcer/activity scope | No implementation is required |
 
 ## Out of Scope
@@ -124,7 +125,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 | INDEX-01 | Phase 1 | Partial — GitHub code in place; App auth live verification and full reindex pending |
 | INDEX-02 | Phase 2 | Complete — P1 merged and live-verified (PR #9) |
 | INDEX-03 | Phase 1 | Partial — read-only client implemented; Miro token and live verification pending |
-| ASK-01 | Phase 3 | Partial — retrieval/grounding fixes done; full-corpus live validation pending |
+| ASK-01 | Phase 3 | Removed from active v1 (2026-11-18) — `/ask` command removed; retrieval engine retained for future |
 | DIGE-01 | Phase 4 | ✅ Complete (implementation, tests and live acceptance; PR #18 open for Khushi review/merge) |
 | MEET-02 | Phase 5 | Pending — L3 |
 | OPTO-01 | Phase 2 | Complete — P1 merged and live-verified (PR #9) |
@@ -134,14 +135,14 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 | PRNT-01 | — | Cancelled (2026-11-15) |
 
 **Coverage:**
-- Active v1 requirements: **7**
-- Mapped to active phases: **7**
+- Active v1 requirements: **6**
+- Mapped to active phases: **6**
 - Unmapped: **0** ✓
 - Deferred: INDEX-04, MEET-01
-- Removed from active v1: DECI-01
+- Removed from active v1: ASK-01, DECI-01
 - Cancelled: PRNT-01
 
 ---
 
 *Requirements defined: 2026-11-12*
-*Last updated: 2026-11-18 — DIGE-01 is complete: on-demand activity/event awareness (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`) is implemented, tested and live-verified; 434 tests pass, build is clean, and `0009_events` is recorded. The P3 PR (#18) is open for Khushi review/merge, so DIGE-01 is not marked merged until that completes. The weekly scheduled digest and AI-written summaries remain out of scope. Active v1 remains seven requirements.*
+*Last updated: 2026-11-18 — DIGE-01 is complete: on-demand activity/event awareness (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`) is implemented, tested and live-verified; 421 tests pass, build is clean, and `0009_events` is recorded. The P3 PR (#18) is open for Khushi review/merge, so DIGE-01 is not marked merged until that completes. ASK-01 and its `/ask` command are removed from active v1 on 2026-11-18; the retrieval engine is retained for future. Active v1 is six requirements.*

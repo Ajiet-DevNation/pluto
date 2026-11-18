@@ -19,7 +19,6 @@ export const helpCommand = new SlashCommandBuilder()
 export const HELP_CONTENT = [
   'Pluto commands',
   '',
-  '`/ask question:<text>` — answer from indexed project sources with one supporting source link.',
   '`/digest [days:1-30]` — on-demand activity snapshot (default 7 days). No AI narrative.',
   '`/upcoming meetings` — confirmed upcoming meetings.',
   '`/upcoming events` — scheduled upcoming events.',
@@ -29,7 +28,6 @@ export const HELP_CONTENT = [
   '`/help` — show this list.',
   '',
   'Examples',
-  '`/ask what is the current project stack?`',
   '`/digest days:14`',
   '`/upcoming meetings`',
   '`/upcoming events`',

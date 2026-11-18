@@ -1,6 +1,6 @@
 # Roadmap: Pluto
 
-The **seven** active v1 capabilities are covered across **six** phases. The 2026-11-17 revision removed the transcript upload milestone and the `/decisions` milestone from active v1 delivery, and replaced the transcript-based meeting phase with the Automatic Meeting Announcer (MEET-02). Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. Deferred work is listed separately and is not part of the v1 critical path. Each phase uses vertical MVP-style delivery — independently testable, end-to-end user value per phase — with **Mode: mvp** set on every phase.
+The **six** active v1 capabilities are covered across **six** phases. The 2026-11-18 revision removed `/ask` and ASK-01 from active v1; the retrieval engine is retained for a future re-enable. The 2026-11-17 revision removed the transcript upload milestone and the `/decisions` milestone from active v1 delivery, and replaced the transcript-based meeting phase with the Automatic Meeting Announcer (MEET-02). Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. Deferred work is listed separately and is not part of the v1 critical path. Each phase uses vertical MVP-style delivery — independently testable, end-to-end user value per phase — with **Mode: mvp** set on every phase.
 
 ## Phase 1: Foundation & GitHub Repository Indexing
 **Goal:** Set up the Pluto backend scaffold and index the first public Ajiet-DevNation GitHub repository (read-only).
@@ -32,7 +32,7 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 **Requirements:** INDEX-02, OPTO-01
 **Status (2026-11-17):** Complete — P1 merged and live-verified (PR #9). `#decisions` was added to the allowlist on 2026-11-15 and remains indexed.
 
-## Phase 3: /ask Q&A with Citations
+## Phase 3: /ask Q&A with Citations (removed from active v1)
 **Goal:** Answer questions through `/ask` with citations to original sources.
 **Mode:** mvp
 **Depends on:** Phases 1–2
@@ -44,7 +44,7 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 4. No unsupported general knowledge is used in answers
 5. Contributor questions use the read-only contributors API and never guess names
 **Requirements:** ASK-01
-**Status (2026-11-17):** Partial — P2 merged (PR #10, `298e557`) and the retrieval audit is merged (PR #14). Verified eval gate 9/9. Full-corpus reindex and live Discord acceptance are still pending.
+**Status (2026-11-18):** ⏸ Removed from active v1. The `/ask` command and handler are removed because the live answer path is not working reliably. The retrieval/indexing engine, schema, contracts, evaluation scripts and tests are retained for a possible future re-enable. P2 implementation (PR #10) and the retrieval audit (PR #14) remain merged historically.
 
 ## Phase 4: Project Activity & Event Awareness
 **Goal:** Provide on-demand project activity snapshots and simple upcoming-event awareness without AI-written summaries or a weekly scheduler.
@@ -60,7 +60,7 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 6. Digest and event output is grounded in indexed records; empty periods are handled honestly.
 7. Opt-out, privacy, bot-author, and existing-command rules are preserved.
 **Requirements:** DIGE-01
-**Status (2026-11-18):** ✅ Complete — P3. `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, and `/help` are implemented with unit and database integration coverage; 434 tests pass, build clean. Migration `0009_events` is recorded. Live Discord acceptance passed for all P3 flows, public replies, and the 12-hour display. The P3 PR (#18) is open for Khushi review/merge.
+**Status (2026-11-18):** ✅ Complete — P3. `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, and `/help` are implemented with unit and database integration coverage; 421 tests pass, build clean. Migration `0009_events` is recorded. Live Discord acceptance passed for all P3 flows, public replies, and the 12-hour display. The P3 PR (#18) is open for Khushi review/merge.
 
 ## Phase 5: Automatic Meeting Announcer
 **Goal:** Detect eligible meeting announcements in `#meeting-plans`, deterministically parse the date/time, persist the event, and deliver one reminder in `#pluto` one hour before the meeting. Valid future announcements are auto-scheduled; no confirmation or slash command is used.
@@ -83,18 +83,18 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 **Status (2026-11-18):** Implementation, shared-file integration, migration, and test-guild end-to-end acceptance complete. A real Discord announcement was persisted and its pg-boss reminder delivered to the test server; the reminder did not repeat a mass mention. Late reminder jobs now skip delivery, and events are marked completed after reminder delivery or meeting start. TypeScript/build pass; 366 tests pass (0 fail, 0 skip). Production/deployment acceptance and contract approvals remain pending.
 
 ## Phase 6: Hardening, Quality Verification & v1 Release
-**Goal:** Verify all seven active v1 capabilities, enforce the read-only boundary, and release v1.
+**Goal:** Verify all six active v1 capabilities, enforce the read-only boundary, and release v1.
 **Mode:** mvp
 **Depends on:** Phases 1–5
 **Owner:** Khushi (K2, K3)
 **Success Criteria:**
-1. All seven active v1 requirements are implemented and tested
+1. All six active v1 requirements are implemented and tested
 2. Read-only boundary verified: no GitHub writes, no Discord history edits, no Miro writes, no private indexing, no unsupported answers
 3. Citations consistently link to original sources
 4. Meeting announcer safety verified: no mass mention, no history edits, no voice recording, no duplicate reminders
 5. All acceptance criteria across phases pass verification
 6. v1 release deployed to heavencloud plan
-**Requirements:** All active v1 (INDEX-01..03, ASK-01, DIGE-01, MEET-02, OPTO-01)
+**Requirements:** All active v1 (INDEX-01..03, DIGE-01, MEET-02, OPTO-01)
 
 ---
 
@@ -106,7 +106,8 @@ These items are retained in the repository but are **not** active v1 milestones 
 |---------------|----------------------|------|
 | Meeting transcript/audio upload and transcription | INDEX-04 | L2 code and `meeting_transcripts` remain; no new upload workflow is active |
 | Transcript-derived summaries, action items, `/meeting actions` | MEET-01 | Depends on deferred uploads; do not implement from the old PR plan |
-| `/decisions` command | DECI-01 | `#decisions` remains indexed evidence for `/ask` and `/digest` |
+| `/ask` grounded Q&A | ASK-01 | Command/handler removed 2026-11-18; retrieval/indexing engine, schema, contracts and tests retained for future |
+| `/decisions` command | DECI-01 | `#decisions` remains indexed evidence for `/digest` and a future `/ask` |
 
 ## Phase dependencies
 
@@ -114,8 +115,8 @@ These items are retained in the repository but are **not** active v1 milestones 
 |-------|------------|-------|
 | 1 | — | Foundation, database, jobs, GitHub/Miro clients |
 | 2 | 1 | Discord bot and allowlist intake |
-| 3 | 1, 2 | `/ask` uses indexed data and Discord command routing |
-| 4 | 1, 3, 5 | Activity snapshot reuses retrieval and storage; `/upcoming meetings` reads the `meeting_events` schema delivered by Phase 5. No digest scheduler. |
+| 3 | 1, 2 | Removed from active v1; `/ask` command removed, retrieval engine retained for future |
+| 4 | 1, 2, 5 | Activity snapshot uses indexed issues/Discord storage; `/upcoming meetings` reads the `meeting_events` schema delivered by Phase 5. No digest scheduler. |
 | 5 | 1, 2 | Announcer uses database/jobs and Discord message intake; independent of transcripts, `/ask`, and activity commands |
 | 6 | 1–5 | Release verification |
 
@@ -125,15 +126,15 @@ These items are retained in the repository but are **not** active v1 milestones 
 |---|-------|--------------|------------------|
 | 1 | Foundation & GitHub Repository Indexing | INDEX-01, INDEX-03 | 8 |
 | 2 | Discord Channel Indexing & Opt-Out | INDEX-02, OPTO-01 | 4 |
-| 3 | /ask Q&A with Citations | ASK-01 | 5 |
+| 3 | /ask Q&A with Citations (removed) | ASK-01 | 0 active |
 | 4 | Project Activity & Event Awareness | DIGE-01 | 11 |
 | 5 | Automatic Meeting Announcer | MEET-02 | 12 |
 | 6 | Hardening, Quality Verification & v1 Release | All active v1 | 6 |
 
-**Total:** 6 active phases | **7 active v1 requirements** | All active v1 requirements covered ✓
+**Total:** 6 phases | **6 active v1 requirements** | All active v1 requirements covered ✓
 
-**Deferred:** INDEX-04, MEET-01. **Removed from active v1:** DECI-01. **Cancelled:** PRNT-01.
+**Deferred:** INDEX-04, MEET-01. **Removed from active v1:** ASK-01, DECI-01. **Cancelled:** PRNT-01.
 
 ---
 
-*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 434 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review/merge. L3 implementation, shared integration, and real test-guild acceptance are recorded; production/deployment acceptance and contract approval remain pending. Active v1 is seven requirements across six phases.*
+*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 421 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review/merge. ASK-01 and its `/ask` command are removed from active v1 on 2026-11-18; the retrieval engine is retained for future. L3 implementation, shared integration, and real test-guild acceptance are recorded; production/deployment acceptance and contract approval remain pending. Active v1 is six requirements across six phases.*

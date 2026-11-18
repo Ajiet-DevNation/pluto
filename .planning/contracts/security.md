@@ -55,14 +55,16 @@ The boundary holds only if both layers hold. Neither is sufficient alone.
 - `/optout` excludes a member's messages from indexing and retrieval.
 - Enforced as a filter at retrieval time and skipped at index time.
 - Source messages are never deleted or modified.
-- Opted-out content must not appear in `/ask` answers, `/digest` output, or citations.
+- Opted-out content must not appear in `/digest` output or citations. If `/ask` is re-enabled, the same filter applies to its answers.
 
 ## 4. Evidence-only answers
+
+> ASK-01 and the `/ask` command were removed from active v1 on 2026-11-18. These rules are retained for a future re-enable and still describe the evidence engine.
 
 - `/ask` answers only from retrieved indexed chunks.
 - If retrieval returns no chunk above the relevance threshold, respond with the standard no-evidence message.
 - The model must never fall back to general knowledge.
-- `#decisions` messages are ordinary indexed evidence for `/ask` and `/digest`; there is no `/decisions` command.
+- `#decisions` messages are ordinary indexed evidence for `/digest` and a future `/ask`; there is no `/decisions` command.
 - Meeting transcript chunks are legacy/deferred. The standard no-evidence message text is unchanged because legacy transcript rows may still exist; no new transcript ingestion is active in v1.
 
 Standard no-evidence message:

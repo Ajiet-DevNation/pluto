@@ -1,6 +1,6 @@
 # Pluto — PR Plan Per Person (Final Team Collaboration & Integration Workflow)
 
-Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities ship in v1**: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. On 2026-11-17 the `/decisions` command (DECI-01) and the transcript-based meeting pipeline (INDEX-04, MEET-01, `/meeting actions`) were removed from active v1 and deferred. Hosting is heavencloud plan. Each person has one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided. Historical merged packages are identified explicitly so a completed package is not mistaken for new work.
+Git workflow and branch strategy for the Pluto v1 release. **Six capabilities ship in v1**: INDEX-01, INDEX-02, INDEX-03, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. ASK-01 and its `/ask` command were removed from active v1 on 2026-11-18; the retrieval/indexing engine is retained for a possible future re-enable. Automatic PR notifications (PRNT-01) were cancelled on 2026-11-15. On 2026-11-17 the `/decisions` command (DECI-01) and the transcript-based meeting pipeline (INDEX-04, MEET-01, `/meeting actions`) were removed from active v1 and deferred. Hosting is heavencloud plan. Each person has one feature branch and at least three work packages (PRs). Packages may merge separately or as one PR once the set is complete; a defect found after merge is fixed in a small follow-up PR on the same branch. Unresolved items are marked pending; nothing is assumed decided. Historical merged packages are identified explicitly so a completed package is not mistaken for new work.
 
 ## Team and Branch Ownership
 
@@ -36,7 +36,7 @@ Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities 
 |----|---------|-------|------------|------------|-------------|--------|
 | K1 | Initialize TypeScript/Express backend scaffold; configure Node.js 22 runtime; establish read-only GitHub access | `src/cmd/pluto/**`, `tsconfig.json`, `.nvmrc`, `scripts/build.sh`, `src/github/app.ts` | Backend builds and runs locally; Node.js 22 pinned; read-only GitHub credential verified (`GET` 200, write attempt 403) | — | 5 | ✅ Merged (PR #1, #2) |
 | K2 | Enforce the read-only boundary in code: guard the GitHub and Miro clients, prove no write operation is reachable, build the citation layer, verify Miro read access | `src/guardrails/**`, `src/citations/**`, `src/github/**`, `src/miro/**`, `tests/**`, `.planning/contracts/security.md` | Write operations impossible by guard and by credential; static scan finds no write verbs in client modules; citation URLs correct and self-citation blocked; Miro live verification pending (no token) | K1 | 7 | ◐ Code merged (PR #3, #7); live Miro check pending |
-| K3 | v1 release hardening; full acceptance verification across all seven active requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh`, shared integration files | All seven active v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; announcer safety verified; v1 deployed to heavencloud plan | K2, P3, L3 | 8 | ⬜ Pending |
+| K3 | v1 release hardening; full acceptance verification across all six active requirements; deploy v1 release to heavencloud plan | `.planning/**`, `scripts/deploy.sh`, `scripts/test-all.sh`, shared integration files | All six active v1 requirements implemented and tested; read-only boundary verified; citations consistently link to original sources; announcer safety verified; v1 deployed to heavencloud plan | K2, P3, L3 | 8 | ⬜ Pending |
 
 **Cross-cutting responsibilities (Khushi):**
 - Owns overall architecture, integration, shared interfaces, Miro REST setup, and final technical decisions
@@ -55,8 +55,8 @@ Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities 
 | PR | Content | Files | Acceptance | Depends on | Target hour | Status |
 |----|---------|-------|------------|------------|-------------|--------|
 | P1 | Connect Discord bot via discord.js v14; join DevNation server; index selected Discord channels; implement `/optout` command to exclude member messages from indexing | `src/cmd/pluto/**`, `src/discord/**`, `src/optout/**`, `tests/discord/` | Discord bot connected and joined; admin-selected channels indexed; non-selected channels excluded; opted-out members' messages excluded from search and answers | K1 | 5 | ✅ Merged and live-verified (PR #9) |
-| P2 | Implement `/ask`; index all public-org GitHub READMEs, issues, PRs, commits, contributors, and eligible text/source files; ground answers in indexed content | `src/cmd/pluto/**`, `src/ask/**`, `src/search/**`, `tests/ask/`, `tests/search/` | `/ask` answers from indexed sources with one supporting citation; all public Ajiet-DevNation repositories and API pages are included; repo-specific questions stay scoped to that repo; private repositories and excluded/sensitive files remain out; missing credentials fail reindex visibly | P1, L1 | 7 | ✅ Merged (PR #10, #14); full-corpus reindex and live Discord acceptance pending |
-| P3 | Implement on-demand project activity and event awareness: `/digest days:N` deterministic snapshot, `/upcoming meetings`, `/upcoming events`, `/event add` with a public record in `#events`, `/event cancel`, and `/help`. **No weekly scheduler, AI-written digest, `/resource`, `/upcoming all`, channel scanning, or manual-event reminders.** | `src/digest/**`, `src/upcoming/**`, `src/events/**`, `src/help/**`, `tests/digest/**`, `tests/upcoming/**`, `tests/events/**`, `tests/help/**`; command registration coordinated with Khushi in `src/discord/commands.ts` | `/digest` is guild-scoped and deterministic; `/upcoming meetings` lists confirmed future meetings; `/upcoming events` lists scheduled manual events; `/event add` validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`; `/event cancel` lets creators cancel their own events and Manage Events cancel any event without deleting the row; `/help` lists commands; no unsupported content; empty periods handled; privacy/opt-out/bot-author restrictions preserved; existing commands unaffected; tests and build pass | P2, L1, L3 (`meeting_events` schema) | 6 | ✅ Complete — implementation, 434 tests/build and live acceptance pass; PR #18 open for Khushi review/merge |
+| P2 | Implement `/ask`; index all public-org GitHub READMEs, issues, PRs, commits, contributors, and eligible text/source files; ground answers in indexed content | `src/cmd/pluto/**`, `src/ask/**`, `src/search/**`, `tests/ask/`, `tests/search/` | `/ask` answers from indexed sources with one supporting citation; all public Ajiet-DevNation repositories and API pages are included; repo-specific questions stay scoped to that repo; private repositories and excluded/sensitive files remain out; missing credentials fail reindex visibly | P1, L1 | 7 | ⏸ Merged historically (PR #10, #14); `/ask` command removed from active v1 2026-11-18; retrieval/indexing engine retained for future |
+| P3 | Implement on-demand project activity and event awareness: `/digest days:N` deterministic snapshot, `/upcoming meetings`, `/upcoming events`, `/event add` with a public record in `#events`, `/event cancel`, and `/help`. **No weekly scheduler, AI-written digest, `/resource`, `/upcoming all`, channel scanning, or manual-event reminders.** | `src/digest/**`, `src/upcoming/**`, `src/events/**`, `src/help/**`, `tests/digest/**`, `tests/upcoming/**`, `tests/events/**`, `tests/help/**`; command registration coordinated with Khushi in `src/discord/commands.ts` | `/digest` is guild-scoped and deterministic; `/upcoming meetings` lists confirmed future meetings; `/upcoming events` lists scheduled manual events; `/event add` validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`; `/event cancel` lets creators cancel their own events and Manage Events cancel any event without deleting the row; `/help` lists commands; no unsupported content; empty periods handled; privacy/opt-out/bot-author restrictions preserved; existing commands unaffected; tests and build pass | P2, L1, L3 (`meeting_events` schema) | 6 | ✅ Complete — implementation, 421 tests/build and live acceptance pass; PR #18 open for Khushi review/merge |
 
 **P3 acceptance criteria (authoritative):**
 1. `/digest days:N` is guild-scoped; `N` is 1–30 and defaults to 7.
@@ -99,7 +99,7 @@ Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities 
 4. Durable pg-boss jobs survive restarts through startup reconciliation and a registered worker.
 5. Reminders go to configured `#pluto` without repeating mass mentions.
 6. Duplicate event creation and concurrent delivery are controlled; delivery is honestly documented as at-least-once.
-7. Failures are handled safely; existing `/ask`, `/optout`, and indexing behavior remains unaffected.
+7. Failures are handled safely; existing `/optout` and indexing behavior remains unaffected.
 8. Unit and integration tests pass.
 
 **L3 scope details:**
@@ -198,11 +198,11 @@ Prerequisite order:
 | 1 | K1 | Khushi | GitHub contract, API contract, DB schema | Backend scaffold builds locally; Node.js 22 pinned; read-only GitHub credential verified |
 | 2 | L1 | Likhith | K1, DB schema, background jobs contract | Neon + pg-boss connected; issues indexed |
 | 3 | P1 | Pragathi | K1, Discord contract | Discord bot joined; `/optout` working |
-| 4 | P2 | Pragathi | P1, L1, search contract | `/ask` returns grounded answers with one supporting source |
+| 4 | P2 | Pragathi | P1, L1, search contract | `/ask` historically completed; command removed from active v1 2026-11-18; engine retained |
 | 5 | L3 | Likhith + Khushi integration | L1, P1, meeting contract, background jobs, DB schema | Announcer detects, parses, auto-persists, schedules, reminds one hour before; shared integration and test-guild end-to-end flow verified; production/deployment acceptance pending |
 | 6 | P3 | Pragathi | P2, L1, L3 (`meeting_events`), search contract | `/digest` returns a deterministic snapshot; `/upcoming meetings` and `/upcoming events` list correctly; `/event add` saves and posts once; `/help` lists commands |
 | 7 | K2 | Khushi | K1 | Read-only boundary enforced; guard rails verified |
-| 8 | K3 | Khushi | K2, P3, L3 | All seven active capabilities tested; v1 deployed to heavencloud plan |
+| 8 | K3 | Khushi | K2, P3, L3 | All six active capabilities tested; v1 deployed to heavencloud plan |
 
 **Note:** L2 is historically merged (PR #11, #12) but is **not** in the v1 critical path. Its upload/transcription user workflow is deferred. It must not be treated as a prerequisite for L3 or P3.
 
@@ -213,14 +213,14 @@ Prerequisite order:
 | CP1: Contract sign-off | Before step 1 | Khushi, Pragathi, Likhith | All 9 shared contracts documented and approved |
 | CP2: DB + backend integration | After L1, before P2/L3 | Khushi, Likhith | Neon schema matches API expectations; migrations apply cleanly; `meeting_events` design fits the same migration runner |
 | CP3: Discord + backend integration | After P1, before P2/L3 | Khushi, Pragathi | Discord commands route through backend; `/optout` enforced in retrieval; existing intake unchanged |
-| CP4: Search + retrieval integration | After P2, before P3 | Khushi, Pragathi, Likhith | Embeddings stored correctly; `/ask` citations resolve; `/digest` can reuse retrieval |
+| CP4: Search + retrieval integration | After P2, before P3 | Khushi, Pragathi, Likhith | Embeddings stored correctly; retrieval engine retained for a future `/ask` re-enable; P3 digest uses indexed issues/Discord storage, not retrieval |
 | CP5: Jobs + announcer integration | After L1/P1, before L3 merge | Khushi, Likhith | `meeting_events` migration applies; `send-meeting-reminder` queue is created **and** a worker is registered; reminder posts only to `#pluto`; restart recovery works. Test-guild integration verified; production/deployment acceptance pending. |
 | CP6: Activity + event integration | After P2/L3, before P3 merge | Khushi, Pragathi | Command registration is reviewed; `/digest` is deterministic; `/upcoming meetings` reads `meeting_events`; `/event add` writes once and posts one public record; no scheduler is added |
-| CP7: Pre-release integration | Before K3 | All three | All seven active capabilities work together; read-only boundary, no-mass-mention and no-voice rules hold end-to-end |
+| CP7: Pre-release integration | Before K3 | All three | All six active capabilities work together; read-only boundary, no-mass-mention and no-voice rules hold end-to-end |
 
 ### Phase D — Final Integration and Release Verification Checklist (K3)
 
-- [ ] All **seven** active v1 requirements implemented and mapped to phases
+- [ ] All **six** active v1 requirements implemented and mapped to phases
 - [ ] Read-only boundary verified: no GitHub writes, no Discord history edits, no Miro writes, no private indexing, no unsupported answers
 - [ ] Citations consistently link to original sources (GitHub commit/PR URL, Discord message link, Miro board URL)
 - [ ] Meeting announcer: unique source announcement identity; event versioning; no `@everyone`/`@here` repeat; no voice recording; no original-announcement edits; no confirmation/cancel/reschedule controls in MVP
@@ -228,7 +228,7 @@ Prerequisite order:
 - [ ] All acceptance criteria for K1–K3, P1–P3, L1–L3 verified and marked in REQUIREMENTS.md traceability
 - [ ] `STATE.md` updated with final phase progress
 - [ ] v1 release deployed to heavencloud plan
-- [ ] Smoke test on heavencloud plan: `/ask`, `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/help`, announcer auto-detection and reminder delivery, `/optout`, Miro board search all functional
+- [ ] Smoke test on heavencloud plan: `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, `/help`, announcer auto-detection and reminder delivery, `/optout`, Miro board search all functional
 - [ ] Legacy L2 upload code is present but not presented as an active v1 workflow
 - [ ] Rollback plan documented if deployment fails
 
@@ -254,7 +254,7 @@ Prerequisite order:
 |------|-------------|------------|
 | **Khushi bottleneck** | Khushi has final approval on all three PRs plus shared integration. If Khushi is unavailable, P and L PRs cannot merge. | Khushi reviews in a timely window; branch owners prepare feedback responses in advance. |
 | **K3 depends on P3 and L3** | Khushi's final release PR (K3) cannot complete until Pragathi's activity/event package and Likhith's announcer finish. Any delay blocks v1. | CP7 before K3; early warning if P3/L3 slip. |
-| **Shared-file collisions** | L3 touches `worker.ts`/`schema.ts`/migrations, P3 touches the command registry, and both need `bot.ts` routing. Independent replacement would break existing `/ask`/`/optout`. | Khushi owns final integration; isolated modules; one command registry; one migration per feature; CP5/CP6 reviews. |
+| **Shared-file collisions** | L3 touches `worker.ts`/`schema.ts`/migrations, P3 touches the command registry, and both need `bot.ts` routing. Independent replacement would break existing `/optout`. | Khushi owns final integration; isolated modules; one command registry; one migration per feature; CP5/CP6 reviews. |
 | **P3 depends on P2 and L3** | `/digest` needs P2's indexed corpus; `/upcoming meetings` needs L3's `meeting_events` schema. If either slips, P3 slips. | Merge PR #16 before P3; CP4/CP6; handle empty/partial periods honestly. |
 | **Announcer date/time ambiguity** | Relative dates ("tomorrow"), missing AM/PM, and timezone mistakes could schedule the wrong reminder. | Deterministic parser, `Asia/Kolkata`, relative to original `createdAt`, explicit clarification, and tests for past/invalid/<1-hour cases. |
 | **Reminder duplication or missed delivery** | A crash between Discord send and database update can duplicate a reminder; a failed send can miss one. | pg-boss retries, versioned events, conditional DB claim, startup reconciliation, honest at-least-once documentation. Never use in-memory `setTimeout`. |
@@ -269,11 +269,12 @@ Prerequisite order:
 ## Unresolved / Pending
 
 - L3 implementation, shared startup integration, and real test-guild acceptance are verified; production/deployment acceptance — pending
-- P3 (on-demand activity snapshot, `/upcoming`, `/event add`, `/event cancel`, `/help`) — ✅ complete; 434 tests/build pass, `0009_events` recorded, live Discord acceptance passed; PR #18 open for Khushi review/merge
+- P3 (on-demand activity snapshot, `/upcoming`, `/event add`, `/event cancel`, `/help`) — ✅ complete; 421 tests/build pass, `0009_events` recorded, live Discord acceptance passed; PR #18 open for Khushi review/merge
 - P3 12-hour time display/input — approved by Khushi on 2026-11-18; implemented and live-verified (24-hour input remains accepted)
 - P3 public replies for `/digest`, `/upcoming`, `/help` — approved by Khushi on 2026-11-18; implemented and live-verified; `/optout` and `/event add`/`/event cancel` confirmations remain ephemeral
 - P3 every-member `/event add` — approved by Khushi on 2026-11-18; implemented and live-verified
 - P3 `/event cancel` — approved by Khushi on 2026-11-18; implemented and live-verified with creator/Manage Events authorization and public cancellation notices
+- ASK-01 / `/ask` command — removed from active v1 2026-11-18; retrieval/indexing engine, schema, contracts, eval scripts and tests retained for future re-enable
 - `contracts/meeting.md` — drafted 2026-11-17; Khushi approval pending
 - Database contract #1 approval status — pending confirmation by Khushi
 - Contracts #2 (API) and #5 (Miro) — pending
@@ -286,7 +287,7 @@ Prerequisite order:
 - `.planning/config.json` still records `all_ten_capabilities_in_v1: true` and a pending R2/audio-storage decision. These are stale but intentionally unchanged because this documentation task forbids editing `config.json`; Khushi must approve a config update
 
 **Constraints confirmed:**
-- **Seven** active capabilities remain in v1: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02, OPTO-01.
+- **Six** active capabilities remain in v1: INDEX-01, INDEX-02, INDEX-03, DIGE-01, MEET-02, OPTO-01.
 - PRNT-01 (PR notifications) was cancelled by Khushi on 2026-11-15.
 - INDEX-04, MEET-01 and DECI-01 are deferred/removed from active v1 as of 2026-11-17.
 - Hosting is heavencloud plan. Kerit Cloud is not referenced anywhere.
@@ -296,4 +297,4 @@ Prerequisite order:
 
 ---
 
-*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 434 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review/merge. L3 implementation, shared integration, and test-guild acceptance are complete; production/deployment acceptance and contract approvals are pending. Active v1 remains seven requirements.*
+*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 421 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review/merge. ASK-01 and its `/ask` command are removed from active v1 on 2026-11-18; the retrieval engine is retained for future. L3 implementation, shared integration, and test-guild acceptance are complete; production/deployment acceptance and contract approvals are pending. Active v1 is six requirements.*
