@@ -21,6 +21,7 @@ export class DiscordConfigError extends Error {
 export interface RawDiscordConfig {
   guild_id: string;
   output_channel_id: string;
+  events_channel_id?: string;
   index_own_output_channel: boolean;
   indexed_channels: Record<string, string>;
   indexing_mode?: string;
@@ -29,6 +30,8 @@ export interface RawDiscordConfig {
 export interface DiscordPolicy {
   guildId: string;
   outputChannelId: string;
+  /** Manual event log channel; never indexed. `null` when not configured. */
+  eventsChannelId: string | null;
   indexedChannels: Readonly<Record<string, string>>;
   indexedChannelIds: ReadonlySet<string>;
 }
@@ -36,6 +39,7 @@ export interface DiscordPolicy {
 export interface DiscordPolicyInput {
   guildId: string;
   outputChannelId: string;
+  eventsChannelId?: string | null;
   indexedChannels: Record<string, string>;
 }
 
@@ -73,9 +77,29 @@ export function buildDiscordPolicy(input: DiscordPolicyInput): DiscordPolicy {
     );
   }
 
+  const eventsChannelId = input.eventsChannelId?.trim() || null;
+  if (eventsChannelId) {
+    if (!SNOWFLAKE.test(eventsChannelId)) {
+      throw new DiscordConfigError(
+        `Invalid Discord events channel id: ${eventsChannelId}`,
+      );
+    }
+    if (seen.has(eventsChannelId)) {
+      throw new DiscordConfigError(
+        `The events channel (${eventsChannelId}) must never be indexed`,
+      );
+    }
+    if (eventsChannelId === input.outputChannelId) {
+      throw new DiscordConfigError(
+        'The events channel must be different from the bot output channel',
+      );
+    }
+  }
+
   return {
     guildId: input.guildId,
     outputChannelId: input.outputChannelId,
+    eventsChannelId,
     indexedChannels: { ...input.indexedChannels },
     indexedChannelIds: seen,
   };
@@ -103,6 +127,7 @@ export function validateDiscordConfig(raw: RawDiscordConfig): DiscordPolicy {
   return buildDiscordPolicy({
     guildId: raw.guild_id,
     outputChannelId: raw.output_channel_id,
+    eventsChannelId: raw.events_channel_id,
     indexedChannels: raw.indexed_channels,
   });
 }

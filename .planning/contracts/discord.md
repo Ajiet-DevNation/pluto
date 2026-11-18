@@ -305,11 +305,12 @@ All are guild-scoped and must reject DMs/foreign guilds ephemerally.
 
 | Command | Options | Behavior | Reply |
 |---------|---------|----------|-------|
-| `/digest` | `days` integer 1–30, default 7 | Deterministic activity snapshot from indexed GitHub issues, Discord records, `#decisions`, and upcoming meetings/events. No AI narrative, no PR/commit counts until reliable dates exist. | Ephemeral |
-| `/upcoming meetings` | none | Confirmed future meetings from `meeting_events`, sorted by start. | Ephemeral |
-| `/upcoming events` | none | Scheduled future/ongoing manual events from `events`, sorted by start. | Ephemeral |
-| `/event add` | `title`, `date` (`YYYY-MM-DD`), `time` (`HH:MM`), optional `end`, optional `description` | Require **Manage Events**; validate future start and end-after-start in `Asia/Kolkata`; insert one `events` row; post one public record in configured `#events`. | Ephemeral confirmation, plus one public channel message |
-| `/help` | none | List available commands and examples. | Ephemeral |
+| `/digest` | `days` integer 1–30, default 7 | Deterministic activity snapshot from indexed GitHub issues, Discord records, `#decisions`, and upcoming meetings/events. No AI narrative, no PR/commit counts until reliable dates exist. | Public |
+| `/upcoming meetings` | none | Confirmed future meetings from `meeting_events`, sorted by start. | Public |
+| `/upcoming events` | none | Scheduled future/ongoing manual events from `events`, sorted by start. | Public |
+| `/event add` | `title`, `date` (`YYYY-MM-DD`), `time` (12-hour `h:MM AM/PM` or 24-hour `HH:MM`), optional `end` (same time formats), optional `description` | Available to every member; validate future start and end-after-start in `Asia/Kolkata`; insert one `events` row; post one public record in configured `#events`. All displayed times use 12-hour IST. | Ephemeral confirmation, plus one public channel message |
+| `/event cancel` | `id` integer from `/upcoming events` or the `#events` record | Available to every member. Organizers can cancel events they created; members with Manage Events can cancel any event. Sets `status = 'cancelled'`; posts one public cancellation notice in `#events`; never edits or deletes the original record. Already-cancelled events are idempotent. | Ephemeral confirmation, plus one public channel message |
+| `/help` | none | List available commands and examples. | Public |
 
 Rules:
 - `#events` is configured via `planning.discord.events_channel_id`; never hardcode it and never index the channel.
@@ -317,13 +318,18 @@ Rules:
 - If the event row saves but the public record fails, keep the row and tell the organizer the public post failed.
 - `/digest`, `/upcoming`, and `/help` are available to every member.
 - No `/resource`, `/upcoming all`, channel scanning, recurring events, or manual-event reminders in v1.
+- **2026-11-18, approved by Khushi:** `/digest`, `/upcoming meetings`, `/upcoming events`, and `/help` replies are public. `/optout` and the `/event add` confirmation remain ephemeral; wrong-guild and error replies also remain ephemeral. The `/event add` public record in `#events` is the visible event announcement.
+- **2026-11-18, approved by Khushi:** `/event add` accepts both 12-hour `h:MM AM/PM` and 24-hour `HH:MM` time input, normalizes to Asia/Kolkata, and displays all times in 12-hour IST. This supersedes the earlier strict-`HH:MM` wording; 24-hour input remains accepted for compatibility.
+- **2026-11-18, approved by Khushi:** `/event add` is available to every member, so any member can write an `events` row and post a public record in `#events`. There is no delete path; cancellation is the v1 lifecycle change.
+- **2026-11-18, approved by Khushi:** `/event cancel` is available to every member. The creator can cancel their own event; members with Manage Events can cancel any event. Cancellation sets `status = 'cancelled'`, posts one public cancellation notice in `#events`, and never edits or deletes the original `#events` message. Repeating a cancellation is idempotent and posts nothing further.
+- **2026-11-18, live-verified:** all P3 commands, public replies, and 12-hour display passed live acceptance in the guild; `#events` remained unindexed.
 
 ### 8.4 Interactions
 
 - P1 handles `isChatInputCommand()` with `commandName === 'optout'`; P2 adds `commandName === 'ask'`; P3 adds `digest`, `upcoming`, `event`, and `help`. Other interactions are ignored unless a reviewed handler exists.
 - Meeting-announcer controls use message components/modals, not a slash command. Likhith exports the handler; Khushi wires it into the shared interaction router so `/ask` and `/optout` keep working.
 - Missing/foreign guild is rejected ephemerally.
-- Replies are ephemeral; long work may `deferReply` first.
+- Replies are public for `/digest`, `/upcoming`, `/help`, and successful `/ask` answers. `/optout`, the `/event add` confirmation, and wrong-guild/error messages remain ephemeral. Long work may `deferReply` first.
 - Handler errors are logged without content/tokens and return the generic message.
 - The opt-out handler never reports success unless the opt-out record was written.
 - Announcer confirm/cancel/reschedule responses must verify that the interacting member is the original announcer or an authorized moderator before changing anything.
@@ -357,7 +363,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 
 ### 9.3 Human permissions
 
-`/optout` is available to every member for themselves. No role or permission is required. Members cannot opt out other members in v1. `/event add` requires Discord's **Manage Events** permission; `/digest`, `/upcoming`, and `/help` are available to every member.
+`/optout` is available to every member for themselves. No role or permission is required. Members cannot opt out other members in v1. `/digest`, `/upcoming`, `/help`, `/event add`, and `/event cancel` are available to every member. `/event cancel` lets the creator cancel their own event; cancelling another member's event requires Manage Events.
 
 ---
 
@@ -448,4 +454,8 @@ Live guild verification is no longer open: it was completed on 2026-11-14 and is
 - A behaviour not described here is not implemented until it is added here first.
 - The meeting-announcer rules in §5.5 and §8.4 were added 2026-11-17. Their full behaviour is owned by `contracts/meeting.md`; a change to detection, confirmation or reminder delivery must update both contracts.
 - P3 activity and event commands were added 2026-11-18. `/event add` writes one `events` row and posts one public record in `#events`; `/digest` is on demand and adds no scheduler. Changes must update `contracts/database.md` and `contracts/background-jobs.md` where applicable.
+- The 12-hour time-input/display change in §8.3 was approved by Khushi on 2026-11-18; 24-hour input remains accepted for compatibility.
+- The public `/digest`, `/upcoming`, and `/help` replies in §8.3/§8.4 were approved by Khushi on 2026-11-18. `/optout` and the `/event add` confirmation remain ephemeral.
+- The every-member `/event add` change in §8.3 and §9.3 was approved by Khushi on 2026-11-18.
+- `/event cancel` was approved by Khushi on 2026-11-18. Cancellation sets `status = 'cancelled'`, posts one public notice, and never edits/deletes the original `#events` record.
 - Changes are recorded in `.planning/STATE.md` at the phase transition.

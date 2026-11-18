@@ -56,7 +56,7 @@ Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities 
 |----|---------|-------|------------|------------|-------------|--------|
 | P1 | Connect Discord bot via discord.js v14; join DevNation server; index selected Discord channels; implement `/optout` command to exclude member messages from indexing | `src/cmd/pluto/**`, `src/discord/**`, `src/optout/**`, `tests/discord/` | Discord bot connected and joined; admin-selected channels indexed; non-selected channels excluded; opted-out members' messages excluded from search and answers | K1 | 5 | ✅ Merged and live-verified (PR #9) |
 | P2 | Implement `/ask`; index all public-org GitHub READMEs, issues, PRs, commits, contributors, and eligible text/source files; ground answers in indexed content | `src/cmd/pluto/**`, `src/ask/**`, `src/search/**`, `tests/ask/`, `tests/search/` | `/ask` answers from indexed sources with one supporting citation; all public Ajiet-DevNation repositories and API pages are included; repo-specific questions stay scoped to that repo; private repositories and excluded/sensitive files remain out; missing credentials fail reindex visibly | P1, L1 | 7 | ✅ Merged (PR #10, #14); full-corpus reindex and live Discord acceptance pending |
-| P3 | Implement on-demand project activity and event awareness: `/digest days:N` deterministic snapshot, `/upcoming meetings`, `/upcoming events`, `/event add` with a public record in `#events`, and `/help`. **No weekly scheduler, AI-written digest, `/resource`, `/upcoming all`, channel scanning, or manual-event reminders.** | `src/digest/**`, `src/upcoming/**`, `src/events/**`, `src/help/**`, `tests/digest/**`, `tests/upcoming/**`, `tests/events/**`, `tests/help/**`; command registration coordinated with Khushi in `src/discord/commands.ts` | `/digest` is guild-scoped and deterministic; `/upcoming meetings` lists confirmed future meetings; `/upcoming events` lists scheduled manual events; `/event add` validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`; `/help` lists commands; no unsupported content; empty periods handled; privacy/opt-out/bot-author restrictions preserved; existing commands unaffected; tests and build pass | P2, L1, L3 (`meeting_events` schema) | 6 | ⬜ Pending (current assignment) |
+| P3 | Implement on-demand project activity and event awareness: `/digest days:N` deterministic snapshot, `/upcoming meetings`, `/upcoming events`, `/event add` with a public record in `#events`, `/event cancel`, and `/help`. **No weekly scheduler, AI-written digest, `/resource`, `/upcoming all`, channel scanning, or manual-event reminders.** | `src/digest/**`, `src/upcoming/**`, `src/events/**`, `src/help/**`, `tests/digest/**`, `tests/upcoming/**`, `tests/events/**`, `tests/help/**`; command registration coordinated with Khushi in `src/discord/commands.ts` | `/digest` is guild-scoped and deterministic; `/upcoming meetings` lists confirmed future meetings; `/upcoming events` lists scheduled manual events; `/event add` validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`; `/event cancel` lets creators cancel their own events and Manage Events cancel any event without deleting the row; `/help` lists commands; no unsupported content; empty periods handled; privacy/opt-out/bot-author restrictions preserved; existing commands unaffected; tests and build pass | P2, L1, L3 (`meeting_events` schema) | 6 | ✅ Complete — implementation, 434 tests/build and live acceptance pass; PR open for Khushi review/merge |
 
 **P3 acceptance criteria (authoritative):**
 1. `/digest days:N` is guild-scoped; `N` is 1–30 and defaults to 7.
@@ -65,12 +65,13 @@ Git workflow and branch strategy for the Pluto v1 release. **Seven capabilities 
 4. Empty periods produce a sensible response; no activity is fabricated.
 5. `/upcoming meetings` lists confirmed future meetings from `meeting_events`.
 6. `/upcoming events` lists scheduled future or ongoing manual events from `events`.
-7. `/event add` requires Manage Events, accepts strict `YYYY-MM-DD` and `HH:MM` input in `Asia/Kolkata`, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`.
+7. `/event add` is available to every member, uses strict `YYYY-MM-DD` and either 12-hour `h:MM AM/PM` or 24-hour `HH:MM` time input in `Asia/Kolkata`, displays times in 12-hour IST, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`.
 8. `/help` lists the available guild-scoped commands and examples.
 9. No `/resource`, `/upcoming all`, weekly digest scheduler, channel scanning, recurring events, or manual-event reminders.
 10. Existing Discord privacy, opt-out and bot-author restrictions are preserved.
 11. Existing commands and bot behavior remain unaffected.
 12. Tests and build pass.
+13. `/event cancel` is available to every member; creators can cancel their own events and Manage Events can cancel any event. Cancellation marks the row cancelled, posts one public notice, never edits/deletes the original `#events` record, and does not remove the row.
 
 **P3 boundaries:**
 - Pragathi may consume `#decisions` messages from the existing indexed store; she must **not** build `/decisions` and must **not** depend on a Likhith-owned `decisions` service module.
@@ -268,7 +269,11 @@ Prerequisite order:
 ## Unresolved / Pending
 
 - L3 implementation, shared startup integration, and real test-guild acceptance are verified; production/deployment acceptance — pending
-- P3 (on-demand activity snapshot, `/upcoming`, `/event add`, `/help`) implementation — pending; assignment for Pragathi
+- P3 (on-demand activity snapshot, `/upcoming`, `/event add`, `/event cancel`, `/help`) — ✅ complete; 434 tests/build pass, `0009_events` recorded, live Discord acceptance passed; PR open for Khushi review/merge
+- P3 12-hour time display/input — approved by Khushi on 2026-11-18; implemented and live-verified (24-hour input remains accepted)
+- P3 public replies for `/digest`, `/upcoming`, `/help` — approved by Khushi on 2026-11-18; implemented and live-verified; `/optout` and `/event add`/`/event cancel` confirmations remain ephemeral
+- P3 every-member `/event add` — approved by Khushi on 2026-11-18; implemented and live-verified
+- P3 `/event cancel` — approved by Khushi on 2026-11-18; implemented and live-verified with creator/Manage Events authorization and public cancellation notices
 - `contracts/meeting.md` — drafted 2026-11-17; Khushi approval pending
 - Database contract #1 approval status — pending confirmation by Khushi
 - Contracts #2 (API) and #5 (Miro) — pending
@@ -291,4 +296,4 @@ Prerequisite order:
 
 ---
 
-*Last updated: 2026-11-18 — revised L3 status and P3 scope. L3 implementation, shared integration, and test-guild acceptance are complete; production/deployment acceptance and contract approvals are pending. P3 is now the on-demand activity and event-awareness package (`/digest`, `/upcoming`, `/event add`, `/help`), replacing the weekly AI digest. Active v1 remains seven requirements.*
+*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 434 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR is open for Khushi review/merge. L3 implementation, shared integration, and test-guild acceptance are complete; production/deployment acceptance and contract approvals are pending. Active v1 remains seven requirements.*

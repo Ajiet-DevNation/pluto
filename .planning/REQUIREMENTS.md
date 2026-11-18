@@ -44,7 +44,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 ### Project Activity & Events
 
 - [ ] **DIGE-01**: Provide on-demand project activity snapshots and event awareness through `/digest`, `/upcoming`, and `/event add`
-  - Scope: `/digest` is an on-demand deterministic activity snapshot, not a scheduled AI-written summary. `/upcoming meetings` lists confirmed future meetings; `/upcoming events` lists manually added future events; `/event add` stores a manual event and posts a public record in the configured `#events` channel. `/help` lists the available commands. No `/resource`, no `/upcoming all`, no channel scanning, no manual-event reminders, and no recurring events.
+  - Scope: `/digest` is an on-demand deterministic activity snapshot, not a scheduled AI-written summary. `/upcoming meetings` lists confirmed future meetings; `/upcoming events` lists manually added future events; `/event add` stores a manual event and posts a public record in the configured `#events` channel; `/event cancel` marks an event cancelled and posts a public notice. `/help` lists the available commands. No `/resource`, no `/upcoming all`, no channel scanning, no manual-event reminders, and no recurring events.
   - Acceptance Criteria:
     1. `/digest days:N` is guild-scoped; `N` is 1–30 and defaults to 7.
     2. The digest reports counts drawn only from indexed records: GitHub issues, Discord messages, `#decisions` messages, and upcoming meetings/events.
@@ -52,11 +52,13 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     4. An empty period produces a sensible response; no activity is fabricated.
     5. `/upcoming meetings` lists confirmed future meetings from `meeting_events`.
     6. `/upcoming events` lists scheduled future or ongoing manual events from the `events` table.
-    7. `/event add` requires Manage Events, uses strict `YYYY-MM-DD` and `HH:MM` input in `Asia/Kolkata`, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`.
+    7. `/event add` is available to every member, uses strict `YYYY-MM-DD` and either 12-hour `h:MM AM/PM` or 24-hour `HH:MM` time input in `Asia/Kolkata`, displays times in 12-hour IST, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`.
     8. `/help` lists the available guild-scoped commands and examples.
     9. No `/resource`, `/upcoming all`, weekly digest scheduler, channel scanning, recurring events, or manual-event reminders in this scope.
     10. Opt-out, privacy, bot-author, and existing-command behavior remain unchanged.
     11. Tests and build pass.
+    12. `/event cancel` is available to every member; creators can cancel their own events, and Manage Events can cancel any event. Cancellation marks the row cancelled, posts one public cancellation notice, never edits or deletes the original `#events` record, and is idempotent.
+  - 2026-11-18 status: **complete** — deterministic digest, upcoming meetings/events, every-member manual events with cancellation, public activity replies, 12-hour input/display, and help are implemented, tested and live-verified. 434 tests pass, build is clean, and `0009_events` is recorded in the dev database. Guild command registration is verified; `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display passed live acceptance. The 12-hour input/display change, every-member `/event add`, public replies, and `/event cancel` were approved by Khushi on 2026-11-18. The P3 PR is open for Khushi review/merge; DIGE-01 is not marked merged until that completes. `/ask` routes correctly but its live answer check is blocked by the separate P2 Cloudflare AI allowance issue.
 
 ### Meetings
 
@@ -123,7 +125,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 | INDEX-02 | Phase 2 | Complete — P1 merged and live-verified (PR #9) |
 | INDEX-03 | Phase 1 | Partial — read-only client implemented; Miro token and live verification pending |
 | ASK-01 | Phase 3 | Partial — retrieval/grounding fixes done; full-corpus live validation pending |
-| DIGE-01 | Phase 4 | Pending — P3 (on-demand activity + event awareness) |
+| DIGE-01 | Phase 4 | ✅ Complete (implementation, tests and live acceptance; PR open for Khushi review/merge) |
 | MEET-02 | Phase 5 | Pending — L3 |
 | OPTO-01 | Phase 2 | Complete — P1 merged and live-verified (PR #9) |
 | INDEX-04 | — | Deferred (2026-11-17) |
@@ -142,4 +144,4 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 ---
 
 *Requirements defined: 2026-11-12*
-*Last updated: 2026-11-18 — DIGE-01 replaced with on-demand project activity and event awareness (`/digest`, `/upcoming`, `/event add`, `/help`); weekly scheduled digest and AI-written summaries removed from scope. Active v1 remains seven requirements.*
+*Last updated: 2026-11-18 — DIGE-01 is complete: on-demand activity/event awareness (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`) is implemented, tested and live-verified; 434 tests pass, build is clean, and `0009_events` is recorded. The P3 PR is open for Khushi review/merge, so DIGE-01 is not marked merged until that completes. The weekly scheduled digest and AI-written summaries remain out of scope. Active v1 remains seven requirements.*

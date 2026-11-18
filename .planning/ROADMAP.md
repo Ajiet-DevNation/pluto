@@ -55,12 +55,12 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 1. `/digest days:N` returns a deterministic activity snapshot for 1–30 days (default 7).
 2. `/upcoming meetings` lists confirmed future meetings from `meeting_events`.
 3. `/upcoming events` lists scheduled future or ongoing manual events from `events`.
-4. `/event add` is guild-scoped, restricted to Manage Events, validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`.
+4. `/event add` is guild-scoped and available to every member, validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`; `/event cancel` lets creators cancel their own events and Manage Events cancel any event, updates the row without deleting it, and posts a public cancellation notice.
 5. `/help` lists the available commands.
 6. Digest and event output is grounded in indexed records; empty periods are handled honestly.
 7. Opt-out, privacy, bot-author, and existing-command rules are preserved.
 **Requirements:** DIGE-01
-**Status (2026-11-18):** Pending — P3. Replaces the former weekly AI digest with an on-demand deterministic digest plus `/upcoming meetings`, `/upcoming events`, `/event add`, and `/help`.
+**Status (2026-11-18):** ✅ Complete — P3. `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, and `/help` are implemented with unit and database integration coverage; 434 tests pass, build clean. Migration `0009_events` is recorded. Live Discord acceptance passed for all P3 flows, public replies, and the 12-hour display. The P3 PR is open for Khushi review/merge.
 
 ## Phase 5: Automatic Meeting Announcer
 **Goal:** Detect eligible meeting announcements in `#meeting-plans`, deterministically parse the date/time, persist the event, and deliver one reminder in `#pluto` one hour before the meeting. Valid future announcements are auto-scheduled; no confirmation or slash command is used.
@@ -136,4 +136,4 @@ These items are retained in the repository but are **not** active v1 milestones 
 
 ---
 
-*Last updated: 2026-11-18 — L3 implementation, shared integration, and real test-guild acceptance recorded; production/deployment acceptance and contract approval remain pending. The former weekly digest milestone was replaced by P3’s on-demand activity snapshot and event-awareness package (`/digest`, `/upcoming`, `/event add`, `/help`). Transcript upload and `/decisions` remain deferred; active v1 is seven requirements across six phases.*
+*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 434 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR is open for Khushi review/merge. L3 implementation, shared integration, and real test-guild acceptance are recorded; production/deployment acceptance and contract approval remain pending. Active v1 is seven requirements across six phases.*

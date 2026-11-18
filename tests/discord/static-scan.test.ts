@@ -3,7 +3,16 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
-const SCANNED_DIRECTORIES = ['src/discord', 'src/optout', 'src/ask', 'src/search'];
+const SCANNED_DIRECTORIES = [
+  'src/discord',
+  'src/optout',
+  'src/ask',
+  'src/search',
+  'src/digest',
+  'src/upcoming',
+  'src/events',
+  'src/help',
+];
 
 function walk(directory: string): string[] {
   if (!existsSync(directory)) {

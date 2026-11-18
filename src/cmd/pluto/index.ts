@@ -7,11 +7,22 @@ import { EmbeddingDeferredError } from '../../search/embedding-errors';
 
 import { uploadRouter } from '../../upload/index';
 import { startBackgroundJobs, ensureMeetingReminderQueue } from '../../jobs/worker';
-import { getDiscordOutputChannelId } from '../../config';
+import { getDiscordOutputChannelId, getIndexedChannels } from '../../config';
 import { createMeetingDb } from '../../meetings/db';
 import { createMeetingRepository } from '../../meetings/repository';
 import { startMeetingAnnouncer } from '../../meetings/index';
 import { reconcileMeetingReminders } from '../../meetings/reconciliation';
+import { createDb } from '../../db/index';
+import { createDigestService, type DigestService } from '../../digest/service';
+import { listIssuesCreatedBetween } from '../../digest/issues';
+import {
+  createEventRepository,
+  type EventRepository,
+} from '../../events/repository';
+import {
+  createUpcomingRepository,
+  type UpcomingRepository,
+} from '../../upcoming/repository';
 
 dotenv.config();
 
@@ -37,6 +48,7 @@ let shutdownMeetingAnnouncer: (() => Promise<void>) | undefined;
 async function start(): Promise<void> {
   const baseStore = createDefaultStore();
   const search = createSearchRuntimeFromEnv();
+  const botStore = search?.store ?? baseStore;
 
   const boss = DATABASE_URL
     ? await startBackgroundJobs(DATABASE_URL, search?.indexer)
@@ -58,9 +70,40 @@ async function start(): Promise<void> {
     }
   }
 
+  // P3 activity and event awareness. This path needs only the database; it is
+  // not gated on Cloudflare credentials or the background worker.
+  const db = search?.db ?? (DATABASE_URL ? createDb(DATABASE_URL) : undefined);
+  let digestService: DigestService | undefined;
+  let upcomingRepository: UpcomingRepository | undefined;
+  let eventRepository: EventRepository | undefined;
+
+  if (db) {
+    const indexedChannels = getIndexedChannels();
+    upcomingRepository = createUpcomingRepository(db);
+    eventRepository = createEventRepository(db);
+    digestService = createDigestService({
+      listIssuesCreatedBetween: (from, to) =>
+        listIssuesCreatedBetween(db, from, to),
+      listDiscordRecords: () => botStore.listRecords(),
+      isOptedOut: (guildId, userId) => botStore.isOptedOut(guildId, userId),
+      upcoming: upcomingRepository,
+      decisionsChannelId: indexedChannels['#decisions'] ?? null,
+      indexedChannelIds: new Set(Object.values(indexedChannels)),
+    });
+  } else {
+    console.warn(
+      'DATABASE_URL is not set; /digest, /upcoming and /event are unavailable.',
+    );
+  }
+
   const bot = await startDiscordBot({
-    store: search?.store ?? baseStore,
+    store: botStore,
     askService: search?.askService,
+    activity: {
+      digest: digestService,
+      upcoming: upcomingRepository,
+      events: eventRepository,
+    },
   });
   shutdownBot = bot.shutdown;
 

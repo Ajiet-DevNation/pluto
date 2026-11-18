@@ -10,6 +10,7 @@ import type { OptOutInteraction } from '../../src/optout/command';
 
 export const GUILD = '1422593925658579036';
 export const OUTPUT = '1570721649538502686';
+export const EVENTS = '1572348309509644289';
 
 export const CHANNELS = {
   '#project-stack': '1423323863093088407',

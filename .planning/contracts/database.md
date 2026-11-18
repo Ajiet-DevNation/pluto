@@ -196,8 +196,18 @@ Indexes:
 - `events_guild_start_idx` — btree on `(guild_id, start_at)` for `/upcoming events`.
 
 Rules:
-- `/event add` is restricted to organizers with Discord's Manage Events permission.
-- Date and time are entered as strict `YYYY-MM-DD` and `HH:MM` in `Asia/Kolkata`.
+- `/event add` is available to every member. Any member can create an `events`
+  row and a public `#events` record.
+- `/event cancel` is available to every member. The creator can cancel their
+  own event; members with Manage Events can cancel any event. Cancellation sets
+  `status = 'cancelled'` and updates `updated_at`; rows are never deleted.
+- Cancelled events are excluded from `/upcoming events` and `/digest`.
+- The original public `#events` record is never edited or deleted; cancellation
+  posts a new public notice.
+- Date is entered as strict `YYYY-MM-DD`; time accepts 12-hour `h:MM AM/PM`
+  or 24-hour `HH:MM` in `Asia/Kolkata` and normalizes to a timezone-aware
+  instant. All displayed times use 12-hour IST. (12-hour input approved by
+  Khushi on 2026-11-18.)
 - Start must be in the future; `end_at`, when present, must be after `start_at`.
 - No channel scanning: posting in `#events` does not create an event. Only `/event add` writes rows.
 - No recurring events and no reminders for manual events in v1.
@@ -329,8 +339,9 @@ Re-runs must not create duplicates. Meeting events are idempotent on
 `(guild_id, channel_id, source_message_id)` and reminder delivery is guarded by
 `event_version` plus a conditional claim. Re-detecting the same announcement
 must not create a second event. Manual events are user-created and may be
-repeated intentionally; the organizer can cancel the obsolete row when
-`/event cancel` is added post-v1.
+repeated intentionally. `/event cancel` marks the row `cancelled`; it never
+deletes the row and repeating the cancellation must not post a second public
+notice.
 
 ## What is not in this contract
 
