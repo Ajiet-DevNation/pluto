@@ -35,7 +35,7 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 | Phase 1: Foundation & GitHub & Miro Indexing | ◐ Partial (GitHub code in place; App auth live check and Miro verification pending) | INDEX-01, INDEX-03 | 6/8 |
 | Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
 | Phase 3: /ask Q&A with Citations | ⏸ Removed from active v1 (2026-11-18; `/ask` command removed, retrieval engine retained for future) | ASK-01 | Removed |
-| Phase 4: Project Activity & Event Awareness | ✅ Complete (implementation, tests and live Discord acceptance; PR #18 open for Khushi review/merge) | DIGE-01 | 11/11 implemented and live-verified; cancellation and approved additions included |
+| Phase 4: Project Activity & Event Awareness | ✅ Complete (implementation, tests and live Discord acceptance; PR #18 open for Khushi review/merge) | DIGE-01 | 12/12 implemented and live-verified; cancellation and approved additions included |
 | Phase 5: Automatic Meeting Announcer | ◐ Implemented, integrated & test-guild verified | MEET-02 | Shared startup/worker wiring complete; migration 0008 recorded; 421 tests pass (0 fail, 0 skip); typecheck/build pass; real Discord test-guild message detected and reminder delivered by pg-boss; late jobs skip delivery and events complete. Production/deployment acceptance and contract approvals pending. |
 | Phase 6: Hardening & v1 Release | ○ Pending | All active v1 (7) | 0/6 |
 

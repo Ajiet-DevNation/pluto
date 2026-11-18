@@ -127,7 +127,7 @@ These items are retained in the repository but are **not** active v1 milestones 
 | 1 | Foundation & GitHub Repository Indexing | INDEX-01, INDEX-03 | 8 |
 | 2 | Discord Channel Indexing & Opt-Out | INDEX-02, OPTO-01 | 4 |
 | 3 | /ask Q&A with Citations (removed) | ASK-01 | 0 active |
-| 4 | Project Activity & Event Awareness | DIGE-01 | 11 |
+| 4 | Project Activity & Event Awareness | DIGE-01 | 12 |
 | 5 | Automatic Meeting Announcer | MEET-02 | 12 |
 | 6 | Hardening, Quality Verification & v1 Release | All active v1 | 6 |
 
