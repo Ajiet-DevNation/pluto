@@ -434,7 +434,7 @@ test('/event cancel lets the organizer cancel their own event', async () => {
   assert.deepEqual(cancelled, [{ guildId: GUILD, id: 169 }]);
   assert.equal(posts.length, 1);
   assert.match(posts[0], /Event cancelled: ui event/);
-  assert.match(posts[0], /Event ID: 169/);
+  assert.match(posts[0], /Event ID:\*\* `169`/);
   assert.match(posts[0], /Cancelled by organizer/);
   assert.match(interaction.edits[0], /public cancellation notice/);
 });
@@ -605,7 +605,7 @@ test('event presentation fits Discord limits and keeps the confirmation honest',
   });
   assert.ok(record.length <= 2_000);
   assert.match(record, /New event: xxx/);
-  assert.match(record, /Event ID: 169/);
+  assert.match(record, /Event ID:\*\* `169`/);
   assert.match(record, /Added by organizer/);
 
   const truncated = fitDiscordContent(`line\n${'z'.repeat(3_000)}`);
@@ -631,7 +631,7 @@ test('event presentation fits Discord limits and keeps the confirmation honest',
     cancelledBy: 'organizer',
   });
   assert.match(cancelled, /Event cancelled: Hackathon/);
-  assert.match(cancelled, /Event ID: 169/);
+  assert.match(cancelled, /Event ID:\*\* `169`/);
   assert.match(cancelled, /Cancelled by organizer/);
 
   const cancelConfirmation = formatEventCancellationConfirmation(

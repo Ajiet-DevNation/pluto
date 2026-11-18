@@ -20,21 +20,29 @@ export const UPCOMING_MESSAGES = {
 
 export const UPCOMING_DISPLAY_LIMIT = 10;
 
+const MEETINGS_HEADER = '**Confirmed upcoming meetings**';
+const EVENTS_HEADER = '**Scheduled upcoming events**';
+
 export function formatMeetingList(
   meetings: readonly UpcomingMeeting[],
   limit: number = UPCOMING_DISPLAY_LIMIT,
 ): string {
   if (meetings.length === 0) {
-    return UPCOMING_MESSAGES.noMeetings;
+    return `${MEETINGS_HEADER}\n\n${UPCOMING_MESSAGES.noMeetings}`;
   }
 
-  const lines = ['Confirmed upcoming meetings'];
+  const lines = [MEETINGS_HEADER, ''];
   for (const meeting of meetings.slice(0, limit)) {
     const title = neutralizeMassMentions(sanitizeInline(meeting.title));
-    lines.push(`• ${formatIstDateTime(meeting.startAt)} — ${title}`);
+    lines.push(`• **${title}**`);
+    lines.push(`  **${formatIstDateTime(meeting.startAt)}**`);
     if (meeting.sourceMessageUrl) {
-      lines.push(`  ${meeting.sourceMessageUrl}`);
+      lines.push(`  <${meeting.sourceMessageUrl}>`);
     }
+    lines.push('');
+  }
+  if (lines[lines.length - 1] === '') {
+    lines.pop();
   }
   return fitDiscordContent(lines.join('\n'));
 }
@@ -45,10 +53,10 @@ export function formatEventList(
   limit: number = UPCOMING_DISPLAY_LIMIT,
 ): string {
   if (upcomingEvents.length === 0) {
-    return UPCOMING_MESSAGES.noEvents;
+    return `${EVENTS_HEADER}\n\n${UPCOMING_MESSAGES.noEvents}`;
   }
 
-  const lines = ['Scheduled upcoming events'];
+  const lines = [EVENTS_HEADER, ''];
   for (const event of upcomingEvents.slice(0, limit)) {
     const title = neutralizeMassMentions(sanitizeInline(event.title));
     const ongoing =
@@ -56,10 +64,9 @@ export function formatEventList(
       event.startAt.getTime() <= now.getTime() &&
       event.endAt.getTime() > now.getTime();
     lines.push(
-      `• ${formatIstRange(event.startAt, event.endAt)} — ${title} (ID: ${event.id})${
-        ongoing ? ' (ongoing)' : ''
-      }`,
+      `• **${title}** · \`ID ${event.id}\`${ongoing ? ' · *(ongoing)*' : ''}`,
     );
+    lines.push(`  **${formatIstRange(event.startAt, event.endAt)}**`);
     if (event.description) {
       const description = neutralizeMassMentions(
         sanitizeDescription(event.description),
@@ -69,6 +76,10 @@ export function formatEventList(
         .join('\n');
       lines.push(description);
     }
+    lines.push('');
+  }
+  if (lines[lines.length - 1] === '') {
+    lines.pop();
   }
   return fitDiscordContent(lines.join('\n'));
 }

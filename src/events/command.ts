@@ -181,15 +181,15 @@ export function formatEventPublicRecord(input: EventPresentationInput): string {
     ? neutralizeMassMentions(sanitizeDescription(input.description))
     : null;
   const lines = [
-    `New event: ${title}`,
-    `When: ${formatIstRange(input.startAt, input.endAt)}`,
-    `Event ID: ${input.id}`,
+    `**New event: ${title}**`,
+    `**When:** **${formatIstRange(input.startAt, input.endAt)}**`,
+    `**Event ID:** \`${input.id}\``,
   ];
   if (description) {
     lines.push('', description);
   }
   if (input.organizerUsername) {
-    lines.push('', `Added by ${neutralizeMassMentions(sanitizeInline(input.organizerUsername))}`);
+    lines.push('', `*Added by ${neutralizeMassMentions(sanitizeInline(input.organizerUsername))}*`);
   }
   return fitDiscordContent(lines.join('\n'));
 }
@@ -199,9 +199,9 @@ export function formatEventConfirmation(
   publicPostSucceeded: boolean,
 ): string {
   const lines = [
-    `Event saved: ${sanitizeInline(input.title)}`,
-    `When: ${formatIstRange(input.startAt, input.endAt)}`,
-    `Event ID: ${input.id}`,
+    `**Event saved: ${sanitizeInline(input.title)}**`,
+    `**When:** **${formatIstRange(input.startAt, input.endAt)}**`,
+    `**Event ID:** \`${input.id}\``,
   ];
   lines.push(
     '',
@@ -218,14 +218,14 @@ export function formatEventCancelledRecord(
   },
 ): string {
   const lines = [
-    `Event cancelled: ${neutralizeMassMentions(sanitizeInline(input.title))}`,
-    `When: ${formatIstRange(input.startAt, input.endAt)}`,
-    `Event ID: ${input.id}`,
+    `**Event cancelled: ${neutralizeMassMentions(sanitizeInline(input.title))}**`,
+    `**When:** **${formatIstRange(input.startAt, input.endAt)}**`,
+    `**Event ID:** \`${input.id}\``,
   ];
   if (input.cancelledBy) {
     lines.push(
       '',
-      `Cancelled by ${neutralizeMassMentions(sanitizeInline(input.cancelledBy))}`,
+      `*Cancelled by ${neutralizeMassMentions(sanitizeInline(input.cancelledBy))}*`,
     );
   }
   return fitDiscordContent(lines.join('\n'));
@@ -236,9 +236,9 @@ export function formatEventCancellationConfirmation(
   publicPostSucceeded: boolean,
 ): string {
   const lines = [
-    `Event cancelled: ${sanitizeInline(input.title)}`,
-    `When: ${formatIstRange(input.startAt, input.endAt)}`,
-    `Event ID: ${input.id}`,
+    `**Event cancelled: ${sanitizeInline(input.title)}**`,
+    `**When:** **${formatIstRange(input.startAt, input.endAt)}**`,
+    `**Event ID:** \`${input.id}\``,
   ];
   lines.push(
     '',

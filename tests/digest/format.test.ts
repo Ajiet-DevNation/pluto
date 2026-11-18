@@ -42,22 +42,23 @@ function report(overrides: Partial<DigestReport> = {}): DigestReport {
 test('digest renders only counts, links and the honest date caveat', () => {
   const output = formatDigest(report());
 
-  assert.match(output, /^Activity digest — last 7 days/);
+  assert.match(output, /^\*\*Activity digest\*\* — last 7 days/);
   assert.match(
     output,
     /Window: 11 Nov 2026, 12:00 PM IST → 18 Nov 2026, 12:00 PM IST/,
   );
-  assert.match(output, /GitHub issues created: 2/);
-  assert.match(output, /Discord messages indexed: 10/);
-  assert.match(output, /• #decisions: 3/);
-  assert.match(output, /Upcoming meetings: 1/);
-  assert.match(output, /Sun, 22 Nov 2026, 10:00 AM IST — Standup/);
+  assert.match(output, /\*\*GitHub issues created:\*\* 2/);
+  assert.match(output, /\*\*Discord messages indexed:\*\* 10/);
+  assert.match(output, /• \*\*#decisions:\*\* 3/);
+  assert.match(output, /\*\*Upcoming meetings:\*\* 1/);
+  assert.match(output, /• \*\*Standup\*\*/);
+  assert.match(output, /\*\*Sun, 22 Nov 2026, 10:00 AM IST\*\*/);
   assert.match(output, /https:\/\/discord\.com\/channels\/1\/2\/3/);
-  assert.match(output, /Upcoming events: none/);
-  assert.match(output, /Recent GitHub issues/);
+  assert.match(output, /\*\*Upcoming events:\*\* none/);
+  assert.match(output, /\*\*Recent GitHub issues\*\*/);
   assert.match(
     output,
-    /Ajiet-DevNation\/pluto#12 — Fix login/,
+    /• \*\*Ajiet-DevNation\/pluto#12\*\* — Fix login/,
   );
   assert.match(output, /https:\/\/github\.com\/Ajiet-DevNation\/pluto\/issues\/12/);
   assert.match(output, new RegExp(DIGEST_FOOTER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -85,23 +86,23 @@ test('digest handles an empty period without fabricating activity', () => {
     output,
     /No indexed GitHub issues, Discord messages, or #decisions messages were recorded in this period\./,
   );
-  assert.match(output, /Upcoming meetings: none/);
-  assert.match(output, /Upcoming events: none/);
-  assert.equal(output.includes('Recent GitHub issues'), false);
+  assert.match(output, /\*\*Upcoming meetings:\*\* none/);
+  assert.match(output, /\*\*Upcoming events:\*\* none/);
+  assert.equal(output.includes('**Recent GitHub issues**'), false);
   assert.equal(output.includes('GitHub issues created: 0'), false);
 });
 
 test('digest uses singular wording for a one-day window', () => {
   const output = formatDigest(report({ days: 1 }));
-  assert.match(output, /^Activity digest — last 1 day\n/);
+  assert.match(output, /^\*\*Activity digest\*\* — last 1 day\n/);
 });
 
 test('digest shows the decisions subset even when the window has other messages', () => {
   const output = formatDigest(
     report({ decisionsMessageCount: 0, upcomingEventCount: 0 }),
   );
-  assert.match(output, /Discord messages indexed: 10/);
-  assert.match(output, /• #decisions: 0/);
+  assert.match(output, /\*\*Discord messages indexed:\*\* 10/);
+  assert.match(output, /• \*\*#decisions:\*\* 0/);
 });
 
 test('digest output stays within the Discord message limit', () => {

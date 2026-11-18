@@ -109,7 +109,7 @@ test('/digest defaults to 7 days and replies publicly', async () => {
   assert.deepEqual(received, { guildId: GUILD, days: 7 });
   assert.equal(interaction.deferrals, 1);
   assert.equal(interaction.deferOptions[0], undefined);
-  assert.match(interaction.edits[0], /Activity digest — last 7 days/);
+  assert.match(interaction.edits[0], /\*\*Activity digest\*\* — last 7 days/);
 });
 
 test('/digest passes an explicit day value through', async () => {

@@ -122,11 +122,9 @@ test('/upcoming meetings lists confirmed meetings with their source link', async
   assert.equal(eventsCalled, 0);
   assert.equal(interaction.deferrals, 1);
   assert.equal(interaction.deferOptions[0], undefined);
-  assert.match(interaction.edits[0], /Confirmed upcoming meetings/);
-  assert.match(
-    interaction.edits[0],
-    /Sun, 22 Nov 2026, 10:00 AM IST — Standup/,
-  );
+  assert.match(interaction.edits[0], /\*\*Confirmed upcoming meetings\*\*/);
+  assert.match(interaction.edits[0], /• \*\*Standup\*\*/);
+  assert.match(interaction.edits[0], /\*\*Sun, 22 Nov 2026, 10:00 AM IST\*\*/);
   assert.match(interaction.edits[0], /https:\/\/discord\.com\/channels\/1\/2\/3/);
 });
 
@@ -152,12 +150,16 @@ test('/upcoming events lists scheduled events and marks ongoing ones', async () 
   });
 
   assert.equal(result, 'listed');
-  assert.match(interaction.edits[0], /Scheduled upcoming events/);
+  assert.match(interaction.edits[0], /\*\*Scheduled upcoming events\*\*/);
+  assert.match(interaction.edits[0], /• \*\*Hackathon\*\* · `ID 1`/);
   assert.match(
     interaction.edits[0],
-    /Sun, 22 Nov 2026, 10:00 AM–12:00 PM IST — Hackathon \(ID: 1\)/,
+    /\*\*Sun, 22 Nov 2026, 10:00 AM–12:00 PM IST\*\*/,
   );
-  assert.match(interaction.edits[0], /Live now \(ID: 2\) \(ongoing\)/);
+  assert.match(
+    interaction.edits[0],
+    /• \*\*Live now\*\* · `ID 2` · \*\(ongoing\)\*/,
+  );
 });
 
 test('/upcoming handles empty lists honestly', async () => {
@@ -173,7 +175,8 @@ test('/upcoming handles empty lists honestly', async () => {
   });
 
   assert.equal(result, 'listed');
-  assert.equal(interaction.edits[0], UPCOMING_MESSAGES.noEvents);
+  assert.ok(interaction.edits[0].includes(UPCOMING_MESSAGES.noEvents));
+  assert.match(interaction.edits[0], /\*\*Scheduled upcoming events\*\*/);
 });
 
 test('/upcoming reports unsupported subcommands and query failures', async () => {
@@ -208,8 +211,8 @@ test('/upcoming reports unsupported subcommands and query failures', async () =>
 });
 
 test('upcoming formatters produce deterministic, bounded output', () => {
-  assert.equal(formatMeetingList([]), UPCOMING_MESSAGES.noMeetings);
-  assert.equal(formatEventList([], NOW), UPCOMING_MESSAGES.noEvents);
+  assert.ok(formatMeetingList([]).includes(UPCOMING_MESSAGES.noMeetings));
+  assert.ok(formatEventList([], NOW).includes(UPCOMING_MESSAGES.noEvents));
 
   const manyMeetings = Array.from({ length: 30 }, (_, index) => ({
     id: `m${index}`,
