@@ -1,7 +1,7 @@
 # Search contract
 
 Owner: Khushi owns. Approved 2026-11-13; consumer list revised 2026-11-17.
-Consumers: L1 (storage + indexing), L2 (legacy transcript indexing, deferred), P2 (`/ask`), P3 (`/digest`), L3 (meeting-announcer date/time parsing does **not** use retrieval; it only stores events).
+Consumers: L1 (storage + indexing), L2 (legacy transcript indexing, deferred), P2 (`/ask`), P3 (on-demand `/digest` activity snapshot), L3 (meeting-announcer date/time parsing does **not** use retrieval; it only stores events).
 
 ## Scope note (2026-11-17)
 

@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Pluto is a read-only Discord knowledge assistant for the DevNation developer community at AJIET. It connects information from public GitHub repositories, selected Discord channels, and Miro boards into one searchable place accessible through Discord. Members can ask questions and receive answers with source citations, receive weekly digests, and rely on an automatic meeting announcer that detects meeting announcements in `#meeting-plans`, confirms ambiguous details with the announcer, and posts a reminder in `#pluto` one hour before the meeting.
+Pluto is a read-only Discord knowledge assistant for the DevNation developer community at AJIET. It connects information from public GitHub repositories, selected Discord channels, and Miro boards into one searchable place accessible through Discord. Members can ask questions and receive answers with source citations, view on-demand project activity snapshots and upcoming meetings/events, and rely on an automatic meeting announcer that detects meeting announcements in `#meeting-plans` and posts a reminder in `#pluto` one hour before the meeting.
 
 ## Core Value
 
@@ -20,7 +20,7 @@ Make community information easier to find, understand, and manage — with answe
 - [ ] Index selected Discord channels (allowlist only; `#decisions` messages remain indexed evidence)
 - [ ] Index Miro boards via REST v2 (read-only) — boards, comments, texts, diagrams, and other board content
 - [ ] `/ask` — answer questions with citations to original sources
-- [ ] `/digest` — weekly summaries grounded in indexed project activity
+- [ ] `/digest` + `/upcoming` + `/event add` + `/help` — on-demand deterministic activity snapshots, upcoming meetings/events, manual event creation with a public `#events` record, and command discoverability
 - [ ] Automatic Meeting Announcer — detect `#meeting-plans` announcements, confirm date/time, and remind one hour before the meeting
 - [ ] `/optout` — allow members to opt out of message indexing
 
@@ -59,7 +59,7 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 
 - **[Tech stack]**: TypeScript, Node.js 22, Express.js, Discord.js v14 hosted on heavencloud plan — backend language/runtime fixed
 - **[Database]**: Neon PostgreSQL with pgvector and tsvector, Drizzle ORM — vector + full-text search required
-- **[Job queue]**: pg-boss — background jobs for GitHub indexing, digest scheduling, and durable meeting reminders
+- **[Job queue]**: pg-boss — background jobs for GitHub indexing and durable meeting reminders. `/digest` is on demand and adds no digest scheduler.
 - **[GitHub integration]**: Read-only GitHub App via Octokit App authentication, with a fine-grained PAT fallback during rollout — no repository writes
 - **[Miro integration]**: Read-only Miro access via REST v2 — boards, comments, texts, diagrams, and other board content; no write operations on Miro
 - **[AI & embeddings]**: Cloudflare Workers AI (bge-base-en-v1.5 embeddings, instruct model) — AI provider fixed. Whisper remains in the repository for legacy L2 code but is not an active v1 user workflow
@@ -77,8 +77,9 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 | Drop automatic PR notifications (PRNT-01) | Takoyaki bot already posts PR notices in the server; Pluto would duplicate them in the channel | — Decided 2026-11-15 (Khushi) |
 | Automatic Meeting Announcer replaces the transcript pipeline | A focused reminder feature is reliably deliverable and directly useful; transcript ingestion, summaries and action items depend on uploads that are not ready | — Decided 2026-11-17 (Khushi) |
 | Remove `/decisions` command but keep `#decisions` indexed | Decisions remain valuable evidence for `/ask` and `/digest`; a separate command is not needed in v1 | — Decided 2026-11-17 (Khushi) |
-| Defer transcript uploads, summaries, action items, `/meeting actions` and voice recording | Keeps v1 focused on the announcer and digest; existing L2 code and tables are retained | — Decided 2026-11-17 (Khushi) |
-| L3 owns the announcer end-to-end; P3 owns `/digest` only | One clear owner per feature; no duplicated implementation | — Decided 2026-11-17 (Khushi) |
+| Defer transcript uploads, summaries, action items, `/meeting actions` and voice recording | Keeps v1 focused on the announcer and activity/event awareness; existing L2 code and tables are retained | — Decided 2026-11-17 (Khushi) |
+| L3 owns the announcer end-to-end; P3 owns the activity/event-awareness commands | One clear owner per feature; no duplicated implementation | — Decided 2026-11-17 (Khushi) |
+| Simplify `/digest` and add event awareness | An on-demand deterministic snapshot is simpler, cheaper and safer than an AI-written weekly digest. `/upcoming` and `/event add` cover club event awareness without channel scanning. `/resource` and `/upcoming all` are out of scope. | — Decided 2026-11-18 (Khushi) |
 | Deterministic date/time parsing, no new AI provider | Testable, predictable clarification behavior; avoids new infrastructure and hallucinated times | — Decided 2026-11-17 (Khushi) |
 | Durable reminders via pg-boss, honest at-least-once delivery | In-memory timers do not survive restarts; Discord delivery cannot be made exactly-once across the send/persist gap | — Decided 2026-11-17 (Khushi) |
 | Prioritize quality, extend timeline | Avoid sacrificing correctness for an aggressive deadline | — Pending |
@@ -91,7 +92,7 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 
 ---
 
-*Last updated: 2026-11-17 — revised v1 scope: Automatic Meeting Announcer (MEET-02) added; `/decisions` command and transcript upload/summary/action-item capabilities deferred; `#decisions` retained as indexed evidence; active v1 reduced to seven capabilities*
+*Last updated: 2026-11-18 — P3 scope revised: weekly AI digest replaced by an on-demand deterministic `/digest`, plus `/upcoming meetings`, `/upcoming events`, `/event add`, and `/help`. Active v1 remains seven capabilities.*
 
 ## Evolution
 

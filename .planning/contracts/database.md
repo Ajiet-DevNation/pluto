@@ -1,8 +1,8 @@
 # Database schema contract
 
 Owner: Likhith proposes; Khushi approves.
-Status: Draft — pending Khushi approval (revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
-Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P2 (`/ask` retrieval), P3 (`/digest`).
+Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events` and define the on-demand activity/event-awareness scope; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
+Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P2 (`/ask` retrieval), P3 (activity snapshot and manual `events`/`/upcoming`).
 
 ## Purpose
 
@@ -77,7 +77,7 @@ because GitHub node ids exceed `integer` range (observed value: 2627377453).
 
 ## Additional tables
 
-`discord_messages` below remains planned/not created (P1 uses a JSON store). `meeting_transcripts` is implemented but legacy/deferred. `meeting_events` is the active v1 addition for L3.
+`discord_messages` below remains planned/not created (P1 uses a JSON store). `meeting_transcripts` is implemented but legacy/deferred. `meeting_events` is the active v1 addition for L3. `events` is the active v1 addition for P3's manual club events; it is deliberately separate from `meeting_events`.
 
 ### `discord_messages`
 
@@ -171,6 +171,41 @@ Migration expectations:
 - Do not edit an applied migration.
 - Do not drop or rewrite `meeting_transcripts` or existing meeting `search_chunks` rows.
 - Apply through `scripts/migrate/index.ts`; re-runs must be idempotent.
+
+### `events`
+
+Manual club events added through `/event add`. This table is separate from
+`meeting_events`: meetings keep their announcer lifecycle and reminder claims,
+while manual events are simple listings. `/upcoming events` reads this table.
+
+| Column | Type | Nullable | Notes |
+|--------|------|----------|-------|
+| `id` | serial | NO | primary key |
+| `guild_id` | text | NO | Discord guild snowflake |
+| `title` | varchar(200) | NO | event title |
+| `description` | text | YES | optional details |
+| `start_at` | timestamptz | NO | timezone-aware start |
+| `end_at` | timestamptz | YES | optional end, must be after start |
+| `timezone` | varchar(64) | NO | default `'Asia/Kolkata'` |
+| `created_by` | text | NO | Discord user ID of the organizer |
+| `status` | varchar(20) | NO | `scheduled` \| `cancelled` \| `completed`; default `scheduled` |
+| `created_at` | timestamptz | NO | default `now()` |
+| `updated_at` | timestamptz | NO | default `now()` |
+
+Indexes:
+- `events_guild_start_idx` — btree on `(guild_id, start_at)` for `/upcoming events`.
+
+Rules:
+- `/event add` is restricted to organizers with Discord's Manage Events permission.
+- Date and time are entered as strict `YYYY-MM-DD` and `HH:MM` in `Asia/Kolkata`.
+- Start must be in the future; `end_at`, when present, must be after `start_at`.
+- No channel scanning: posting in `#events` does not create an event. Only `/event add` writes rows.
+- No recurring events and no reminders for manual events in v1.
+- The public confirmation is posted in the configured `#events` channel, which is not indexed.
+
+Migration:
+- Add `drizzle/migrations/0009_events.sql`; use `CREATE TABLE IF NOT EXISTS` and the index.
+- Do not merge manual events into `meeting_events`.
 
 ## Search chunk table
 
@@ -281,10 +316,11 @@ cannot contain a NUL byte, so the separator must be concatenated as `bytea`;
 - Each migration file is run at most once
 - Migrations that alter existing columns (e.g. `0001_dear_cerise.sql`) are safe to
   skip if already applied
-- L3 adds one new migration for `meeting_events`. It must not modify or drop the
-  existing transcript tables or `search_chunks`.
-- No migration is created by the 2026-11-17 documentation task; this section
-  records the implementation requirement.
+- L3 added one migration for `meeting_events`. P3 adds one migration for manual
+  `events`. Neither migration may modify or drop the existing transcript tables
+  or `search_chunks`.
+- No migration is created by this documentation update; this section records the
+  implementation requirement.
 
 ## Idempotency rule
 
@@ -292,7 +328,9 @@ Re-indexing upserts on `github_id` (issues) and message identity for Discord.
 Re-runs must not create duplicates. Meeting events are idempotent on
 `(guild_id, channel_id, source_message_id)` and reminder delivery is guarded by
 `event_version` plus a conditional claim. Re-detecting the same announcement
-must not create a second event.
+must not create a second event. Manual events are user-created and may be
+repeated intentionally; the organizer can cancel the obsolete row when
+`/event cancel` is added post-v1.
 
 ## What is not in this contract
 
@@ -300,4 +338,4 @@ must not create a second event.
 - Reranking (not in v1)
 - Miro table structure (pending token and live verification)
 - Transcript-derived summary or action-item tables (deferred with MEET-01)
-- A second meeting-event table or alternative event identity (not permitted without documented justification)
+- A second meeting-event table or alternative meeting identity (not permitted without documented justification). Manual club events use the separate `events` table above.
