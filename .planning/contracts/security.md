@@ -59,7 +59,7 @@ The boundary holds only if both layers hold. Neither is sufficient alone.
 
 ## 4. Evidence-only answers
 
-> ASK-01 and the `/ask` command were removed from active v1 on 2026-11-18. These rules are retained for a future re-enable and still describe the evidence engine.
+> ASK-01 and the `/ask` command, answer runtime and retrieval modules were removed from active v1 on 2026-11-18. The evidence-only and citation rules below are historical/retained as security principles; no active answer command exists.
 
 - `/ask` answers only from retrieved indexed chunks.
 - If retrieval returns no chunk above the relevance threshold, respond with the standard no-evidence message.

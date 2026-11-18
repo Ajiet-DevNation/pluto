@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CloudflareAIError,
-  CloudflareAnswerGenerator,
   CloudflareEmbeddingClient,
   EMBEDDING_DIMENSIONS,
 } from '../../src/search/cloudflare';
@@ -128,36 +127,3 @@ test('embedding client treats 429 as a deferred quota condition without retrying
   assert.equal(calls.length, 1);
 });
 
-test('answer generator sends a system instruction and returns the response', async () => {
-  const { fetch, calls } = captureFetch(
-    jsonResponse({ result: { response: 'The answer is grounded in [1].' } }),
-  );
-  const generator = new CloudflareAnswerGenerator({
-    accountId: 'account',
-    token: 'token',
-    fetchImpl: fetch,
-  });
-
-  const answer = await generator.generate('Question: what?\n\nEvidence:\n[1] ...');
-
-  assert.equal(answer, 'The answer is grounded in [1].');
-  assert.equal(calls.length, 1);
-  assert.match(calls[0].url, /@cf\/meta\/llama-3.1-8b-instruct$/);
-  const body = JSON.parse(String(calls[0].init?.body)) as {
-    messages: Array<{ role: string; content: string }>;
-  };
-  assert.equal(body.messages[0].role, 'system');
-  assert.match(body.messages[0].content, /only from the supplied evidence/i);
-  assert.equal(body.messages[1].role, 'user');
-});
-
-test('answer generator fails closed on an empty answer', async () => {
-  const { fetch } = captureFetch(jsonResponse({ result: { response: '   ' } }));
-  const generator = new CloudflareAnswerGenerator({
-    accountId: 'account',
-    token: 'token',
-    fetchImpl: fetch,
-  });
-
-  await assert.rejects(() => generator.generate('prompt'), CloudflareAIError);
-});

@@ -28,8 +28,6 @@ function fakes(stored: Set<string>) {
           .filter((key) => stored.has(key)),
       );
     },
-    async vectorSearch() { return []; },
-    async fullTextSearch() { return []; },
     async deleteDiscordAuthor() { return 0; },
   };
   const embeddingClient = {

@@ -1,13 +1,21 @@
 # Search contract
 
 Owner: Khushi owns. Approved 2026-11-13; consumer list revised 2026-11-17.
-Consumers: L1 (storage + indexing), L2 (legacy transcript indexing, deferred), P3 (on-demand `/digest` activity snapshot), L3 (meeting-announcer date/time parsing does **not** use retrieval; it only stores events). ASK-01 and its `/ask` command were removed from active v1 on 2026-11-18; this contract and the retrieval engine are retained for a possible future re-enable.
+Consumers: L1 (storage + indexing), L2 (legacy transcript indexing, deferred), P3 (on-demand `/digest` activity snapshot), L3 (meeting-announcer date/time parsing does **not** use retrieval; it only stores events). ASK-01, the `/ask` command, answer runtime and retrieval modules were removed from active v1 on 2026-11-18. This contract is retained for the indexing/chunk pipeline; its retrieval, citation and answer-generation sections are historical.
+
+## Removed scope note (2026-11-18)
+
+- `/ask`, `src/search/ask.ts`, retrieval modules, prompt/contributor/evaluation code,
+  answer generation, evidence gating and their tests/scripts are removed.
+- `search_chunks`, embeddings and the indexing pipeline remain for `/digest` and
+  corpus storage.
+- `#decisions` remains indexed evidence for `/digest`.
 
 ## Scope note (2026-11-17)
 
 - `#decisions` remains an ordinary indexed Discord channel. Its human-authored
-  messages are evidence for `/ask` and `/digest`; there is no `/decisions`
-  command and no separate decisions service module.
+  messages are evidence for `/digest`; there is no `/decisions` command and no
+  separate decisions service module.
 - Meeting transcript content (`source_type = 'meeting'`) is legacy/deferred.
   Existing chunks remain searchable if present, but no new upload or transcript
   ingestion workflow is active in v1.
@@ -213,8 +221,8 @@ On a 20-vector sample after removing the forced index scan, approximate
 Recall@5 and Recall@10 were both **1.000** because the planner chose exact
 scans. The earlier forced-index 60-vector measurement was 0.940 / 0.990; its
 residual difference was duplicate/equal-score chunks, not missing neighbours.
-With probes=1 the 60-vector sample scored 0.517 / 0.440. See
-`contracts/evaluation.md` for methodology.
+With probes=1 the 60-vector sample scored 0.517 / 0.440. The evaluation contract
+was removed with the `/ask` engine; its methodology is retained in Git history.
 
 No index was rebuilt and no index migration was applied. If a rebuild becomes
 necessary, use `CREATE INDEX CONCURRENTLY` outside a transaction block; see

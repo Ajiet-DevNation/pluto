@@ -3,9 +3,8 @@
 Read-only Discord knowledge assistant for the DevNation community at AJIET.
 Indexes public GitHub repositories, selected Discord channels, Miro boards and
 meeting records, provides deterministic activity digests and upcoming-event
-awareness, and runs an automatic meeting announcer. The `/ask` command is
-currently removed from active v1; its retrieval/indexing engine is retained for
-a possible future re-enable.
+awareness, and runs an automatic meeting announcer. The `/ask` command and its
+QA runtime were removed from active v1; no question-answering command is active.
 
 ## Stack
 
@@ -13,7 +12,7 @@ a possible future re-enable.
 - discord.js v14
 - Neon Postgres (pgvector, tsvector) with Drizzle ORM
 - pg-boss job queue
-- Cloudflare Workers AI (embeddings, instruct model, Whisper)
+- Cloudflare Workers AI (embeddings; Whisper retained for legacy L2)
 - Hosting: heavencloud plan
 
 ## Setup
@@ -35,8 +34,6 @@ Requires Node.js 22 or newer (see `.nvmrc`).
 | `npm start` | Run the compiled server |
 | `npm run dev` | Watch mode via tsx |
 | `npm test` | Run the test suite (`node:test` via tsx) |
-| `npm run eval:ask` | Retained future `/ask` engine evaluation; the Discord command is not registered in active v1. Writes `tmp/eval-ask-report.json` |
-| `npm run eval:retrieval -- --allow-cloudflare` | Live retrieval-quality evaluation; uses a dedicated read-only database connection and verifies the read-only settings before querying. Requires explicit Cloudflare opt-in and writes `tmp/eval-retrieval-report.json`. When enabled, curated-question embeddings can consume Cloudflare usage. |
 
 ## Health check
 

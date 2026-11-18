@@ -1,10 +1,8 @@
 /**
- * Embedding/generation budget shared by indexing and `/ask`.
+ * Embedding budget for indexing.
  *
- * Cloudflare's free allocation is metered per UTC day. Indexing and answering
- * draw from the same pool, so the day is split: indexing may use its share, and
- * the remainder is reserved for answering. Without this split a backfill can
- * starve `/ask` entirely.
+ * Cloudflare's free allocation is metered per UTC day. The `/ask` answer budget
+ * was removed with the command on 2026-11-18; indexing keeps its own limits.
  *
  * Units are estimated tokens. The estimate is deliberately conservative and is
  * not provider metering; see contracts/search.md.
@@ -13,7 +11,6 @@
 export const DEFAULT_TOTAL_DAILY_UNITS = 1_000_000;
 export const DEFAULT_INDEXING_DAILY_UNITS = 700_000;
 export const DEFAULT_INDEXING_RUN_UNITS = 150_000;
-export const DEFAULT_ANSWER_QUESTION_UNITS = 3_000;
 
 function positiveIntegerEnv(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
   const value = Number(env[name]);
@@ -24,7 +21,6 @@ export interface BudgetLimits {
   totalDaily: number;
   indexingDaily: number;
   indexingRun: number;
-  answerPerQuestion: number;
 }
 
 export function budgetLimitsFromEnv(env: NodeJS.ProcessEnv = process.env): BudgetLimits {
@@ -37,6 +33,5 @@ export function budgetLimitsFromEnv(env: NodeJS.ProcessEnv = process.env): Budge
     totalDaily,
     indexingDaily,
     indexingRun: positiveIntegerEnv(env, 'INDEX_EMBEDDING_RUN_BUDGET', DEFAULT_INDEXING_RUN_UNITS),
-    answerPerQuestion: positiveIntegerEnv(env, 'ANSWER_BUDGET_UNITS', DEFAULT_ANSWER_QUESTION_UNITS),
   };
 }

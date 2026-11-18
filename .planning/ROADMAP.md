@@ -44,7 +44,7 @@ The **six** active v1 capabilities are covered across **six** phases. The 2026-1
 4. No unsupported general knowledge is used in answers
 5. Contributor questions use the read-only contributors API and never guess names
 **Requirements:** ASK-01
-**Status (2026-11-18):** ⏸ Removed from active v1. The `/ask` command and handler are removed because the live answer path is not working reliably. The retrieval/indexing engine, schema, contracts, evaluation scripts and tests are retained for a possible future re-enable. P2 implementation (PR #10) and the retrieval audit (PR #14) remain merged historically.
+**Status (2026-11-18):** ⏸ Removed from active v1. The `/ask` command, answer runtime, retrieval modules, evaluation scripts and ask-specific tests are removed because the live answer path is not working reliably. The chunk schema and embedding/indexing pipeline are retained for `/digest` and corpus storage. P2 implementation (PR #10) and the retrieval audit (PR #14) remain merged historically.
 
 ## Phase 4: Project Activity & Event Awareness
 **Goal:** Provide on-demand project activity snapshots and simple upcoming-event awareness without AI-written summaries or a weekly scheduler.
@@ -60,7 +60,7 @@ The **six** active v1 capabilities are covered across **six** phases. The 2026-1
 6. Digest and event output is grounded in indexed records; empty periods are handled honestly.
 7. Opt-out, privacy, bot-author, and existing-command rules are preserved.
 **Requirements:** DIGE-01
-**Status (2026-11-18):** ✅ Complete — P3. `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, and `/help` are implemented with unit and database integration coverage; 421 tests pass, build clean. Migration `0009_events` is recorded. Live Discord acceptance passed for all P3 flows, public replies, and the 12-hour display. The P3 PR (#18) is open for Khushi review/merge.
+**Status (2026-11-18):** ✅ Complete — P3. `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, and `/help` are implemented with unit and database integration coverage; 318 tests pass, build clean. Migration `0009_events` is recorded. Live Discord acceptance passed for all P3 flows, public replies, and the 12-hour display. The P3 PR (#18) is open for Khushi review/merge.
 
 ## Phase 5: Automatic Meeting Announcer
 **Goal:** Detect eligible meeting announcements in `#meeting-plans`, deterministically parse the date/time, persist the event, and deliver one reminder in `#pluto` one hour before the meeting. Valid future announcements are auto-scheduled; no confirmation or slash command is used.
@@ -106,7 +106,7 @@ These items are retained in the repository but are **not** active v1 milestones 
 |---------------|----------------------|------|
 | Meeting transcript/audio upload and transcription | INDEX-04 | L2 code and `meeting_transcripts` remain; no new upload workflow is active |
 | Transcript-derived summaries, action items, `/meeting actions` | MEET-01 | Depends on deferred uploads; do not implement from the old PR plan |
-| `/ask` grounded Q&A | ASK-01 | Command/handler removed 2026-11-18; retrieval/indexing engine, schema, contracts and tests retained for future |
+| `/ask` grounded Q&A | ASK-01 | Command, answer runtime, retrieval modules and ask-specific tests removed 2026-11-18; chunk schema/indexing retained for `/digest` and storage |
 | `/decisions` command | DECI-01 | `#decisions` remains indexed evidence for `/digest` and a future `/ask` |
 
 ## Phase dependencies
@@ -115,7 +115,7 @@ These items are retained in the repository but are **not** active v1 milestones 
 |-------|------------|-------|
 | 1 | — | Foundation, database, jobs, GitHub/Miro clients |
 | 2 | 1 | Discord bot and allowlist intake |
-| 3 | 1, 2 | Removed from active v1; `/ask` command removed, retrieval engine retained for future |
+| 3 | 1, 2 | Removed from active v1; `/ask` command and answer/retrieval engine removed; chunk schema/indexing retained for `/digest` |
 | 4 | 1, 2, 5 | Activity snapshot uses indexed issues/Discord storage; `/upcoming meetings` reads the `meeting_events` schema delivered by Phase 5. No digest scheduler. |
 | 5 | 1, 2 | Announcer uses database/jobs and Discord message intake; independent of transcripts, `/ask`, and activity commands |
 | 6 | 1–5 | Release verification |
@@ -137,4 +137,4 @@ These items are retained in the repository but are **not** active v1 milestones 
 
 ---
 
-*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 421 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review/merge. ASK-01 and its `/ask` command are removed from active v1 on 2026-11-18; the retrieval engine is retained for future. L3 implementation, shared integration, and real test-guild acceptance are recorded; production/deployment acceptance and contract approval remain pending. Active v1 is six requirements across six phases.*
+*Last updated: 2026-11-18 — P3 activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 318 tests pass, build clean, migration `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review/merge. ASK-01 and its `/ask` command/engine are removed from active v1 on 2026-11-18; the chunk schema/indexing pipeline is retained. L3 implementation, shared integration, and real test-guild acceptance are recorded; production/deployment acceptance and contract approval remain pending. Active v1 is six requirements across six phases.*

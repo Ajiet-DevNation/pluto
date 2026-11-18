@@ -30,7 +30,7 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 | Capability | Status | Reason | Preserved |
 |------------|--------|--------|-----------|
 | `/decisions` command (DECI-01) | Removed from active v1 (2026-11-17) | The focused v1 keeps decisions as indexed evidence rather than a separate command | `#decisions` remains in the five-channel allowlist; its human-authored messages are available to `/digest` and a future `/ask` |
-| `/ask` grounded Q&A (ASK-01) | Removed from active v1 (2026-11-18) | Live answer path is not working reliably; deferred for a possible future re-enable | `/ask` command/handler removed; retrieval/indexing engine, schema, contracts, eval scripts and tests retained |
+| `/ask` grounded Q&A (ASK-01) | Removed from active v1 (2026-11-18) | Live answer path is not working reliably; command and answer/retrieval engine removed | Chunk schema and embedding/indexing pipeline retained for `/digest` and corpus storage |
 | Meeting transcript/audio upload (INDEX-04) | Deferred (2026-11-17) | v1 prioritises the automatic announcer; uploads are not required for it | L2 upload/transcription code, `meeting_transcripts`, and `search_chunks` rows remain |
 | Transcript summaries, action-item extraction, `/meeting actions` (MEET-01) | Deferred (2026-11-17) | Depends on transcript uploads, which are deferred | No active assignment; do not implement from the old PR plan |
 | Voice-channel recording | Out of scope for v1 | Not required for the announcer; adds privacy and infrastructure risk | None planned |
@@ -76,8 +76,8 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 | All ten capabilities in v1 | Initial user requirement — no features excluded from first release | Superseded 2026-11-15 (nine), 2026-11-17 (seven active) and 2026-11-18 (six active; ASK-01 removed) |
 | Drop automatic PR notifications (PRNT-01) | Takoyaki bot already posts PR notices in the server; Pluto would duplicate them in the channel | — Decided 2026-11-15 (Khushi) |
 | Automatic Meeting Announcer replaces the transcript pipeline | A focused reminder feature is reliably deliverable and directly useful; transcript ingestion, summaries and action items depend on uploads that are not ready | — Decided 2026-11-17 (Khushi) |
-| Remove `/decisions` command but keep `#decisions` indexed | Decisions remain valuable evidence for `/digest` and a future `/ask`; a separate command is not needed in v1 | — Decided 2026-11-17 (Khushi) |
-| Remove `/ask` command and ASK-01 from active v1 | The live answer path is not working reliably; keep the retrieval/indexing engine and evidence for a possible future re-enable | — Decided 2026-11-18 |
+| Remove `/decisions` command but keep `#decisions` indexed | Decisions remain valuable evidence for `/digest`; a separate command is not needed in v1 | — Decided 2026-11-17 (Khushi) |
+| Remove `/ask` command and ASK-01 from active v1 | The live answer path is not working reliably; remove the command, answer runtime, retrieval modules, eval scripts and ask-specific tests; keep the chunk schema/indexing pipeline | — Decided 2026-11-18 |
 | Defer transcript uploads, summaries, action items, `/meeting actions` and voice recording | Keeps v1 focused on the announcer and activity/event awareness; existing L2 code and tables are retained | — Decided 2026-11-17 (Khushi) |
 | L3 owns the announcer end-to-end; P3 owns the activity/event-awareness commands | One clear owner per feature; no duplicated implementation | — Decided 2026-11-17 (Khushi) |
 | Simplify `/digest` and add event awareness | An on-demand deterministic snapshot is simpler, cheaper and safer than an AI-written weekly digest. `/upcoming` and `/event add` cover club event awareness without channel scanning. `/resource` and `/upcoming all` are out of scope. | — Decided 2026-11-18 (Khushi) |
@@ -89,11 +89,11 @@ These capabilities are **deferred, not deleted**. Existing implementation and da
 | Citations link to original source | Verifiability — users can jump to GitHub commit/PR, Discord message, or Miro board | — Pending |
 | TypeScript + Node.js 22 + discord.js v14 | Existing team stack decision (per provided stack table) | — Pending |
 | Neon Postgres + pgvector + tsvector + Drizzle | Vector + full-text search for knowledge retrieval | — Pending |
-| Cloudflare Workers AI | AI embeddings and generation; legacy Whisper code retained but not an active v1 workflow | — Resolved |
+| Cloudflare Workers AI | AI embeddings for indexing; the generation model was removed with `/ask`; legacy Whisper code retained but not an active v1 workflow | — Resolved |
 
 ---
 
-*Last updated: 2026-11-18 — `/ask` and ASK-01 removed from active v1; the `/ask` command and handler are removed and the retrieval/indexing engine is retained for a possible future re-enable. Active v1 is six capabilities: INDEX-01/02/03, DIGE-01, MEET-02 and OPTO-01. P3 activity/event awareness is complete and live-verified; PR #18 is open for Khushi review/merge.*
+*Last updated: 2026-11-18 — `/ask` and ASK-01 removed from active v1; the command, answer runtime, retrieval modules, evaluation scripts and ask-specific tests are removed. The chunk schema and indexing pipeline remain for `/digest` and corpus storage. Active v1 is six capabilities: INDEX-01/02/03, DIGE-01, MEET-02 and OPTO-01. P3 activity/event awareness is complete and live-verified; PR #18 is open for Khushi review/merge.*
 
 ## Evolution
 

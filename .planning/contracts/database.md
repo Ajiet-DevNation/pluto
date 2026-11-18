@@ -1,8 +1,8 @@
 # Database schema contract
 
 Owner: Likhith proposes; Khushi approves.
-Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events`, define the on-demand activity/event-awareness scope, and mark the `/ask` command removed from active v1 while retaining its retrieval schema; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
-Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P3 (activity snapshot and manual `events`/`/upcoming`), and the retained retrieval engine for a future `/ask` re-enable.
+Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events`, define the on-demand activity/event-awareness scope, and record that `/ask` and its answer/retrieval engine were removed while the chunk schema remains for indexing; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
+Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P3 (activity snapshot and manual `events`/`/upcoming`), and the indexing pipeline.
 
 ## Purpose
 
@@ -221,7 +221,7 @@ Migration:
 
 ### `search_chunks`
 
-Searchable chunks backing `/digest` and a future `/ask` engine. The table is created
+Searchable chunks backing indexing and `/digest`. The table is created
 by `drizzle/migrations/0004_search_chunks.sql` and represented in
 `src/db/schema.ts`. Embeddings and generated full-text vectors are stored here per
 `contracts/search.md`. Existing chunks from meeting transcripts use
@@ -260,7 +260,10 @@ Constraints:
 
 Source: `contracts/search.md` §Chunk format, §Full-text search
 
-### IVFFlat index operations (2026-11-16 audit)
+### Historical IVFFlat index operations (retrieval removed 2026-11-18)
+
+> `/ask` retrieval was removed from active v1. This section is retained as
+> operational history; the chunk/indexing pipeline remains.
 
 Live index metadata:
 
@@ -289,9 +292,10 @@ No index rebuild, replacement, or migration was performed. If one is needed:
 3. For the current ~7.9k rows, a small explicit `lists` value (e.g. 64–100) is
    reasonable; for a much larger corpus follow pgvector guidance (rows/1000 up
    to 1M, `sqrt(rows)` above).
-4. Validate recall against an exact scan with `npm run eval:retrieval` before
-   dropping the old index.
-5. Re-tune `IVFFLAT_PROBES` to cover the new list count.
+4. If retrieval is ever reintroduced, validate recall against an exact scan; the
+   old `eval:retrieval` script was removed with `/ask`.
+5. Re-tune `IVFFLAT_PROBES` only if retrieval is reintroduced and the list count
+   grows.
 
 ### `content_hash` backfill (pending approval)
 
