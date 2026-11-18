@@ -58,7 +58,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     10. Opt-out, privacy, bot-author, and existing-command behavior remain unchanged.
     11. Tests and build pass.
     12. `/event cancel` is available to every member; creators can cancel their own events, and Manage Events can cancel any event. Cancellation marks the row cancelled, posts one public cancellation notice, never edits or deletes the original `#events` record, and is idempotent.
-  - 2026-11-18 status: **complete** — deterministic digest, upcoming meetings/events, every-member manual events with cancellation, public activity replies, 12-hour input/display, and help are implemented, tested and live-verified. 434 tests pass, build is clean, and `0009_events` is recorded in the dev database. Guild command registration is verified; `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display passed live acceptance. The 12-hour input/display change, every-member `/event add`, public replies, and `/event cancel` were approved by Khushi on 2026-11-18. The P3 PR is open for Khushi review/merge; DIGE-01 is not marked merged until that completes. `/ask` routes correctly but its live answer check is blocked by the separate P2 Cloudflare AI allowance issue.
+  - 2026-11-18 status: **complete** — deterministic digest, upcoming meetings/events, every-member manual events with cancellation, public activity replies, 12-hour input/display, and help are implemented, tested and live-verified. 434 tests pass, build is clean, and `0009_events` is recorded in the dev database. Guild command registration is verified; `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display passed live acceptance. The 12-hour input/display change, every-member `/event add`, public replies, and `/event cancel` were approved by Khushi on 2026-11-18. The P3 PR (#18) is open for Khushi review/merge; DIGE-01 is not marked merged until that completes. `/ask` routes correctly but its live answer check is blocked by the separate P2 Cloudflare AI allowance issue.
 
 ### Meetings
 
@@ -125,7 +125,7 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 | INDEX-02 | Phase 2 | Complete — P1 merged and live-verified (PR #9) |
 | INDEX-03 | Phase 1 | Partial — read-only client implemented; Miro token and live verification pending |
 | ASK-01 | Phase 3 | Partial — retrieval/grounding fixes done; full-corpus live validation pending |
-| DIGE-01 | Phase 4 | ✅ Complete (implementation, tests and live acceptance; PR open for Khushi review/merge) |
+| DIGE-01 | Phase 4 | ✅ Complete (implementation, tests and live acceptance; PR #18 open for Khushi review/merge) |
 | MEET-02 | Phase 5 | Pending — L3 |
 | OPTO-01 | Phase 2 | Complete — P1 merged and live-verified (PR #9) |
 | INDEX-04 | — | Deferred (2026-11-17) |
@@ -144,4 +144,4 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 ---
 
 *Requirements defined: 2026-11-12*
-*Last updated: 2026-11-18 — DIGE-01 is complete: on-demand activity/event awareness (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`) is implemented, tested and live-verified; 434 tests pass, build is clean, and `0009_events` is recorded. The P3 PR is open for Khushi review/merge, so DIGE-01 is not marked merged until that completes. The weekly scheduled digest and AI-written summaries remain out of scope. Active v1 remains seven requirements.*
+*Last updated: 2026-11-18 — DIGE-01 is complete: on-demand activity/event awareness (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`) is implemented, tested and live-verified; 434 tests pass, build is clean, and `0009_events` is recorded. The P3 PR (#18) is open for Khushi review/merge, so DIGE-01 is not marked merged until that completes. The weekly scheduled digest and AI-written summaries remain out of scope. Active v1 remains seven requirements.*
