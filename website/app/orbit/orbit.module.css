@@ -58,23 +58,6 @@
   letter-spacing: -.035em;
 }
 
-.brandOrbit {
-  width: 22px;
-  height: 22px;
-  position: relative;
-  border: 1px solid var(--dust);
-  border-radius: 50%;
-  transform: rotate(-29deg);
-}
-
-.brandOrbit::after {
-  content: "";
-  position: absolute;
-  inset: 7px -5px;
-  border: 1px solid var(--blush);
-  border-radius: 50%;
-}
-
 .brand small {
   font: 500 .7rem var(--font-sans);
   letter-spacing: .08em;
@@ -129,7 +112,7 @@
 .eyebrow {
   margin: 0 0 1.45rem;
   color: var(--dust);
-  font-size: .65rem;
+  font-size: .7rem;
   letter-spacing: .17em;
   text-transform: uppercase;
   font-weight: 600;
@@ -163,7 +146,7 @@
 }
 
 .copy h3 {
-  font-size: 1.12rem;
+  font-size: 1.2rem;
   margin: 0;
 }
 
@@ -227,7 +210,7 @@
   display: block;
   margin-top: 1.7rem;
   color: var(--dust);
-  font-size: .77rem;
+  font-size: .87rem;
 }
 
 .note a {
@@ -266,14 +249,14 @@
 }
 
 .featureLines h3 {
-  font-size: 1.06rem;
+  font-size: 1.14rem;
   font-weight: 600;
 }
 
 .featureLines p {
   margin: .3rem 0 0;
   color: var(--mute);
-  font-size: .92rem;
+  font-size: 1.02rem;
 }
 
 .steps {
@@ -291,7 +274,7 @@
 
 .steps p {
   margin: .3rem 0 0;
-  font-size: .92rem;
+  font-size: 1.02rem;
 }
 
 .scorecard {
@@ -424,12 +407,12 @@
   border: 1px solid rgba(185, 168, 220, .2);
   background: #1d153855;
   color: var(--dust);
-  font-size: .75rem;
+  font-size: .82rem;
 }
 
 .fine {
   margin-top: 1.4rem;
-  font-size: .75rem;
+  font-size: .85rem;
   color: var(--dust);
 }
 
@@ -438,7 +421,7 @@
   border-top: 1px solid rgba(185, 168, 220, .2);
   padding-top: 1rem;
   color: var(--dust);
-  font-size: .76rem;
+  font-size: .84rem;
 }
 
 .guide {
@@ -592,11 +575,11 @@
   }
 
   .copy > p:not(.eyebrow) {
-    font-size: .91rem;
+    font-size: 1.02rem;
   }
 
   .eyebrow {
-    font-size: .59rem;
+    font-size: .66rem;
     margin-bottom: 1.1rem;
   }
 

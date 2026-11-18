@@ -16,10 +16,9 @@ export default function OrbitPage() {
       <OrbitShowcase />
       <header className={styles.masthead}>
         <a className={styles.brand} href="#meet" aria-label="Pluto home">
-          <span className={styles.brandOrbit} aria-hidden="true" />Pluto<span className={styles.brandByline}> / by DevNation</span>
+          Pluto<span className={styles.brandByline}> / by DevNation</span>
         </a>
         <nav className={styles.mastheadLinks} aria-label="Main links">
-          <a href="https://github.com/Ajiet-DevNation/pluto">The code ↗</a>
           <a href="https://www.devnation.club/">DevNation ↗</a>
         </nav>
       </header>

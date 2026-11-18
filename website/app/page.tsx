@@ -7,7 +7,7 @@ export default function Home() {
     <>
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="site-header">
-        <a className="wordmark" href="#meet" aria-label="Pluto home"><span className="brand-orbit" aria-hidden="true" />Pluto<span className="brand-byline"> / by DevNation</span></a>
+        <a className="wordmark" href="#meet" aria-label="Pluto home">Pluto<span className="brand-byline"> / by DevNation</span></a>
         <a className="community-link" href="https://www.devnation.club/">devnation.club <span aria-hidden="true">↗</span></a>
       </header>
       <OrbitExperience />

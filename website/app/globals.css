@@ -16,7 +16,7 @@
 @theme inline { --font-sans: var(--font-sans); }
 * { box-sizing: border-box; }
 html { background: var(--void); scroll-behavior: smooth; scroll-padding-top: 5rem; }
-body { margin: 0; color: var(--ink); font: 400 1.05rem/1.65 var(--font-sans); background: var(--void); }
+body { margin: 0; color: var(--ink); font: 400 1.15rem/1.65 var(--font-sans); background: var(--void); }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { font: inherit; }
 button, a { touch-action: manipulation; }
@@ -30,8 +30,6 @@ button { cursor: pointer; }
 .site-header a { pointer-events: auto; text-decoration: none; }
 .wordmark { display: flex; align-items: center; gap: 10px; font: 800 1.45rem var(--font-display); letter-spacing: -.04em; }
 .brand-byline { margin-left: 3px; font: 400 .75rem var(--font-sans); letter-spacing: 0; color: var(--dust); }
-.brand-orbit { width: 23px; height: 23px; border: 1px solid var(--dust); border-radius: 50%; position: relative; transform: rotate(-35deg); }
-.brand-orbit::before { content: ""; position: absolute; inset: 7px -5px; border: 1px solid var(--blush); border-radius: 50%; }
 .community-link { font-size: .85rem; color: var(--dust); }
 .community-link span { margin-left: 9px; color: var(--blush); }
 .site-header a:hover { color: var(--blush); }
@@ -44,7 +42,7 @@ button { cursor: pointer; }
 .story-copy em { color: var(--dust); font-style: normal; }
 .story-copy p { margin: 1.25rem 0 0; color: var(--muted); }
 .story-copy .eyebrow { margin: 0 0 1.6rem; color: var(--dust); }
-.eyebrow { font-size: .66rem; text-transform: uppercase; letter-spacing: .16em; font-weight: 500; }
+.eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .16em; font-weight: 500; }
 .status-light { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--blush); margin: 0 8px 1px 0; box-shadow: 0 0 14px #f2a7a080; }
 .button-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.8rem; }
 .pill-button { display: inline-flex; align-items: center; justify-content: center; gap: 20px; padding: .8rem 1.4rem; border: 1px solid transparent; border-radius: 100px; color: var(--dusk); background: var(--ink); text-decoration: none; font-size: .9rem; font-weight: 600; text-shadow: none; transition: background .2s, transform .2s; }
@@ -55,32 +53,32 @@ button { cursor: pointer; }
 .scroll-hint span { display: grid; place-items: center; border: 1px solid #b9a8dc40; border-radius: 30px; width: 24px; height: 34px; color: var(--blush); }
 .feature-list { display: grid; gap: 1.2rem; margin-top: 1.8rem; }
 .feature-list dt { font-weight: 500; margin-bottom: .25rem; }
-.feature-list dd { font-size: .94rem; color: var(--muted); margin: 0; }
-code { font: .87em ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--blush); }
-.story-copy .fine-print { font-size: .75rem; color: var(--dust); border-top: 1px solid #b9a8dc26; padding-top: 1rem; }
+.feature-list dd { font-size: 1.02rem; color: var(--muted); margin: 0; }
+code { font: .95em ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--blush); }
+.story-copy .fine-print { font-size: .85rem; color: var(--dust); border-top: 1px solid #b9a8dc26; padding-top: 1rem; }
 .flow { display: grid; gap: 1.7rem; margin: 2rem 0; border-left: 1px solid #b9a8dc44; padding: 0 0 0 25px; list-style: none; }
 .flow li { position: relative; }
 .flow li::before { content: ""; position: absolute; width: 9px; height: 9px; left: -30px; top: .5rem; background: var(--glow); border-radius: 50%; box-shadow: 0 0 15px #8b6bff66; }
 .flow h3 { font-size: 1rem; font-weight: 500; margin: 0; }
-.flow p { font-size: .94rem; margin-top: .35rem; }
+.flow p { font-size: 1.02rem; margin-top: .35rem; }
 .chat-demo { margin-top: 1.6rem; border: 1px solid #b9a8dc40; border-radius: 16px; background: #120c26d9; backdrop-filter: blur(12px); text-shadow: none; overflow: hidden; }
 .chat-heading { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid #b9a8dc20; font-size: .86rem; }
 .chat-heading > span > span { color: var(--dust); margin-right: 6px; }
 .preview-label { color: var(--dust); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; }
-.chat-log { min-height: 255px; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: .88rem; }
+.chat-log { min-height: 255px; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: 1rem; }
 .chat-message { max-width: 95%; border-radius: 12px; padding: 10px 13px; line-height: 1.55; }
-.user-message { align-self: flex-end; background: #6b4bd5; color: white; font-size: .8rem; }
+.user-message { align-self: flex-end; background: #6b4bd5; color: white; font-size: .92rem; }
 .bot-message { background: var(--dusk); }
-.bot-caption { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: .78rem; }
-.bot-caption > span:last-child { padding: 0 4px; border-radius: 3px; background: #8b6bff33; color: var(--dust); font: 500 .55rem var(--font-sans); }
+.bot-caption { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: .88rem; }
+.bot-caption > span:last-child { padding: 0 4px; border-radius: 3px; background: #8b6bff33; color: var(--dust); font: 500 .62rem var(--font-sans); }
 .tiny-mascot { position: relative; width: 26px; height: 26px; border-radius: 50%; background: #f5d2ca; box-shadow: inset 0 0 0 4px #7662bc, 0 1px 5px #0d0a1a88; }
 .tiny-mascot::before { content: ""; position: absolute; top: 12px; left: 8px; width: 3px; height: 4px; border-radius: 50%; background: #211536; box-shadow: 8px 0 #211536; }
 .tiny-mascot::after { content: ""; position: absolute; inset: 0; background: url('/pluto-walk.png') left center / 234px 26px no-repeat; image-rendering: pixelated; }
 .source-link { display: block; font-size: .75rem; margin-top: 10px; color: var(--dust); text-underline-offset: 4px; }
 .command-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; }
-.command-chips button { border: 1px solid #b9a8dc55; border-radius: 99px; padding: 9px 11px; color: var(--ink); background: transparent; font: .72rem ui-monospace, monospace; min-height: 40px; transition: background .2s; }
+.command-chips button { border: 1px solid #b9a8dc55; border-radius: 99px; padding: 9px 11px; color: var(--ink); background: transparent; font: .86rem ui-monospace, monospace; min-height: 40px; transition: background .2s; }
 .command-chips button:hover, .command-chips button[aria-pressed="true"] { background: #8b6bff33; border-color: var(--glow); }
-.story-copy .demo-disclaimer { font-size: .64rem; margin: 13px 16px; color: var(--dust); }
+.story-copy .demo-disclaimer { font-size: .74rem; margin: 13px 16px; color: var(--dust); }
 .typing-dots { letter-spacing: 5px; animation: pulse 1s ease-in-out infinite alternate; }
 @keyframes pulse { to { opacity: .3; } }
 .roadmap { margin-top: 2.5rem; padding-top: 1.4rem; border-top: 1px solid #b9a8dc33; }
@@ -125,8 +123,8 @@ code { font: .87em ui-monospace, SFMono-Regular, Consolas, monospace; color: var
   .story-copy { width: min(100%, 34rem); background: #0d0a1ad9; border: 1px solid #b9a8dc18; backdrop-filter: blur(10px); padding: 23px; border-radius: 18px; text-shadow: none; }
   .story-copy h1 { font-size: clamp(2.6rem, 8.5vw, 3.8rem); }
   .story-copy h2 { font-size: clamp(2.1rem, 7vw, 3rem); }
-  .story-copy p, .feature-list dd, .flow p { font-size: .9rem; }
-  .story-copy .eyebrow { font-size: .57rem; margin-bottom: 1.2rem; }
+  .story-copy p, .feature-list dd, .flow p { font-size: 1rem; }
+  .story-copy .eyebrow { font-size: .64rem; margin-bottom: 1.2rem; }
   .scroll-hint { margin-top: 1.5rem; font-size: .7rem; }
   .section-nav { right: 0; }
   .section-nav a { width: 28px; height: 38px; }
@@ -135,7 +133,7 @@ code { font: .87em ui-monospace, SFMono-Regular, Consolas, monospace; color: var
   .chat-message { max-width: 100%; }
   .preview-label { font-size: .55rem; }
   .command-chips { gap: 6px; }
-  .command-chips button { font-size: .65rem; }
+  .command-chips button { font-size: .8rem; }
   .journey-label { display: none; }
   .fallback-planet { width: 130px; height: 130px; top: 12%; left: 45%; }
 }
