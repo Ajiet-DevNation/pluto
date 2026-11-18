@@ -5,11 +5,11 @@ import "@fontsource-variable/instrument-sans";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pluto — DevNation’s Discord companion",
-  description: "Meet Pluto, DevNation’s Discord bot for community activity, events and meeting reminders. Built by DevNation at AJIET.",
+  title: "Pluto — DevNation’s knowledge companion",
+  description: "Meet Pluto, DevNation’s read-only Discord knowledge assistant: indexed club records, deterministic activity digests, upcoming meetings and events, and an automatic meeting announcer.",
   openGraph: {
-    title: "Pluto — DevNation’s Discord companion",
-    description: "Project activity, upcoming events and meeting reminders, right where DevNation talks.",
+    title: "Pluto — DevNation’s knowledge companion",
+    description: "Club knowledge from Discord, GitHub and Miro—indexed read-only, with activity digests, meeting reminders and event awareness.",
     type: "website",
   },
 };

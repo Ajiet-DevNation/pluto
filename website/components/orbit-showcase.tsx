@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import styles from "@/app/orbit/orbit.module.css";
 
 const greetings = [
-  "Hi, I’m Pluto. Welcome to Orbit!",
-  "Keep going. There’s more around the bend.",
-  "Let’s build together!",
-  "See you out there, DevNation.",
+  "Hi, I'm Pluto. Your read-only guide to DevNation.",
+  "Need a catch-up? Try /digest.",
+  "Meetings and events live under /upcoming.",
+  "I only read approved sources—never write to them.",
 ];
 
 export function OrbitShowcase() {

@@ -1,6 +1,6 @@
 # Pluto showcase
 
-A responsive Next.js / React showcase for DevNation’s Discord companion. The full-screen Three.js scene follows a six-stop scroll journey, with a 3D orbital path, planet, asteroids, stars, and an optional animated local mascot.
+A responsive Next.js / React showcase for Pluto, DevNation’s read-only Discord knowledge assistant. The full-screen Three.js scene follows a six-stop scroll journey, with a 3D orbital path, planet, asteroids, stars, and an optional animated local mascot.
 
 ## Develop
 
@@ -53,13 +53,14 @@ Reduced-motion preferences and the pause control stop continuous animation; sect
 
 ## Content source
 
-Reviewed against `origin/main` at `227ca8e` on 2026-11-18, including `.planning/STATE.md`, `src/discord/commands.ts`, and the command implementations:
+Reviewed against the project `README.md` and `.planning/STATE.md` on 2026-11-18:
 
-- `/ask` is removed from active v1; there is no active question-answering command.
-- `/optout` is one-way in v1 and excludes/removes a member’s indexed messages.
-- `/digest` is an on-demand activity snapshot, not a scheduled weekly summary or AI narrative; `/upcoming`, `/event` and `/help` are active commands.
-- The meeting announcer is implemented and test-guild verified; production deployment acceptance remains pending.
-- Public GitHub and five allowlisted Discord channels are indexed; Miro indexing is pending.
+- Active v1 covers GitHub, Discord and Miro indexing, Discord opt-out, deterministic `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, `/help`, and the automatic meeting announcer.
+- `/ask` is removed from active v1; no question-answering command is active.
+- `/digest` is an on-demand deterministic snapshot (1–30 days, default 7). It does not generate an AI narrative and does not count PRs or commits.
+- Miro is read-only and supported when configured; the shared DevNation workspace, token and live verification are still pending.
+- Meeting detection and reminders passed test-guild checks; production deployment acceptance remains pending.
+- Indexing is allowlist-only: five Discord channels and public GitHub repositories. `#pluto` and `#events` are never indexed.
 - Transcript workflows and `/decisions` are not active v1 capabilities.
 
 Earlier showcase drafts in this local checkout are not imported by the page or part of the deployed build.

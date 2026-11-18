@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 const stops = [
-  ["meet", "Meet Pluto"], ["knowledge", "Community activity"],
-  ["how-it-works", "Meeting reminders"], ["commands", "Try a command"],
-  ["boundaries", "Your choice"], ["community", "DevNation"],
+  ["meet", "Meet Pluto"], ["knowledge", "The problem"],
+  ["journey", "Everyday awareness"], ["how-it-works", "Commands"],
+  ["built", "Privacy & how it works"], ["join", "Examples & DevNation"],
 ] as const;
-const greetings = ["Hi, I’m Pluto. Your little guide to DevNation.", "Keep scrolling. There’s more in orbit.", "Need a catch-up? Try /digest.", "See what’s coming with /upcoming."];
+const greetings = ["Hi, I'm Pluto. Your read-only guide to DevNation.", "Need a catch-up? Try /digest.", "Meetings and events live under /upcoming.", "I only read approved sources—never write to them."];
 
 export function OrbitExperience() {
   const canvas = useRef<HTMLCanvasElement>(null);
