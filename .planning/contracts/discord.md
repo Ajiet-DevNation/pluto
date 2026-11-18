@@ -2,8 +2,8 @@
 
 **Contract:** #3 — Discord (commands + channel configuration + permissions)
 **Owner:** Pragathi proposes; Khushi approves
-**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 consumes the retrieval/citation rules; `/ask` itself is specified by `contracts/search.md` and the P2 implementation. Meeting-announcer detection and interaction rules were added 2026-11-17 and defer to `contracts/meeting.md`.
-**Consumers:** P1 (Discord indexing, `/optout`), P2 (`/ask` retrieval/citations), P3 (`/digest`), L3 (meeting-announcer detection/interaction), CP3, CP5.
+**Status:** Approved and merged with P1 in PR #9 (`c964678`, 2026-11-14). P2 consumes the retrieval/citation rules; `/ask` itself is specified by `contracts/search.md` and the P2 implementation. Meeting-announcer detection and interaction rules were added 2026-11-17 and defer to `contracts/meeting.md`. P3 activity and event commands were added 2026-11-18 and defer to `contracts/database.md`.
+**Consumers:** P1 (Discord indexing, `/optout`), P2 (`/ask` retrieval/citations), P3 (`/digest`, `/upcoming`, `/event`, `/help`), L3 (meeting-announcer detection/interaction), CP3, CP5.
 **Sources:** `.planning/PR-PLAN.md` §Shared Technical Contracts; `.planning/config.json` → `planning.discord`; `contracts/security.md`; `contracts/search.md`.
 
 ---
@@ -22,7 +22,7 @@
 
 ### Out of scope
 
-- `/ask`, `/digest` (P2, P3).
+- `/ask` (P2). P3 adds `/digest`, `/upcoming`, `/event`, and `/help`; see §8.3.
 - Meeting transcript uploads, transcripts, summaries, action items and `/meeting actions` (deferred with L2/MEET-01). The `/decisions` command is removed from active v1; `#decisions` remains an indexed channel.
 - The automatic meeting announcer's detection/confirmation behaviour is specified in `contracts/meeting.md`. This contract only defines its Discord-channel, mention, authorization and output rules.
 - Embeddings, chunking and vector storage (search contract / L1; P2 integrates).
@@ -72,6 +72,7 @@
 | `#meeting-plans` | `1570872485933752502` | ✅ |
 | `#decisions` | `1571564343995277492` | ✅ |
 | `#pluto` | `1570721649538502686` | ❌ output |
+| `#events` | `1572348309509644289` | ❌ event log |
 | `#core-secrets` and all other visible non-allowlisted channels | — | ❌ |
 | Threads, forum posts, DMs, other guilds | — | ❌ v1 |
 
@@ -298,9 +299,28 @@ Behavior:
 | purge failure only | Opt-out still recorded; log warning | Success message |
 | wrong guild/DM | No store change | `This command works only inside the DevNation server.` |
 
-### 8.3 Interactions
+### 8.3 P3 activity and event commands
 
-- P1 handles `isChatInputCommand()` with `commandName === 'optout'`; P2 adds `commandName === 'ask'`. Other interactions are ignored unless a reviewed handler exists.
+All are guild-scoped and must reject DMs/foreign guilds ephemerally.
+
+| Command | Options | Behavior | Reply |
+|---------|---------|----------|-------|
+| `/digest` | `days` integer 1–30, default 7 | Deterministic activity snapshot from indexed GitHub issues, Discord records, `#decisions`, and upcoming meetings/events. No AI narrative, no PR/commit counts until reliable dates exist. | Ephemeral |
+| `/upcoming meetings` | none | Confirmed future meetings from `meeting_events`, sorted by start. | Ephemeral |
+| `/upcoming events` | none | Scheduled future/ongoing manual events from `events`, sorted by start. | Ephemeral |
+| `/event add` | `title`, `date` (`YYYY-MM-DD`), `time` (`HH:MM`), optional `end`, optional `description` | Require **Manage Events**; validate future start and end-after-start in `Asia/Kolkata`; insert one `events` row; post one public record in configured `#events`. | Ephemeral confirmation, plus one public channel message |
+| `/help` | none | List available commands and examples. | Ephemeral |
+
+Rules:
+- `#events` is configured via `planning.discord.events_channel_id`; never hardcode it and never index the channel.
+- `/event add` must not ping `@everyone`/`@here` in its public record.
+- If the event row saves but the public record fails, keep the row and tell the organizer the public post failed.
+- `/digest`, `/upcoming`, and `/help` are available to every member.
+- No `/resource`, `/upcoming all`, channel scanning, recurring events, or manual-event reminders in v1.
+
+### 8.4 Interactions
+
+- P1 handles `isChatInputCommand()` with `commandName === 'optout'`; P2 adds `commandName === 'ask'`; P3 adds `digest`, `upcoming`, `event`, and `help`. Other interactions are ignored unless a reviewed handler exists.
 - Meeting-announcer controls use message components/modals, not a slash command. Likhith exports the handler; Khushi wires it into the shared interaction router so `/ask` and `/optout` keep working.
 - Missing/foreign guild is rejected ephemerally.
 - Replies are ephemeral; long work may `deferReply` first.
@@ -328,6 +348,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 |---------|-------------|
 | 5 allowlisted channels | View Channel, Read Message History |
 | `#pluto` | View Channel, Send Messages, Embed Links |
+| `#events` | View Channel, Send Messages |
 | Guild | Use Application Commands |
 
 - Scopes: `bot`, `applications.commands`
@@ -336,7 +357,7 @@ If `MessageContent` is disabled, Discord delivers empty content; intake fails cl
 
 ### 9.3 Human permissions
 
-`/optout` is available to every member for themselves. No role or permission is required. Members cannot opt out other members in v1.
+`/optout` is available to every member for themselves. No role or permission is required. Members cannot opt out other members in v1. `/event add` requires Discord's **Manage Events** permission; `/digest`, `/upcoming`, and `/help` are available to every member.
 
 ---
 
@@ -425,5 +446,6 @@ Live guild verification is no longer open: it was completed on 2026-11-14 and is
 - Only Khushi approves this contract or changes to it.
 - Channel allowlist, output channel and guild are configuration; no code change required.
 - A behaviour not described here is not implemented until it is added here first.
-- The meeting-announcer rules in §5.5 and §8.3 were added 2026-11-17. Their full behaviour is owned by `contracts/meeting.md`; a change to detection, confirmation or reminder delivery must update both contracts.
+- The meeting-announcer rules in §5.5 and §8.4 were added 2026-11-17. Their full behaviour is owned by `contracts/meeting.md`; a change to detection, confirmation or reminder delivery must update both contracts.
+- P3 activity and event commands were added 2026-11-18. `/event add` writes one `events` row and posts one public record in `#events`; `/digest` is on demand and adds no scheduler. Changes must update `contracts/database.md` and `contracts/background-jobs.md` where applicable.
 - Changes are recorded in `.planning/STATE.md` at the phase transition.

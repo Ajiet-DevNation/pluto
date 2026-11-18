@@ -46,26 +46,26 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 **Requirements:** ASK-01
 **Status (2026-11-17):** Partial — P2 merged (PR #10, `298e557`) and the retrieval audit is merged (PR #14). Verified eval gate 9/9. Full-corpus reindex and live Discord acceptance are still pending.
 
-## Phase 4: /digest Weekly Summaries
-**Goal:** Generate and deliver weekly summaries of indexed project activity.
+## Phase 4: Project Activity & Event Awareness
+**Goal:** Provide on-demand project activity snapshots and simple upcoming-event awareness without AI-written summaries or a weekly scheduler.
 **Mode:** mvp
-**Depends on:** Phase 3 (and Phase 1 for jobs/storage)
+**Depends on:** Phase 3 (indexed retrieval) and Phase 5's `meeting_events` schema for `/upcoming meetings`; not dependent on transcripts.
 **Owner:** Pragathi (P3)
 **Success Criteria:**
-1. `/digest` can be invoked through the agreed guild-scoped Discord command
-2. The digest summarizes the intended weekly period from indexed GitHub and Discord activity
-3. Messages from the indexed `#decisions` channel are usable as supporting evidence
-4. Digest content is grounded in indexed records only — no invented decisions, progress or contributors
-5. An empty period produces a sensible response
-6. Delivery scheduling is persistent and does not create duplicate digests
-7. Opt-out, privacy and bot-author restrictions are preserved
+1. `/digest days:N` returns a deterministic activity snapshot for 1–30 days (default 7).
+2. `/upcoming meetings` lists confirmed future meetings from `meeting_events`.
+3. `/upcoming events` lists scheduled future or ongoing manual events from `events`.
+4. `/event add` is guild-scoped, restricted to Manage Events, validates strict date/time input, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`.
+5. `/help` lists the available commands.
+6. Digest and event output is grounded in indexed records; empty periods are handled honestly.
+7. Opt-out, privacy, bot-author, and existing-command rules are preserved.
 **Requirements:** DIGE-01
-**Status (2026-11-17):** Pending — P3.
+**Status (2026-11-18):** Pending — P3. Replaces the former weekly AI digest with an on-demand deterministic digest plus `/upcoming meetings`, `/upcoming events`, `/event add`, and `/help`.
 
 ## Phase 5: Automatic Meeting Announcer
 **Goal:** Detect eligible meeting announcements in `#meeting-plans`, deterministically parse the date/time, persist the event, and deliver one reminder in `#pluto` one hour before the meeting. Valid future announcements are auto-scheduled; no confirmation or slash command is used.
 **Mode:** mvp
-**Depends on:** Phases 1–2 (database/jobs and Discord intake); **not** dependent on transcript uploads, `/ask`, or `/digest`
+**Depends on:** Phases 1–2 (database/jobs and Discord intake); **not** dependent on transcript uploads, `/ask`, or activity/event commands
 **Owner:** Likhith (L3)
 **Success Criteria:**
 1. Only human-authored messages in the configured `#meeting-plans` channel are considered
@@ -115,8 +115,8 @@ These items are retained in the repository but are **not** active v1 milestones 
 | 1 | — | Foundation, database, jobs, GitHub/Miro clients |
 | 2 | 1 | Discord bot and allowlist intake |
 | 3 | 1, 2 | `/ask` uses indexed data and Discord command routing |
-| 4 | 1, 3 | `/digest` reuses retrieval, database and job scheduling; not dependent on transcripts |
-| 5 | 1, 2 | Announcer uses database/jobs and Discord message intake; independent of transcripts, `/ask` and `/digest` |
+| 4 | 1, 3, 5 | Activity snapshot reuses retrieval and storage; `/upcoming meetings` reads the `meeting_events` schema delivered by Phase 5. No digest scheduler. |
+| 5 | 1, 2 | Announcer uses database/jobs and Discord message intake; independent of transcripts, `/ask`, and activity commands |
 | 6 | 1–5 | Release verification |
 
 ## Coverage Summary
@@ -126,7 +126,7 @@ These items are retained in the repository but are **not** active v1 milestones 
 | 1 | Foundation & GitHub Repository Indexing | INDEX-01, INDEX-03 | 8 |
 | 2 | Discord Channel Indexing & Opt-Out | INDEX-02, OPTO-01 | 4 |
 | 3 | /ask Q&A with Citations | ASK-01 | 5 |
-| 4 | /digest Weekly Summaries | DIGE-01 | 7 |
+| 4 | Project Activity & Event Awareness | DIGE-01 | 11 |
 | 5 | Automatic Meeting Announcer | MEET-02 | 12 |
 | 6 | Hardening, Quality Verification & v1 Release | All active v1 | 6 |
 
@@ -136,4 +136,4 @@ These items are retained in the repository but are **not** active v1 milestones 
 
 ---
 
-*Last updated: 2026-11-18 — L3 implementation, shared integration, and real test-guild acceptance recorded; production/deployment acceptance and contract approval remain pending. Transcript upload and `/decisions` are deferred from active v1; digest milestone owned by P3; active v1 is seven requirements across six phases.*
+*Last updated: 2026-11-18 — L3 implementation, shared integration, and real test-guild acceptance recorded; production/deployment acceptance and contract approval remain pending. The former weekly digest milestone was replaced by P3’s on-demand activity snapshot and event-awareness package (`/digest`, `/upcoming`, `/event add`, `/help`). Transcript upload and `/decisions` remain deferred; active v1 is seven requirements across six phases.*

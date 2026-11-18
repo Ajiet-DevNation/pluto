@@ -2,7 +2,7 @@
 
 Owner: Likhith proposes; Khushi approves.
 Status: approved 2026-11-13; revised 2026-11-17 to add `send-meeting-reminder` and mark transcript indexing legacy/deferred.
-Consumers: L1 (GitHub indexing), L3 (meeting reminders), P3 (`/digest` scheduling), Khushi (shared worker startup).
+Consumers: L1 (GitHub indexing), L3 (meeting reminders), P3 (no queue: `/digest` is on-demand), Khushi (shared worker startup).
 
 ## Runtime
 
@@ -14,8 +14,8 @@ Consumers: L1 (GitHub indexing), L3 (meeting reminders), P3 (`/digest` schedulin
   without registering a processor does not process jobs.** Every active queue
   must have a `boss.work(...)` (or version-appropriate) handler.
 - Shared worker startup is Khushi's integration point. Likhith supplies the
-  meeting-reminder registration; Pragathi supplies digest scheduling. Neither
-  developer replaces the existing GitHub startup path.
+  meeting-reminder registration. P3 adds no background worker because `/digest`
+  is on demand. Neither developer replaces the existing GitHub startup path.
 
 ## Existing implementation note (verified 2026-11-17)
 

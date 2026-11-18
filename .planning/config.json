@@ -79,6 +79,8 @@
       "guild_id": "1422593925658579036",
       "output_channel_id": "1570721649538502686",
       "output_channel_name": "#pluto",
+      "events_channel_id": "1572348309509644289",
+      "events_channel_name": "#events",
       "index_own_output_channel": false,
       "indexed_channels": {
         "#project-stack": "1423323863093088407",
@@ -88,7 +90,7 @@
         "#decisions": "1571564343995277492"
       },
       "indexing_mode": "allowlist",
-      "indexing_rule": "Index ONLY the channels in indexed_channels. Never infer from excluded_channels — that list is documentation and is not exhaustive. As of 2026-11-16 the bot sees 29 channels, of which these 5 are indexed. Private channels (Core Channels) are never indexed. #decisions was added on 2026-11-15 for decision capture; it sits in the public Information category, synced with the category, not private.",
+      "indexing_rule": "Index ONLY the channels in indexed_channels. Never infer from excluded_channels — that list is documentation and is not exhaustive. The bot indexes exactly these 5 channels; all others, including #events, are not indexed. Private channels (Core Channels) are never indexed. #decisions was added on 2026-11-15 for decision capture; it sits in the public Information category, synced with the category, not private.",
       "excluded_channels": [
         "#pluto",
         "#pluto-bot",
@@ -98,12 +100,14 @@
         "#assets",
         "#welcome-and-rules",
         "#takoyaki",
-        "all voice channels"
+        "all voice channels",
+        "#events"
       ],
       "unresolved": {},
       "resolved": {
         "#meeting-plans": "2026-11-14 — channel created under the Projects category (id 1570872485933752502) and added to indexed_channels. Replaces the earlier 'not visible to the bot' state; #event-ideation was not used.",
-        "#decisions": "2026-11-16 — created in the public Information category (id 1571564343995277492), permissions synced with the category, @everyone has View Channel. Added to indexed_channels for decision capture. Empty at creation, so no backfill. #core-general and #event-ideation were rejected because both are private Core Channels."
+        "#decisions": "2026-11-16 — created in the public Information category (id 1571564343995277492), permissions synced with the category, @everyone has View Channel. Added to indexed_channels for decision capture. Empty at creation, so no backfill. #core-general and #event-ideation were rejected because both are private Core Channels.",
+        "#events": "2026-11-18 — manual club-event log channel (id 1572348309509644289). Used for public records posted by /event add; not indexed. Manual events are stored in the events table."
       },
       "not_in_policy": {
         "note": "Channels the bot can see that are in neither list. They are NOT indexed — allowlist indexing covers only indexed_channels. Listed so nobody assumes they are included.",
