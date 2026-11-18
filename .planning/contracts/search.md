@@ -261,8 +261,9 @@ Consequences:
   IDF-weighted coverage; a single common word no longer clears the gate.
 - Vector search remains the semantic path for paraphrases.
 
-The calibration is recorded in `src/search/relevance.ts` with unit tests. It is
-a scoring normalization, not a change to the configured threshold.
+The calibration was implemented in the removed `src/search/relevance.ts` (deleted
+with `/ask`). It was a scoring normalization, not a change to the configured
+threshold.
 
 ## Answer grounding and safety (2026-11-16 audit)
 
@@ -276,7 +277,8 @@ to 3 sources, or 6 sources for repository-list questions). The prompt:
 - requires the standard `NO_EVIDENCE_MESSAGE` when evidence is insufficient;
 - forbids URLs, source lists, citation markers, guesses and speculation.
 
-After generation, `src/search/ask.ts` applies post-generation guards:
+Historical only (the `/ask` engine was removed on 2026-11-18): after generation,
+the removed `src/search/ask.ts` applied post-generation guards:
 
 - `stripInternalPromptLeakage` removes exact echoed prompt instructions (ask
   instructions and system-prompt sentences) from the answer while preserving
