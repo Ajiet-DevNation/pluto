@@ -58,8 +58,8 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
 
 ### Meetings
 
-- [ ] **MEET-02**: Build the complete Automatic Meeting Announcer
-  - Scope: Monitor only the configured `#meeting-plans` channel, detect human-authored meeting announcements that use an actual Discord `@everyone` or `@here` mention, parse the date/time deterministically in `Asia/Kolkata`, confirm ambiguous details with the announcer, persist confirmed events, and deliver one durable reminder to `#pluto` one hour before the meeting.
+- [ ] **MEET-02**: Build the Automatic Meeting Announcer (MVP)
+  - Scope: Monitor only the configured `#meeting-plans` channel, detect human-authored meeting announcements that use an actual Discord `@everyone` or `@here` mention, parse the date/time deterministically in `Asia/Kolkata`, auto-schedule one durable reminder to `#pluto` one hour before the meeting when a valid future date/time is confidently parsed. No confirmation, cancel, or reschedule controls.
   - The `#meeting-plans` and `#pluto` channel IDs come from `.planning/config.json`, never a hardcoded constant.
   - Announcement detection is independent of the ordinary Discord indexing pipeline. `#decisions` and the other indexed channels keep their existing intake rules.
   - No new slash command is introduced for meetings.
@@ -69,16 +69,14 @@ Seven Pluto capabilities belong to the first official release (v1). The 2026-11-
     3. Bot-authored and unrelated messages are ignored; meeting-related language is required in addition to the mention
     4. Supported date/time expressions are parsed correctly (for example "tomorrow at 4 PM", "Friday at 10:30 AM", "18 November at 3 PM"); a bare-hour expression such as "today at 5" is recognised and its AM/PM ambiguity is clarified rather than guessed
     5. Ambiguous or missing date/time information requires clarification; the parser never silently guesses
-    6. Confirmation is required before scheduling
+    6. No confirmation required — valid future events are auto-scheduled; invalid/ambiguous/past input gets a simple explanatory reply
     7. Confirmed meetings are persisted in `meeting_events` with a unique source announcement identity
     8. Reminder jobs are durable across restarts using pg-boss
     9. One-hour reminders are delivered to `#pluto` without repeating `@everyone` or `@here`
-    10. Cancellation invalidates scheduled reminders
-    11. Rescheduling invalidates the previous schedule and creates a new one
-    12. Duplicate event creation and concurrent delivery are controlled
-    13. Failures are logged safely and recovered where possible; the delivery guarantee is documented honestly
-    14. Existing `/ask` and `/optout` behavior remains unaffected
-    15. Unit and integration tests pass
+    10. Duplicate event creation and concurrent delivery are controlled
+    11. Failures are logged safely and recovered where possible; the delivery guarantee is documented honestly
+    12. Existing `/ask` and `/optout` behavior remains unaffected
+    13. Unit and integration tests pass
 
 ### Opt-Out
 

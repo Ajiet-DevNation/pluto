@@ -7,6 +7,7 @@ import type { SourceIndexer } from '../search/types.js';
 import { createDb } from '../db/index.js';
 import { refreshGithubCorpus } from '../search/corpus-refresh.js';
 import { EmbeddingDeferredError } from '../search/embedding-errors.js';
+import { MEETING_REMINDER_QUEUE } from '../meetings/scheduling.js';
 
 const GITHUB_ISSUES_QUEUE = 'index-github-issues';
 const TRANSCRIPT_INDEX_QUEUE = 'index-transcript';
@@ -28,7 +29,7 @@ let isIndexingTranscript = false;
 export async function startBackgroundJobs(
   connectionString: string,
   searchIndexer?: SourceIndexer,
-): Promise<void> {
+): Promise<PgBoss> {
   const boss = createJobQueue(connectionString);
   await ensureJobQueue(boss);
 
@@ -51,6 +52,23 @@ export async function startBackgroundJobs(
       void runCorpusRefreshJob(connectionString, searchIndexer);
     }, CORPUS_REFRESH_INTERVAL_MS);
   }
+
+  // The pg-boss handle is returned so startup can register feature-owned
+  // workers (for example the meeting reminder) on the same queue instance.
+  return boss;
+}
+
+/**
+ * Create the meeting reminder queue.
+ *
+ * Queues must exist before `boss.send`/`boss.work` is used. The worker itself
+ * is registered by `startMeetingAnnouncer`, which owns the announcer lifecycle.
+ */
+export async function ensureMeetingReminderQueue(boss: PgBoss): Promise<void> {
+  await boss.createQueue(MEETING_REMINDER_QUEUE, {
+    retryLimit: 3,
+    retryBackoff: true,
+  });
 }
 
 async function runCorpusRefreshJob(

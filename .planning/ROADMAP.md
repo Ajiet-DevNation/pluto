@@ -63,7 +63,7 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 **Status (2026-11-17):** Pending — P3.
 
 ## Phase 5: Automatic Meeting Announcer
-**Goal:** Detect meeting announcements in `#meeting-plans`, confirm the date/time with the announcer, persist the event, and deliver one reminder in `#pluto` one hour before the meeting.
+**Goal:** Detect eligible meeting announcements in `#meeting-plans`, deterministically parse the date/time, persist the event, and deliver one reminder in `#pluto` one hour before the meeting. Valid future announcements are auto-scheduled; no confirmation or slash command is used.
 **Mode:** mvp
 **Depends on:** Phases 1–2 (database/jobs and Discord intake); **not** dependent on transcript uploads, `/ask`, or `/digest`
 **Owner:** Likhith (L3)
@@ -71,17 +71,16 @@ The **seven** active v1 capabilities are covered across **six** phases. The 2026
 1. Only human-authored messages in the configured `#meeting-plans` channel are considered
 2. Detection requires an actual Discord `@everyone`/`@here` mention (metadata, not text matching) plus meeting-related language
 3. Supported date/time expressions are parsed deterministically in `Asia/Kolkata`; ambiguity asks the announcer to clarify
-4. Confirmation is required before scheduling; only the original announcer or an authorized moderator can confirm, cancel or reschedule
-5. Confirmed events are stored in `meeting_events` with a unique source announcement identity and event version
-6. Reminder jobs are durable through pg-boss and survive restarts
+4. Ambiguous or invalid date/time input receives a clarification; valid future events are auto-scheduled without a confirmation step
+5. Events are stored in `meeting_events` with a unique source announcement identity and event version
+6. Reminder jobs are durable through pg-boss; a real worker is registered and startup reconciliation recovers missing jobs
 7. One reminder is delivered to `#pluto` one hour before the meeting without repeating `@everyone`/`@here`
-8. Cancellation and rescheduling invalidate obsolete jobs
-9. Duplicate announcements and concurrent delivery are controlled
-10. Failures are logged safely, recovered where possible, and the delivery guarantee is documented honestly
-11. Existing `/ask`, `/optout` and Discord indexing behavior is unaffected
-12. Unit and integration tests pass
+8. Duplicate announcements and concurrent delivery are controlled; the at-least-once delivery guarantee is documented honestly
+9. Failures are logged safely and recovered where possible
+10. Existing `/ask`, `/optout` and Discord indexing behavior is unaffected
+11. Unit and integration tests pass
 **Requirements:** MEET-02
-**Status (2026-11-17):** Pending — L3.
+**Status (2026-11-18):** Implementation, shared-file integration, migration, and test-guild end-to-end acceptance complete. A real Discord announcement was persisted and its pg-boss reminder delivered to the test server; the reminder did not repeat a mass mention. Late reminder jobs now skip delivery, and events are marked completed after reminder delivery or meeting start. TypeScript/build pass; 366 tests pass (0 fail, 0 skip). Production/deployment acceptance and contract approvals remain pending.
 
 ## Phase 6: Hardening, Quality Verification & v1 Release
 **Goal:** Verify all seven active v1 capabilities, enforce the read-only boundary, and release v1.
@@ -137,4 +136,4 @@ These items are retained in the repository but are **not** active v1 milestones 
 
 ---
 
-*Last updated: 2026-11-17 — transcript upload and `/decisions` milestones removed from active v1; Automatic Meeting Announcer milestone added for L3; digest milestone owned by P3; active v1 is seven requirements across six phases*
+*Last updated: 2026-11-18 — L3 implementation, shared integration, and real test-guild acceptance recorded; production/deployment acceptance and contract approval remain pending. Transcript upload and `/decisions` are deferred from active v1; digest milestone owned by P3; active v1 is seven requirements across six phases.*

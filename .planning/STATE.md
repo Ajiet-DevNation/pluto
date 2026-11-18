@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** Revised v1 scope (2026-11-17) on `docs/update-v1-scope`. **Seven capabilities are active in v1**: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. The `/decisions` command and the transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`) are removed from active v1; `#decisions` remains in the five-channel allowlist and is indexed evidence for `/ask` and `/digest`, and the legacy L2 code/tables are retained. **L3 (Likhith) is the complete Automatic Meeting Announcer**, covering detection, parsing, confirmation, `meeting_events` persistence, durable pg-boss reminders and tests. **P3 (Pragathi) is weekly `/digest` only.** P2 is merged to `main` (`298e557`, PR #10) and the retrieval audit is merged (`2ff2871`, PR #14); full-corpus reindex and live Discord acceptance remain pending. P1 is merged and live-verified (PR #9). L1 is complete. L2 is historically merged but deferred from active v1. Remaining before K3: L3, P3, INDEX-03 (Miro REST, blocked on token), and P2 live acceptance.
+**Current focus:** Revised v1 scope (2026-11-17). **Seven capabilities are active in v1**: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. The `/decisions` command and transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`) are removed from active v1; `#decisions` remains in the five-channel allowlist and is indexed evidence for `/ask` and `/digest`, and legacy L2 code/tables are retained. **L3 implementation, shared-file integration, and live test-guild acceptance are complete locally.** A real Discord message was detected, persisted in `meeting_events`, and delivered by pg-boss to the test server’s `#pluto`; the delivered message contained no mass mention. The worker now skips late reminders and marks events completed after delivery or when meetings have started. TypeScript/build pass; all 366 tests pass, including 11 database integration tests. Production deployment acceptance and meeting/database contract approval remain pending. **P3 (Pragathi) is weekly `/digest` only.** P2 is merged to `main` (`298e557`, PR #10) and the retrieval audit is merged (`2ff2871`, PR #14); full-corpus reindex and live Discord acceptance remain pending. P1 is merged and live-verified (PR #9). L1 is complete. L2 is historically merged but deferred from active v1. Remaining before K3 include P3, INDEX-03 (Miro REST, blocked on token), P2 live acceptance, and L3 production/deployment acceptance/approval.
 
 ## Team
 - Project Lead: Khushi
@@ -36,7 +36,7 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 | Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
 | Phase 3: /ask Q&A with Citations | ◐ In progress (P2 and retrieval audit merged; full-corpus reindex and live acceptance pending) | ASK-01 | 3/5 |
 | Phase 4: /digest Weekly Summaries | ○ Pending (P3 — Pragathi) | DIGE-01 | 0/10 |
-| Phase 5: Automatic Meeting Announcer | ○ Pending (L3 — Likhith) | MEET-02 | 0/15 |
+| Phase 5: Automatic Meeting Announcer | ◐ Implemented, integrated & test-guild verified | MEET-02 | Shared startup/worker wiring complete; migration 0008 recorded; 366 tests pass (0 fail, 0 skip); typecheck/build pass; real Discord test-guild message detected and reminder delivered by pg-boss; late jobs skip delivery and events complete. Production/deployment acceptance and contract approvals pending. |
 | Phase 6: Hardening & v1 Release | ○ Pending | All active v1 (7) | 0/6 |
 
 **Deferred / not active v1 phases:** transcript upload and ingestion (INDEX-04), transcript summaries/action items/`/meeting actions` (MEET-01), and the `/decisions` command (DECI-01). L2's upload code remains in the repository but is not in the v1 critical path.
@@ -269,7 +269,7 @@ Files changed in this hardening pass: `src/ask/command.ts`,
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
 | L1 | Likhith | ✅ Complete (PR #4 + #8, migration fix #12) | Neon/Drizzle, pg-boss, public issue indexing, scheduled worker, idempotent migrations, tests, `vector(768)`/`tsvector` migration. Latest `main` tests/build pass. |
 | L2 | Likhith | ✅ Merged historically (PR #11, #12); ⏸ **deferred from active v1** | Upload endpoint, Whisper transcription, `meeting_transcripts` storage and transcript chunk indexing exist in the repository. No new upload/transcription user workflow is active in v1. The code and tables must not be deleted; L2 is not a prerequisite for L3 or P3. |
-| L3 | Likhith | ⬜ Pending (current assignment) | **Automatic Meeting Announcer, end-to-end.** Detect announcements in `#meeting-plans`, parse date/time deterministically in `Asia/Kolkata`, confirm with the original announcer/moderator, persist `meeting_events`, schedule durable `send-meeting-reminder` jobs, deliver one reminder to `#pluto`, handle cancellation/rescheduling/restarts, and test the lifecycle. Depends on L1 and P1; not on L2 or P2. |
+| L3 | Likhith (feature implementation); Khushi (shared integration) | ◐ Implemented, integrated & test-guild verified | **Automatic Meeting Announcer, MVP.** Detects real @everyone/@here mentions plus meeting language in configured #meeting-plans; deterministic Asia/Kolkata parsing anchored to message createdAt; persists valid events; schedules durable pg-boss reminders; registers worker and runs startup reconciliation. Late jobs are skipped; delivered or started meetings are marked completed. Integration wired through `src/cmd/pluto/index.ts` and `src/jobs/worker.ts`; safe listener error boundary and shutdown. Migration `0008_meeting_events.sql` is recorded in the dev DB. 366 tests pass, 0 fail, 0 skip; typecheck/build pass. A real Discord test-guild message was detected, persisted, and delivered to test #pluto by pg-boss; the sent message had no mass mention. No `/meeting` slash command, confirmation, cancel, or reschedule controls in MVP. Remaining: production/deployment acceptance and Khushi approval of meeting/database contracts. |
 | P1 | Pragathi | ✅ Merged and live-verified (PR #9) | Discord allowlist intake, startup backfill, bot-author exclusion, guild-scoped `/optout`; live verification passed. |
 | P2 | Pragathi / Khushi takeover fix | ✅ Merged (PR #10 `298e557`; retrieval audit PR #14 `2ff2871`) | `/ask`, repo-scoped retrieval, one visible supporting source, App/PAT auth, and paginated public-repository indexing for READMEs, issues, PRs, commits, contributor identities, and eligible source files. Retrieval audit fixed IVFFlat probes, full-text query construction, exact issue/PR lookup, dedupe and answer guards. Full reindex and live Discord acceptance are still pending. |
 | P3 | Pragathi | ⬜ Pending (current assignment) | **Weekly `/digest` only.** Summarize the intended weekly period from indexed GitHub and Discord activity, include `#decisions` messages as evidence, ground every claim in indexed records, handle empty periods, deliver on a persistent non-duplicating schedule, preserve privacy/opt-out/bot-author rules, and test. No meeting summaries, transcript action items or `/meeting actions`. Depends on P2 and L1. |
@@ -324,7 +324,7 @@ At the start of each development session:
 - Pending/unresolved decisions are marked `"pending"` in `PROJECT.md` Key Decisions and `config.json`, and are not assumed resolved across sessions.
 
 ## Unresolved / Pending Items
-- **L3 Automatic Meeting Announcer implementation — pending** (Likhith's current assignment)
+- **L3 production/deployment acceptance — pending.** A real Discord test-guild message and reminder were verified; the bot was not deployed or tested in the production guild.
 - **P3 weekly `/digest` implementation — pending** (Pragathi's current assignment)
 - P2 full-corpus live reindex using the GitHub App; verify all public repos are enumerated and private repos/files remain excluded
 - `content_hash` backfill for the 7,880 pre-migration rows (production write; SQL prepared in `contracts/database.md`)
@@ -334,7 +334,7 @@ At the start of each development session:
 - Team/mentor agreement on posting five lines of meeting notes in `#meeting-plans` after each meeting — **pending**
 - Cleanup PR #13 (`fix/pre-l3-cleanup`) — merged to `main` (`f335152`)
 - API contract #2 and Miro contract #5 — pending
-- Meeting contract #8 — drafted in `contracts/meeting.md` on 2026-11-17; **Khushi approval pending**
+- Meeting contract #8 — drafted in `contracts/meeting.md` on 2026-11-17; revised for MVP (no confirmation/cancel/reschedule); **Khushi approval pending**
 - Database contract #1 approval status — pending confirmation by Khushi; `meeting_events` definition added 2026-11-17
 - Audio storage — **legacy L2 only**: no active v1 upload workflow; retained code discards the audio buffer and stores no R2/disk audio
 - CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_AI_TOKEN — verified working via Live API check; need values in each .env for local runs
@@ -393,7 +393,7 @@ At the start of each development session:
 | Transcript upload and transcription | **Deferred from active v1.** L2 code, `meeting_transcripts` and existing chunks are retained and must not be deleted. | `PROJECT.md`, `REQUIREMENTS.md`, `contracts/database.md` |
 | Meeting summaries, action items and `/meeting actions` | **Deferred (MEET-01).** No active assignment; do not implement from the old PR plan. | `PROJECT.md`, `REQUIREMENTS.md`, `PR-PLAN.md` |
 | Voice recording | **Out of scope.** Do not join, listen to, record or index voice channels. | `PROJECT.md`, `contracts/meeting.md`, `contracts/discord.md` |
-| Automatic Meeting Announcer | **New MEET-02, owned end-to-end by L3 (Likhith).** Detection, parsing, confirmation, persistence, scheduling, delivery and tests. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `contracts/meeting.md` |
+| Automatic Meeting Announcer | **New MEET-02, implemented by L3 (Likhith), with shared startup integration by Khushi.** Detection, parsing, auto-persistence, scheduling, delivery and tests; no confirmation or slash command in MVP. Test-guild acceptance passed; production/deployment acceptance pending. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `contracts/meeting.md` |
 | Active v1 capability count | **Seven** (was nine). PRNT-01 cancelled; INDEX-04 and MEET-01 deferred; DECI-01 removed from active v1. | `REQUIREMENTS.md`, `ROADMAP.md` |
 | Meeting timezone | **`Asia/Kolkata`**, with relative dates resolved from the original announcement's `createdAt`. | `contracts/meeting.md` |
 | Date/time parsing | **Deterministic, testable parsing.** No new AI provider; ambiguous input asks the announcer to clarify. | `contracts/meeting.md` |
@@ -412,10 +412,10 @@ At the start of each development session:
 - Bot-authored and other-channel messages are ignored.
 - Reminders never repeat `@everyone`/`@here`.
 - The original announcement is never edited or deleted.
-- Only the original announcer or an authorized moderator may confirm, cancel or reschedule.
+- Events are auto-confirmed when parsing succeeds; no confirmation/cancel/reschedule controls.
 - No voice-channel recording or indexing.
 - The five-channel indexing allowlist is unchanged; `#pluto` remains excluded.
 
 ---
 
-*Last updated: 2026-11-17 — revised v1 scope. Active v1 is seven capabilities: INDEX-01/02/03, ASK-01, DIGE-01, MEET-02 and OPTO-01. `/decisions` and the transcript upload/summary/action-item pipeline are deferred/removed from active scope; `#decisions` remains indexed evidence and legacy L2 code/tables are retained. L1 complete, L2 merged but deferred, P1 merged/live-verified, P2 merged with live acceptance pending, L3 and P3 are the current assignments. Documentation only — no application source, tests, migrations, config, commits, merges or pushes were made.*
+*Last updated: 2026-11-18 — revised v1 scope and L3 status. Active v1 is seven capabilities: INDEX-01/02/03, ASK-01, DIGE-01, MEET-02 and OPTO-01. `/decisions` and the transcript upload/summary/action-item pipeline are deferred/removed from active scope; `#decisions` remains indexed evidence and legacy L2 code/tables are retained. L1 complete, L2 merged but deferred, P1 merged/live-verified, P2 merged with live acceptance pending, L3 implementation/shared integration and real test-guild acceptance verified; production/deployment acceptance and contract approvals pending; P3 pending. The working tree includes uncommitted L3 integration, tests, and status updates.*
