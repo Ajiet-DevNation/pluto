@@ -283,14 +283,14 @@ Implemented modules:
   Events), ephemeral confirmations, one public `#events` record/notice with
   `allowedMentions.parse = []`, and keep-the-row behaviour when a public post
   fails.
-- `src/help/**` — guild-scoped `/help` listing the six v1 commands with examples.
+- `src/help/**` — guild-scoped `/help` listing the five active commands with examples.
 - `drizzle/migrations/0009_events.sql` — manual event table, status/timezone/
   end-after-start checks and the `(guild_id, start_at)` index.
 
 Shared integration (minimal, single-registry rule preserved):
 
 - `src/discord/commands.ts` registers `/digest`, `/upcoming`, `/event`, `/help`
-  alongside `/optout` and `/ask`; no global application commands.
+  alongside `/optout`; no global application commands. `/ask` is not registered.
 - `src/discord/bot.ts` routes the four new interactions, validates `#events`
   access at startup, and sends the public event record with mass mentions
   disabled.
@@ -320,7 +320,7 @@ Verification completed:
 
 - `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and the approved 12-hour input/display are live-verified in the guild.
 - `#events` remains outside the five-channel allowlist and has zero `search_chunks` rows.
-- `/ask` routes correctly; its live answer check is blocked by the separate Cloudflare AI allowance issue tracked for P2, not by P3.
+- `/ask` is removed from active v1 and is no longer registered; its retrieval engine is retained for a future re-enable. The former Cloudflare answer-allowance issue no longer affects the active command set.
 - Known interaction: L3 marks a meeting `completed` after its one-hour reminder
   is delivered, so `/upcoming meetings` stops listing it in that final hour. This
   follows the P3 contract's `confirmed`-only wording; changing it needs a
@@ -467,7 +467,7 @@ At the start of each development session:
 | Meeting summaries, action items and `/meeting actions` | **Deferred (MEET-01).** No active assignment; do not implement from the old PR plan. | `PROJECT.md`, `REQUIREMENTS.md`, `PR-PLAN.md` |
 | Voice recording | **Out of scope.** Do not join, listen to, record or index voice channels. | `PROJECT.md`, `contracts/meeting.md`, `contracts/discord.md` |
 | Automatic Meeting Announcer | **New MEET-02, implemented by L3 (Likhith), with shared startup integration by Khushi.** Detection, parsing, auto-persistence, scheduling, delivery and tests; no confirmation or slash command in MVP. Test-guild acceptance passed; production/deployment acceptance pending. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `contracts/meeting.md` |
-| Active v1 capability count | **Seven** (was nine). PRNT-01 cancelled; INDEX-04 and MEET-01 deferred; DECI-01 removed from active v1. | `REQUIREMENTS.md`, `ROADMAP.md` |
+| Active v1 capability count (2026-11-17) | **Seven at that time** (was nine). PRNT-01 cancelled; INDEX-04 and MEET-01 deferred; DECI-01 removed from active v1. ASK-01 was removed on 2026-11-18, leaving six. | `REQUIREMENTS.md`, `ROADMAP.md` |
 | Meeting timezone | **`Asia/Kolkata`**, with relative dates resolved from the original announcement's `createdAt`. | `contracts/meeting.md` |
 | Date/time parsing | **Deterministic, testable parsing.** No new AI provider; ambiguous input asks the announcer to clarify. | `contracts/meeting.md` |
 | Reminder delivery | **Durable pg-boss queue `send-meeting-reminder`, at-least-once delivery.** No in-memory `setTimeout`; no exactly-once claim. | `contracts/background-jobs.md`, `contracts/meeting.md` |

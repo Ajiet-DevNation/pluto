@@ -6,7 +6,7 @@
 
 **Owner:** Khushi approves; P2 owner maintains the question set.
 **Status:** Draft — expected answers are filled in only after a reviewer checks the live GitHub source.
-**Applies to:** P2 `/ask`, every later change to indexing or retrieval.
+**Applies to:** the retained `/ask` retrieval engine and any future re-enable of ASK-01; every later change to indexing or retrieval.
 
 ## Purpose
 

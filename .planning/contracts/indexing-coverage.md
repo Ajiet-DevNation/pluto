@@ -10,10 +10,7 @@
 
 ## Principle
 
-`/ask` can only answer from what is indexed. "Any question about any repository"
-therefore means: every category of public repository content that answers a
-plausible question is indexed, and every gap is either closed or listed here.
-Coverage is measured with the evaluation set, not assumed.
+`/digest` and a future `/ask` engine can only use what is indexed. "Any question about any repository" therefore means: every category of public repository content that answers a plausible question is indexed, and every gap is either closed or listed here. Coverage is measured with the evaluation set, not assumed.
 
 ## Covered today (P2 branch)
 

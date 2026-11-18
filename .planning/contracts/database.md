@@ -1,8 +1,8 @@
 # Database schema contract
 
 Owner: Likhith proposes; Khushi approves.
-Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events` and define the on-demand activity/event-awareness scope; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
-Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P2 (`/ask` retrieval), P3 (activity snapshot and manual `events`/`/upcoming`).
+Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events`, define the on-demand activity/event-awareness scope, and mark the `/ask` command removed from active v1 while retaining its retrieval schema; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
+Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P3 (activity snapshot and manual `events`/`/upcoming`), and the retained retrieval engine for a future `/ask` re-enable.
 
 ## Purpose
 
@@ -221,7 +221,7 @@ Migration:
 
 ### `search_chunks`
 
-Searchable chunks backing `/ask` and `/digest`. The table is created
+Searchable chunks backing `/digest` and a future `/ask` engine. The table is created
 by `drizzle/migrations/0004_search_chunks.sql` and represented in
 `src/db/schema.ts`. Embeddings and generated full-text vectors are stored here per
 `contracts/search.md`. Existing chunks from meeting transcripts use

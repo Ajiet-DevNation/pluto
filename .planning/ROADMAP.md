@@ -77,7 +77,7 @@ The **six** active v1 capabilities are covered across **six** phases. The 2026-1
 7. One reminder is delivered to `#pluto` one hour before the meeting without repeating `@everyone`/`@here`
 8. Duplicate announcements and concurrent delivery are controlled; the at-least-once delivery guarantee is documented honestly
 9. Failures are logged safely and recovered where possible
-10. Existing `/ask`, `/optout` and Discord indexing behavior is unaffected
+10. Existing `/optout` and Discord indexing behavior is unaffected
 11. Unit and integration tests pass
 **Requirements:** MEET-02
 **Status (2026-11-18):** Implementation, shared-file integration, migration, and test-guild end-to-end acceptance complete. A real Discord announcement was persisted and its pg-boss reminder delivered to the test server; the reminder did not repeat a mass mention. Late reminder jobs now skip delivery, and events are marked completed after reminder delivery or meeting start. TypeScript/build pass; 366 tests pass (0 fail, 0 skip). Production/deployment acceptance and contract approvals remain pending.
