@@ -5,7 +5,7 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 
 **Core value:** Make community information easier to find, understand, and manage — with answers based only on actual project records (GitHub, Discord, Miro), always cited to their original source, and never generated from unsupported general knowledge.
 
-**Current focus:** Revised v1 scope (base scope 2026-11-17; P3 revised 2026-11-18). **Seven capabilities are active in v1**: INDEX-01, INDEX-02, INDEX-03, ASK-01, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. The `/decisions` command and transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`) are removed from active v1; `#decisions` remains in the five-channel allowlist and is indexed evidence for `/ask` and `/digest`, and legacy L2 code/tables are retained. **L3 implementation, shared-file integration, and live test-guild acceptance are complete locally.** A real Discord message was detected, persisted in `meeting_events`, and delivered by pg-boss to the test server’s `#pluto`; the delivered message contained no mass mention. The worker now skips late reminders and marks events completed after delivery or when meetings have started. TypeScript/build pass; all 366 tests pass, including 11 database integration tests. Production deployment acceptance and meeting/database contract approval remain pending. **P3 (Pragathi) is the on-demand activity and event-awareness package: `/digest days:N`, `/upcoming meetings`, `/upcoming events`, `/event add`, and `/help`.** P2 is merged to `main` (`298e557`, PR #10) and the retrieval audit is merged (`2ff2871`, PR #14); full-corpus reindex and live Discord acceptance remain pending. P1 is merged and live-verified (PR #9). L1 is complete. L2 is historically merged but deferred from active v1. Remaining before K3 include P3, INDEX-03 (Miro REST, blocked on token), P2 live acceptance, and L3 production/deployment acceptance/approval.
+**Current focus:** Revised v1 scope (base scope 2026-11-17; P3 revised 2026-11-18). **Six capabilities are active in v1**: INDEX-01, INDEX-02, INDEX-03, DIGE-01, MEET-02 (Automatic Meeting Announcer) and OPTO-01. ASK-01 is removed from active v1 on 2026-11-18: the `/ask` command and its answer/retrieval engine were removed; the chunk schema and indexing pipeline are retained for `/digest` and corpus storage. The `/decisions` command and transcript-based meeting pipeline (upload, transcription, summaries, action items, `/meeting actions`) are removed from active v1; `#decisions` remains in the five-channel allowlist and is indexed evidence for `/digest`, and legacy L2 code/tables are retained. **L3 implementation, shared-file integration, and live test-guild acceptance are complete locally.** A real Discord message was detected, persisted in `meeting_events`, and delivered by pg-boss to the test server’s `#pluto`; the delivered message contained no mass mention. The worker now skips late reminders and marks events completed after delivery or when meetings have started. TypeScript/build pass; all 318 tests pass, including database integration tests. Production deployment acceptance and meeting/database contract approval remain pending. **P3 (Pragathi) is the on-demand activity and event-awareness package: `/digest days:N`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, and `/help`. P3 is complete: implementation, 318 passing tests, build, migration and live Discord acceptance all pass. Migration `0009_events` is recorded in the dev DB. Guild command registration is verified; `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and the approved 12-hour input/display have been live-verified. `/ask` was removed from active v1 and its command is no longer registered; the retrieval engine is retained for a future re-enable. The P3 PR (#18) is open for Khushi's review and merge.** P2 is merged to `main` (`298e557`, PR #10) and the retrieval audit is merged (`2ff2871`, PR #14); full-corpus reindex and live Discord acceptance remain pending. P1 is merged and live-verified (PR #9). L1 is complete. L2 is historically merged but deferred from active v1. Remaining before K3 include P3 live acceptance, INDEX-03 (Miro REST, blocked on token), P2 live acceptance, and L3 production/deployment acceptance/approval.
 
 ## Team
 - Project Lead: Khushi
@@ -18,7 +18,7 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 - Job Queue: pg-boss
 - GitHub Integration: Read-only GitHub App via Octokit App auth (implementation/live verification pending)
 - Miro Integration: Read-only Miro REST v2, GET only, `boards:read`; typed board content and connectors are in scope, hand-drawn ink is not readable as text. MCP and OCR are dropped.
-- AI & Embeddings: Cloudflare Workers AI (bge-base-en-v1.5, instruct model); Whisper code retained for legacy L2, not an active v1 workflow
+- AI & Embeddings: Cloudflare Workers AI (bge-base-en-v1.5 embeddings; the instruct model was removed with `/ask`); Whisper code retained for legacy L2, not an active v1 workflow
 - Audio Storage: None in v1. The legacy L2 upload path discards audio after transcription; no active upload workflow
 - Meeting Announcer: deterministic date/time parsing in `Asia/Kolkata`; durable reminders through pg-boss
 
@@ -34,14 +34,18 @@ See: .planning/PROJECT.md (updated 2026-11-17 with the revised v1 scope)
 |-------|--------|--------------|----------|
 | Phase 1: Foundation & GitHub & Miro Indexing | ◐ Partial (GitHub code in place; App auth live check and Miro verification pending) | INDEX-01, INDEX-03 | 6/8 |
 | Phase 2: Discord Indexing & Opt-Out | ✅ Complete (P1 merged and live-verified) | INDEX-02, OPTO-01 | 4/4 |
-| Phase 3: /ask Q&A with Citations | ◐ In progress (P2 and retrieval audit merged; full-corpus reindex and live acceptance pending) | ASK-01 | 3/5 |
-| Phase 4: Project Activity & Event Awareness | ○ Pending (P3 — Pragathi) | DIGE-01 | 0/11 |
-| Phase 5: Automatic Meeting Announcer | ◐ Implemented, integrated & test-guild verified | MEET-02 | Shared startup/worker wiring complete; migration 0008 recorded; 366 tests pass (0 fail, 0 skip); typecheck/build pass; real Discord test-guild message detected and reminder delivered by pg-boss; late jobs skip delivery and events complete. Production/deployment acceptance and contract approvals pending. |
+| Phase 3: /ask Q&A with Citations | ⏸ Removed from active v1 (2026-11-18; `/ask` command and answer/retrieval engine removed; chunk schema/indexing retained) | ASK-01 | Removed |
+| Phase 4: Project Activity & Event Awareness | ✅ Complete (implementation, tests and live Discord acceptance; PR #18 open for Khushi review/merge) | DIGE-01 | 12/12 implemented and live-verified; cancellation and approved additions included |
+| Phase 5: Automatic Meeting Announcer | ◐ Implemented, integrated & test-guild verified | MEET-02 | Shared startup/worker wiring complete; migration 0008 recorded; 318 tests pass (0 fail, 0 skip); typecheck/build pass; real Discord test-guild message detected and reminder delivered by pg-boss; late jobs skip delivery and events complete. Production/deployment acceptance and contract approvals pending. |
 | Phase 6: Hardening & v1 Release | ○ Pending | All active v1 (7) | 0/6 |
 
 **Deferred / not active v1 phases:** transcript upload and ingestion (INDEX-04), transcript summaries/action items/`/meeting actions` (MEET-01), and the `/decisions` command (DECI-01). L2's upload code remains in the repository but is not in the v1 critical path.
 
 ## `/ask` Retrieval Audit (2026-11-16)
+
+> Historical note (2026-11-18): the `/ask` command and answer/retrieval engine
+> were removed from active v1. This audit is retained only as project history;
+> the chunk schema and indexing pipeline remain.
 
 Branch: `feature/phase-2-retrieval` (no commits, no merges, no pushes made).
 
@@ -158,9 +162,7 @@ The independent review confirmed additional defects, now fixed:
 | Verified `/ask` eval gate | n/a | 9/9 |
 | Whole eval set (23 entries) | 11/18 on old 18-entry set | 18/23 on the last evaluation-integrity run; verified gate 9/9; failures are four corpus gaps plus one model-variance no-evidence case |
 
-Exact vs approximate, probe sweep, latency, and source-hit methodology are in
-`contracts/evaluation.md`. Approximate retrieval reaches exact-set recall at
-probes=100; no index was rebuilt.
+Exact vs approximate, probe sweep, latency, and source-hit methodology were in the removed `/ask` evaluation contract (retained in Git history only). Approximate retrieval reached exact-set recall at probes=100; no index was rebuilt.
 
 ### `/ask` follow-up improvements (2026-11-16)
 
@@ -260,6 +262,65 @@ Files changed in this hardening pass: `src/ask/command.ts`,
 - FTS uses the `english` configuration; non-English meeting content is handled
   by vector search only.
 
+## P3 Activity & Event Awareness (2026-11-18)
+
+Branch `feat/p3-activity-events`. No commits, pushes or merges were made.
+
+Implemented modules:
+
+- `src/digest/**` — on-demand deterministic `/digest` with a 1–30 day rolling
+  window (default 7), GitHub issue counts/links, indexed Discord message counts,
+  a `#decisions` subset, and upcoming meeting/event counts. Pull requests and
+  commits are explicitly not reported because reliable occurrence dates are not
+  stored.
+- `src/upcoming/**` — `/upcoming meetings` (confirmed future `meeting_events`)
+  and `/upcoming events` (scheduled future or ongoing `events`).
+- `src/events/**` — `events` Drizzle schema and repository, strict
+  `YYYY-MM-DD` plus 12-hour/24-hour time validation in Asia/Kolkata, 12-hour IST
+  display, every-member `/event add`, `/event cancel` (creator or Manage
+  Events), ephemeral confirmations, one public `#events` record/notice with
+  `allowedMentions.parse = []`, and keep-the-row behaviour when a public post
+  fails.
+- `src/help/**` — guild-scoped `/help` listing the five active commands with examples.
+- `drizzle/migrations/0009_events.sql` — manual event table, status/timezone/
+  end-after-start checks and the `(guild_id, start_at)` index.
+
+Shared integration (minimal, single-registry rule preserved):
+
+- `src/discord/commands.ts` registers `/digest`, `/upcoming`, `/event`, `/help`
+  alongside `/optout`; no global application commands. `/ask` is not registered.
+- `src/discord/bot.ts` routes the four new interactions, validates `#events`
+  access at startup, and sends the public event record with mass mentions
+  disabled.
+- `src/discord/policy.ts` reads `events_channel_id` and refuses to index it.
+- `src/cmd/pluto/index.ts` composes the P3 services from the shared database
+  handle; P3 adds no worker or scheduler.
+
+Validation performed locally:
+
+- `npm test` equivalent: **318 pass, 0 fail, 0 skip** (P3 coverage plus retained indexing tests; obsolete `/ask` tests were removed).
+- `npm run build`: clean.
+- `npm run migrate`: applied `0009_events.sql` and recorded it in
+  `schema_migrations` on the dev database.
+- Real-database checks: `events` migration applies, the event repository
+  round-trips, upcoming meeting/event queries filter correctly, and the digest
+  issue query counts only in-window rows.
+- A read-only dry run of the digest and upcoming services against the dev
+  database produced the expected empty-period output.
+- A full `/event add` handler run against the dev database saved one temporary
+  event, produced the ephemeral confirmation and public record, appeared in
+  `/upcoming events`, and was cleaned up afterwards.
+
+Verification completed:
+
+- `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and the approved 12-hour input/display are live-verified in the guild.
+- `#events` remains outside the five-channel allowlist and has zero `search_chunks` rows.
+- `/ask` is removed from active v1 and is no longer registered; its command, answer runtime, retrieval modules and ask-specific tests are removed. The chunk schema and indexing pipeline remain for `/digest` and corpus storage.
+- Known interaction: L3 marks a meeting `completed` after its one-hour reminder
+  is delivered, so `/upcoming meetings` stops listing it in that final hour. This
+  follows the P3 contract's `confirmed`-only wording; changing it needs a
+  contract decision.
+
 ## Package Status
 
 | Package | Owner | Status | Notes |
@@ -269,10 +330,10 @@ Files changed in this hardening pass: `src/ask/command.ts`,
 | K3 | Khushi | ⬜ Pending | Depends on K2, P3, L3. |
 | L1 | Likhith | ✅ Complete (PR #4 + #8, migration fix #12) | Neon/Drizzle, pg-boss, public issue indexing, scheduled worker, idempotent migrations, tests, `vector(768)`/`tsvector` migration. Latest `main` tests/build pass. |
 | L2 | Likhith | ✅ Merged historically (PR #11, #12); ⏸ **deferred from active v1** | Upload endpoint, Whisper transcription, `meeting_transcripts` storage and transcript chunk indexing exist in the repository. No new upload/transcription user workflow is active in v1. The code and tables must not be deleted; L2 is not a prerequisite for L3 or P3. |
-| L3 | Likhith (feature implementation); Khushi (shared integration) | ◐ Implemented, integrated & test-guild verified | **Automatic Meeting Announcer, MVP.** Detects real @everyone/@here mentions plus meeting language in configured #meeting-plans; deterministic Asia/Kolkata parsing anchored to message createdAt; persists valid events; schedules durable pg-boss reminders; registers worker and runs startup reconciliation. Late jobs are skipped; delivered or started meetings are marked completed. Integration wired through `src/cmd/pluto/index.ts` and `src/jobs/worker.ts`; safe listener error boundary and shutdown. Migration `0008_meeting_events.sql` is recorded in the dev DB. 366 tests pass, 0 fail, 0 skip; typecheck/build pass. A real Discord test-guild message was detected, persisted, and delivered to test #pluto by pg-boss; the sent message had no mass mention. No `/meeting` slash command, confirmation, cancel, or reschedule controls in MVP. Remaining: production/deployment acceptance and Khushi approval of meeting/database contracts. |
+| L3 | Likhith (feature implementation); Khushi (shared integration) | ◐ Implemented, integrated & test-guild verified | **Automatic Meeting Announcer, MVP.** Detects real @everyone/@here mentions plus meeting language in configured #meeting-plans; deterministic Asia/Kolkata parsing anchored to message createdAt; persists valid events; schedules durable pg-boss reminders; registers worker and runs startup reconciliation. Late jobs are skipped; delivered or started meetings are marked completed. Integration wired through `src/cmd/pluto/index.ts` and `src/jobs/worker.ts`; safe listener error boundary and shutdown. Migration `0008_meeting_events.sql` is recorded in the dev DB. 318 tests pass, 0 fail, 0 skip; typecheck/build pass. A real Discord test-guild message was detected, persisted, and delivered to test #pluto by pg-boss; the sent message had no mass mention. No `/meeting` slash command, confirmation, cancel, or reschedule controls in MVP. Remaining: production/deployment acceptance and Khushi approval of meeting/database contracts. |
 | P1 | Pragathi | ✅ Merged and live-verified (PR #9) | Discord allowlist intake, startup backfill, bot-author exclusion, guild-scoped `/optout`; live verification passed. |
-| P2 | Pragathi / Khushi takeover fix | ✅ Merged (PR #10 `298e557`; retrieval audit PR #14 `2ff2871`) | `/ask`, repo-scoped retrieval, one visible supporting source, App/PAT auth, and paginated public-repository indexing for READMEs, issues, PRs, commits, contributor identities, and eligible source files. Retrieval audit fixed IVFFlat probes, full-text query construction, exact issue/PR lookup, dedupe and answer guards. Full reindex and live Discord acceptance are still pending. |
-| P3 | Pragathi | ⬜ Pending (current assignment) | **On-demand activity and event awareness.** `/digest days:N` returns a deterministic snapshot for 1–30 days (default 7) using GitHub issues, Discord activity, `#decisions` evidence, and upcoming meetings/events; no AI narrative and no scheduler. `/upcoming meetings` reads `meeting_events`. `/upcoming events` reads the new `events` table. `/event add` requires Manage Events, validates strict `YYYY-MM-DD` / `HH:MM` input in `Asia/Kolkata`, saves the event, sends an ephemeral confirmation, and posts a public record in `#events`. `/help` lists commands. No `/resource`, `/upcoming all`, channel scanning, recurring events, or manual-event reminders. Depends on P2, L1, and L3 (`meeting_events`). |
+| P2 | Pragathi / Khushi takeover fix | ✅ Merged (PR #10 `298e557`; retrieval audit PR #14 `2ff2871`); ⏸ `/ask` removed from active v1 2026-11-18 | `/ask` implementation and retrieval audit were merged, then the `/ask` command, answer runtime, retrieval modules, evaluation scripts and ask-specific tests were removed on 2026-11-18 because the live answer path is not working reliably. The chunk schema, embedding/indexing pipeline and GitHub/Discord indexing remain for `/digest` and corpus storage. |
+| P3 | Pragathi | ✅ Complete (implementation, tests and live acceptance; PR #18 open for Khushi review/merge) | **On-demand activity and event awareness.** `/digest days:N` returns a deterministic 1–30 day snapshot (default 7) using GitHub issues, indexed Discord messages, a `#decisions` subset, and upcoming meetings/events; no AI narrative and no scheduler. `/upcoming meetings` reads confirmed future `meeting_events`. `/upcoming events` reads scheduled future/ongoing `events` and shows each event ID. `/event add` and `/event cancel` are available to every member; creators can cancel their own events and Manage Events can cancel any event. `/event add` validates strict `YYYY-MM-DD` plus 12-hour or 24-hour time input in `Asia/Kolkata`, displays 12-hour IST, saves the event, sends an ephemeral confirmation, and posts one public record in `#events`. Cancellation marks the row cancelled, posts one public notice, never edits/deletes the original record, and is excluded from upcoming lists. `/help` lists the five active v1 commands. Migration `0009_events.sql` is recorded in the dev DB; commands are registered through the single guild registry. No `/resource`, `/upcoming all`, channel scanning, recurring events, or manual-event reminders. 318 tests pass, 0 fail, 0 skip; build/typecheck pass. `/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display are live-verified. ASK-01 is removed from active v1; the `/ask` command is no longer registered and its retrieval engine is retained for future work. |
 
 ### Credentials inventory
 
@@ -326,7 +387,13 @@ At the start of each development session:
 
 ## Unresolved / Pending Items
 - **L3 production/deployment acceptance — pending.** A real Discord test-guild message and reminder were verified; the bot was not deployed or tested in the production guild.
-- **P3 on-demand activity and event-awareness implementation — pending** (Pragathi's current assignment)
+- **P3 live Discord acceptance — complete.** `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, `/help`, public replies, and 12-hour display were live-verified in the guild; command registration and `0009_events` are verified.
+- **ASK-01 / `/ask` — removed from active v1 (2026-11-18).** The `/ask` slash command, handler, `src/ask` module, answer runtime, retrieval modules, evaluation scripts and ask-specific tests are removed. The chunk schema, embedding/indexing pipeline and corpus indexing remain for `/digest` and storage. `#decisions` remains indexed evidence for `/digest`.
+- **P3 PR #18 — open for Khushi review/merge.** Branch `feat/p3-activity-events`; implementation, tests and live acceptance are complete. Do not mark DIGE-01 merged until Khushi approves and the branch merges.
+- **P3 every-member `/event add` — approved.** Khushi approved open event creation on 2026-11-18; the old Manage Events gate is removed. Any member can create an event and post a public `#events` record.
+- **P3 `/event cancel` — approved, implemented and live-verified.** Khushi approved cancellation on 2026-11-18. Creators can cancel their own events; Manage Events can cancel any event. Cancellation sets `status = 'cancelled'`, posts one public notice, never edits/deletes the original record, and does not remove the row.
+- **P3 12-hour time format — approved.** Khushi approved the 12-hour input/display change on 2026-11-18. 12-hour display is implemented across digest/upcoming/event output, and `/event add` accepts both 12-hour and 24-hour input. `contracts/discord.md` §8.3 records the approved behavior.
+- **P3 public replies — approved.** Khushi approved public replies for `/digest`, `/upcoming`, and `/help` on 2026-11-18; implementation is complete. `/optout`, the `/event add`/`/event cancel` confirmations, and wrong-guild/error messages remain ephemeral.
 - P2 full-corpus live reindex using the GitHub App; verify all public repos are enumerated and private repos/files remain excluded
 - `content_hash` backfill for the 7,880 pre-migration rows (production write; SQL prepared in `contracts/database.md`)
 - IVFFlat index rebuild — not required for the runtime fix; any rebuild needs manual approval and `CREATE INDEX CONCURRENTLY` outside a transaction
@@ -381,7 +448,7 @@ At the start of each development session:
 
 | Decision | Value | Recorded in |
 |----------|-------|-------------|
-| PR notifications (PRNT-01) | **Cancelled for v1.** The Takoyaki bot already posts PR notices in the server; Pluto would duplicate them. PRs stay indexed for `/ask` and `/digest` | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md` |
+| PR notifications (PRNT-01) | **Cancelled for v1.** The Takoyaki bot already posts PR notices in the server; Pluto would duplicate them. PRs stay indexed for `/digest` and a future `/ask` | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md` |
 | Action items | **Superseded 2026-11-17.** No longer active v1; transcript-derived action items are deferred with L2/MEET-01. The 2026-11-15 P3 ownership decision is historical only. | `PR-PLAN.md`, `PROJECT.md` |
 | v1 capability count | **Nine on 2026-11-15; revised to seven on 2026-11-17** | `REQUIREMENTS.md`, `ROADMAP.md` |
 | #decisions channel | Created 2026-11-15 in the public Information category; added to the allowlist for decision capture. **The `/decisions` command was removed from active v1 on 2026-11-17; the channel remains indexed evidence.** #core-general and #event-ideation were rejected as private Core Channels | `config.json`, `contracts/discord.md` |
@@ -390,12 +457,12 @@ At the start of each development session:
 
 | Decision | Value | Recorded in |
 |----------|-------|-------------|
-| `/decisions` command | **Removed from active v1.** `#decisions` remains in the five-channel allowlist; its human-authored messages are evidence for `/ask` and `/digest`. No decisions service module is required. | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md`, `contracts/search.md` |
+| `/decisions` command | **Removed from active v1.** `#decisions` remains in the five-channel allowlist; its human-authored messages are evidence for `/digest` and a future `/ask`. No decisions service module is required. | `REQUIREMENTS.md`, `PROJECT.md`, `ROADMAP.md`, `contracts/search.md` |
 | Transcript upload and transcription | **Deferred from active v1.** L2 code, `meeting_transcripts` and existing chunks are retained and must not be deleted. | `PROJECT.md`, `REQUIREMENTS.md`, `contracts/database.md` |
 | Meeting summaries, action items and `/meeting actions` | **Deferred (MEET-01).** No active assignment; do not implement from the old PR plan. | `PROJECT.md`, `REQUIREMENTS.md`, `PR-PLAN.md` |
 | Voice recording | **Out of scope.** Do not join, listen to, record or index voice channels. | `PROJECT.md`, `contracts/meeting.md`, `contracts/discord.md` |
 | Automatic Meeting Announcer | **New MEET-02, implemented by L3 (Likhith), with shared startup integration by Khushi.** Detection, parsing, auto-persistence, scheduling, delivery and tests; no confirmation or slash command in MVP. Test-guild acceptance passed; production/deployment acceptance pending. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `contracts/meeting.md` |
-| Active v1 capability count | **Seven** (was nine). PRNT-01 cancelled; INDEX-04 and MEET-01 deferred; DECI-01 removed from active v1. | `REQUIREMENTS.md`, `ROADMAP.md` |
+| Active v1 capability count (2026-11-17) | **Seven at that time** (was nine). PRNT-01 cancelled; INDEX-04 and MEET-01 deferred; DECI-01 removed from active v1. ASK-01 was removed on 2026-11-18, leaving six. | `REQUIREMENTS.md`, `ROADMAP.md` |
 | Meeting timezone | **`Asia/Kolkata`**, with relative dates resolved from the original announcement's `createdAt`. | `contracts/meeting.md` |
 | Date/time parsing | **Deterministic, testable parsing.** No new AI provider; ambiguous input asks the announcer to clarify. | `contracts/meeting.md` |
 | Reminder delivery | **Durable pg-boss queue `send-meeting-reminder`, at-least-once delivery.** No in-memory `setTimeout`; no exactly-once claim. | `contracts/background-jobs.md`, `contracts/meeting.md` |
@@ -409,6 +476,7 @@ At the start of each development session:
 | Weekly digest | **Replaced.** No scheduled AI-written digest. `DIGE-01` is now an on-demand deterministic `/digest days:N` snapshot. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md` |
 | Event awareness | **Added to P3.** `/upcoming meetings` reads `meeting_events`; `/upcoming events` reads the new `events` table; `/event add` stores manual events and posts a public record in `#events` (id `1572348309509644289`). | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `config.json` |
 | Help command | **Added.** `/help` lists the available guild-scoped commands. | `REQUIREMENTS.md`, `PR-PLAN.md` |
+| `/ask` command / ASK-01 | **Removed from active v1 on 2026-11-18.** The `/ask` slash command, handler, answer runtime, retrieval modules, evaluation scripts and ask-specific tests were removed because the live answer path is not working reliably. The chunk schema and embedding/indexing pipeline are retained for `/digest` and corpus storage. Active v1 is six capabilities. `#decisions` remains indexed evidence for `/digest`. | `REQUIREMENTS.md`, `ROADMAP.md`, `PR-PLAN.md`, `PROJECT.md`, `contracts/discord.md`, `contracts/search.md`, `STATE.md` |
 | Removed P3 ideas | `/resource` and `/upcoming all` are not in v1; no channel scanning, recurring events, or manual-event reminders. | `REQUIREMENTS.md`, `PR-PLAN.md` |
 
 ## Citation and channel safety rules
@@ -428,4 +496,4 @@ At the start of each development session:
 
 ---
 
-*Last updated: 2026-11-18 — revised P3 scope. Active v1 remains seven capabilities: INDEX-01/02/03, ASK-01, DIGE-01, MEET-02 and OPTO-01. The former weekly AI digest is replaced by an on-demand deterministic `/digest` plus `/upcoming meetings`, `/upcoming events`, `/event add`, and `/help`. L3 implementation, shared integration, and real test-guild acceptance are verified; production/deployment acceptance and contract approvals are pending. P3 is pending. The working tree includes uncommitted L3 integration, tests, and status updates.*
+*Last updated: 2026-11-18 — P3 on-demand activity and event-awareness is complete (`/digest`, `/upcoming`, `/event add`, `/event cancel`, `/help`); 318 tests pass, build clean, `0009_events` recorded, and live acceptance passed. The P3 PR (#18) is open for Khushi review and merge. ASK-01 is removed from active v1; the `/ask` command and answer/retrieval engine are removed, while the chunk schema and indexing pipeline remain for `/digest` and corpus storage. Active v1 is six capabilities: INDEX-01/02/03, DIGE-01, MEET-02 and OPTO-01. L3 implementation, shared integration, and real test-guild acceptance are verified; production/deployment acceptance and contract approvals are pending.*

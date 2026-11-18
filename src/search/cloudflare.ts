@@ -1,19 +1,17 @@
 /**
- * Cloudflare Workers AI clients for the two P2 operations:
- * embeddings (bge-base-en-v1.5) and grounded generation (llama-3.1-8b).
+ * Cloudflare Workers AI embedding client for indexing.
  *
- * The API responses are parsed defensively: a missing/odd shape must fail
- * closed rather than silently produce a zero vector or an empty answer.
+ * `/ask` answer generation was removed from active v1 on 2026-11-18. Responses
+ * are parsed defensively: a missing/odd shape must fail closed rather than
+ * silently produce a zero vector.
  */
 
-import type { AnswerGenerator, EmbeddingClient } from './types';
+import type { EmbeddingClient } from './types';
 import { fetchWithRetry } from '../http/retry';
-import { SYSTEM_PROMPT } from './prompt';
-import { EmbeddingQuotaExceededError, AnswerQuotaExceededError, nextUtcDay } from './embedding-errors';
+import { EmbeddingQuotaExceededError, nextUtcDay } from './embedding-errors';
 
 export const EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
 export const EMBEDDING_DIMENSIONS = 768;
-export const GENERATION_MODEL = '@cf/meta/llama-3.1-8b-instruct';
 export const CLOUDFLARE_AI_BASE = 'https://api.cloudflare.com/client/v4/accounts';
 
 export class CloudflareAIError extends Error {
@@ -135,78 +133,5 @@ export class CloudflareEmbeddingClient implements EmbeddingClient {
       }
       return numbers;
     });
-  }
-}
-
-export class CloudflareAnswerGenerator implements AnswerGenerator {
-  private readonly fetchImpl: typeof fetch;
-
-  private readonly credentials: CloudflareCredentials;
-
-  constructor(options: CloudflareClientOptions) {
-    this.credentials = requireCredentials(options);
-    this.fetchImpl = options.fetchImpl ?? fetch;
-  }
-
-  async generate(prompt: string): Promise<string> {
-    if (!prompt.trim()) {
-      throw new CloudflareAIError('Cannot generate an answer from an empty prompt');
-    }
-
-    const response = await fetchWithRetry(this.fetchImpl,
-      endpoint(this.credentials.accountId, GENERATION_MODEL),
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.credentials.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: SYSTEM_PROMPT,
-            },
-            { role: 'user', content: prompt },
-          ],
-        }),
-      },
-      // A 429 means the shared daily allowance is exhausted; retrying cannot help.
-      { retryableStatus: (candidate) => [500, 502, 503, 504].includes(candidate.status) },
-    );
-
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('retry-after');
-      const retryAfterMs = retryAfter
-        ? (Number.isFinite(Number(retryAfter))
-          ? Number(retryAfter) * 1000
-          : Date.parse(retryAfter) - Date.now())
-        : 0;
-      const resumeAt = retryAfterMs > 0
-        ? new Date(Date.now() + retryAfterMs)
-        : nextUtcDay();
-      throw new AnswerQuotaExceededError(
-        resumeAt,
-        `Cloudflare generation quota/rate limit reached; resume after ${resumeAt.toISOString()}`,
-      );
-    }
-
-    const payload = await readJson(response);
-    if (!response.ok) {
-      throw new CloudflareAIError(
-        `Generation request failed (${response.status}): ${JSON.stringify(payload).slice(0, 200)}`,
-      );
-    }
-
-    const result = (payload as { result?: unknown }).result;
-    const text =
-      typeof result === 'string'
-        ? result
-        : (result as { response?: unknown } | undefined)?.response;
-
-    if (typeof text !== 'string' || !text.trim()) {
-      throw new CloudflareAIError('Generation response did not contain an answer');
-    }
-    return text.trim();
   }
 }

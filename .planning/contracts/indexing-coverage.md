@@ -1,15 +1,15 @@
 # GitHub indexing coverage
 
+> ASK-01 and the `/ask` command/engine were removed from active v1 on 2026-11-18.
+> Indexing coverage remains relevant to `/digest` and corpus storage.
+
 **Owner:** Khushi approves; P2 owner implements.
 **Status:** Draft. Describes what P2 indexes today, what it does not, and the order of the next steps.
-**Related:** `contracts/github.md`, `contracts/search.md`, `contracts/evaluation.md`
+**Related:** `contracts/github.md`, `contracts/search.md`
 
 ## Principle
 
-`/ask` can only answer from what is indexed. "Any question about any repository"
-therefore means: every category of public repository content that answers a
-plausible question is indexed, and every gap is either closed or listed here.
-Coverage is measured with the evaluation set, not assumed.
+`/digest` can only use what is indexed. "Any question about any repository" therefore means: every category of public repository content that answers a plausible question is indexed, and every gap is either closed or listed here. Coverage is measured against the retained indexing pipeline, not assumed.
 
 ## Covered today (P2 branch)
 

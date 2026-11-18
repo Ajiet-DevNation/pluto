@@ -6,7 +6,6 @@ import type {
   EmbeddingClient,
   SearchChunkInput,
   SearchStore,
-  ScoredSearchChunk,
 } from '../../src/search/types';
 import { makeRecord } from '../discord/helpers';
 
@@ -16,14 +15,6 @@ class FakeSearchStore implements SearchStore {
 
   async upsertChunks(chunks: readonly SearchChunkInput[]): Promise<void> {
     this.writes.push(chunks.map((chunk) => ({ ...chunk })));
-  }
-
-  async vectorSearch(): Promise<ScoredSearchChunk[]> {
-    return [];
-  }
-
-  async fullTextSearch(): Promise<ScoredSearchChunk[]> {
-    return [];
   }
 
   async deleteDiscordAuthor(authorId: string): Promise<number> {

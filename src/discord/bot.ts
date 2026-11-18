@@ -34,10 +34,31 @@ import {
   type OptOutStore,
 } from './types';
 import { handleOptOutInteraction, type OptOutInteraction } from '../optout/command';
-import { handleAskInteraction, type AskInteraction } from '../ask/command';
-import type { AskService } from '../search/ask';
+import {
+  handleDigestInteraction,
+  type DigestInteraction,
+} from '../digest/command';
+import type { DigestService } from '../digest/service';
+import {
+  handleEventInteraction,
+  EVENT_MESSAGES,
+  type EventInteraction,
+} from '../events/command';
+import type { EventRepository } from '../events/repository';
+import { handleHelpInteraction, type HelpInteraction } from '../help/command';
+import {
+  handleUpcomingInteraction,
+  type UpcomingInteraction,
+} from '../upcoming/command';
+import type { UpcomingRepository } from '../upcoming/repository';
 
 export type BotStore = DiscordIndexStore & OptOutStore;
+
+export interface ActivityServices {
+  digest?: Pick<DigestService, 'build'>;
+  upcoming?: Pick<UpcomingRepository, 'listMeetings' | 'listEvents'>;
+  events?: Pick<EventRepository, 'create' | 'getById' | 'cancel'>;
+}
 
 export interface StartedDiscordBot {
   client: Client;
@@ -49,14 +70,28 @@ export interface StartDiscordBotOptions {
   env?: NodeJS.ProcessEnv;
   policy?: DiscordPolicy;
   store?: BotStore;
-  askService?: Pick<AskService, 'ask'>;
+  activity?: ActivityServices;
 }
 
-const unavailableAskService: Pick<AskService, 'ask'> = {
-  async ask(): Promise<never> {
-    throw new Error('/ask is not configured (search credentials are missing)');
-  },
-};
+const ACTIVITY_MESSAGES = {
+  digestUnavailable:
+    'The activity database is not configured, so /digest is unavailable.',
+  upcomingUnavailable:
+    'The activity database is not configured, so /upcoming is unavailable.',
+} as const;
+
+async function replyUnavailable(
+  interaction: { reply(options: { content: string; ephemeral: boolean }): Promise<unknown> },
+  message: string,
+): Promise<void> {
+  try {
+    await interaction.reply({ content: message, ephemeral: true });
+  } catch (error) {
+    defaultLogger.warn('Failed to send unavailable-command reply', {
+      error: errorMessage(error),
+    });
+  }
+}
 
 export function createDiscordClient(): Client {
   return new Client({
@@ -138,6 +173,25 @@ export async function assertGuildAccess(
       `Missing View Channel / Send Messages / Embed Links on output channel (${policy.outputChannelId})`,
     );
   }
+
+  if (policy.eventsChannelId) {
+    const eventsChannel = asGuildChannel(
+      guild.channels.cache.get(policy.eventsChannelId) ??
+        (await guild.channels.fetch(policy.eventsChannelId)),
+      'Events channel',
+      policy.eventsChannelId,
+    );
+    const eventsPermissions = eventsChannel.permissionsFor(me);
+    const eventsRequired = [
+      PermissionsBitField.Flags.ViewChannel,
+      PermissionsBitField.Flags.SendMessages,
+    ];
+    if (!eventsPermissions?.has(eventsRequired)) {
+      throw new Error(
+        `Missing View Channel / Send Messages on events channel (${policy.eventsChannelId})`,
+      );
+    }
+  }
 }
 
 async function resolveBackfillChannels(
@@ -191,15 +245,90 @@ export async function startDiscordBot(
     void handleMessageCreate(message, context);
   });
 
-  const askService = options.askService ?? unavailableAskService;
+  const postPublicRecord = async (
+    content: string,
+  ): Promise<{ messageId?: string } | null> => {
+    if (!policy.eventsChannelId) {
+      throw new Error('The #events channel is not configured');
+    }
+    const channel = await client.channels.fetch(policy.eventsChannelId);
+    if (!channel) {
+      throw new Error('The #events channel is not visible to the bot');
+    }
+    if (!channel.isSendable()) {
+      throw new Error('The #events channel is not a sendable channel');
+    }
+    const message = await channel.send({
+      content,
+      allowedMentions: { parse: [] },
+    });
+    return { messageId: message.id };
+  };
 
   client.on(Events.InteractionCreate, (interaction) => {
-    if (interaction.isChatInputCommand() && interaction.commandName === 'ask') {
-      void handleAskInteraction(interaction as unknown as AskInteraction, {
+    if (interaction.isChatInputCommand() && interaction.commandName === 'digest') {
+      if (!options.activity?.digest) {
+        void replyUnavailable(interaction, ACTIVITY_MESSAGES.digestUnavailable);
+        return;
+      }
+      void handleDigestInteraction(interaction as unknown as DigestInteraction, {
         guildId: policy.guildId,
-        askService,
+        digest: options.activity.digest,
       }).catch((error: unknown) => {
-        defaultLogger.error('Unhandled /ask interaction error', {
+        defaultLogger.error('Unhandled /digest interaction error', {
+          error: errorMessage(error),
+        });
+      });
+      return;
+    }
+
+    if (
+      interaction.isChatInputCommand() &&
+      interaction.commandName === 'upcoming'
+    ) {
+      if (!options.activity?.upcoming) {
+        void replyUnavailable(
+          interaction,
+          ACTIVITY_MESSAGES.upcomingUnavailable,
+        );
+        return;
+      }
+      void handleUpcomingInteraction(
+        interaction as unknown as UpcomingInteraction,
+        {
+          guildId: policy.guildId,
+          upcoming: options.activity.upcoming,
+        },
+      ).catch((error: unknown) => {
+        defaultLogger.error('Unhandled /upcoming interaction error', {
+          error: errorMessage(error),
+        });
+      });
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === 'event') {
+      if (!options.activity?.events || !policy.eventsChannelId) {
+        void replyUnavailable(interaction, EVENT_MESSAGES.unavailable);
+        return;
+      }
+      void handleEventInteraction(interaction as unknown as EventInteraction, {
+        guildId: policy.guildId,
+        events: options.activity.events,
+        postPublicRecord,
+      }).catch((error: unknown) => {
+        defaultLogger.error('Unhandled /event interaction error', {
+          error: errorMessage(error),
+        });
+      });
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === 'help') {
+      void handleHelpInteraction(interaction as unknown as HelpInteraction, {
+        guildId: policy.guildId,
+      }).catch((error: unknown) => {
+        defaultLogger.error('Unhandled /help interaction error', {
           error: errorMessage(error),
         });
       });

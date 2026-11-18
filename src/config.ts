@@ -14,6 +14,8 @@ export interface DiscordConfig {
   guild_id: string;
   output_channel_id: string;
   output_channel_name: string;
+  events_channel_id?: string;
+  events_channel_name?: string;
   index_own_output_channel: boolean;
   indexed_channels: Record<string, string>;
   excluded_channels: string[];
@@ -68,6 +70,15 @@ export function getDiscordGuildId(): string {
 
 export function getDiscordOutputChannelId(): string {
   return loadConfig().planning.discord.output_channel_id;
+}
+
+/**
+ * The manual event log channel (`#events`). It is configured in
+ * planning.discord.events_channel_id and is never indexed.
+ */
+export function getDiscordEventsChannelId(): string | null {
+  const id = loadConfig().planning.discord.events_channel_id?.trim();
+  return id ? id : null;
 }
 
 export function getIndexedChannels(): Record<string, string> {

@@ -8,7 +8,7 @@ import {
   validateDiscordConfig,
   type RawDiscordConfig,
 } from '../../src/discord/policy';
-import { CHANNELS, GUILD, OUTPUT } from './helpers';
+import { CHANNELS, EVENTS, GUILD, OUTPUT } from './helpers';
 
 function validRaw(overrides: Partial<RawDiscordConfig> = {}): RawDiscordConfig {
   return {
@@ -32,6 +32,38 @@ test('loadDiscordPolicy reads exactly the five v1 allowlisted channels', () => {
     assert.equal(policy.indexedChannels[name], id);
   }
   assert.equal(policy.indexedChannelIds.has(OUTPUT), false);
+  assert.equal(policy.eventsChannelId, EVENTS);
+  assert.equal(policy.indexedChannelIds.has(EVENTS), false);
+});
+
+test('buildDiscordPolicy refuses to index the events channel', () => {
+  assert.throws(
+    () =>
+      buildDiscordPolicy({
+        guildId: GUILD,
+        outputChannelId: OUTPUT,
+        eventsChannelId: EVENTS,
+        indexedChannels: { ...CHANNELS, '#events': EVENTS },
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof DiscordConfigError);
+      assert.match(error.message, /events channel/i);
+      return true;
+    },
+  );
+});
+
+test('buildDiscordPolicy rejects a malformed events channel id', () => {
+  assert.throws(
+    () =>
+      buildDiscordPolicy({
+        guildId: GUILD,
+        outputChannelId: OUTPUT,
+        eventsChannelId: 'not-a-snowflake',
+        indexedChannels: { ...CHANNELS },
+      }),
+    DiscordConfigError,
+  );
 });
 
 test('validateDiscordConfig rejects a non-allowlist indexing mode', () => {

@@ -13,9 +13,7 @@
     "dev": "tsx watch src/cmd/pluto/index.ts",
     "migrate": "tsx scripts/migrate/index.ts",
     "index:github": "tsx src/db/index-github-issues.ts",
-    "index:search": "tsx src/search/reindex.ts",
-    "eval:ask": "tsx scripts/eval-ask.ts",
-    "eval:retrieval": "tsx scripts/eval-retrieval.ts"
+    "index:search": "tsx src/search/reindex.ts"
   },
   "repository": {
     "type": "git",

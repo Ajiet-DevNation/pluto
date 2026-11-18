@@ -1,8 +1,8 @@
 # Database schema contract
 
 Owner: Likhith proposes; Khushi approves.
-Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events` and define the on-demand activity/event-awareness scope; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
-Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P2 (`/ask` retrieval), P3 (activity snapshot and manual `events`/`/upcoming`).
+Status: Draft — pending Khushi approval (revised 2026-11-18 to add manual `events`, define the on-demand activity/event-awareness scope, and record that `/ask` and its answer/retrieval engine were removed while the chunk schema remains for indexing; revised 2026-11-17 to add `meeting_events` and mark transcript storage legacy/deferred).
+Consumers: L1 (storage + indexing), L2 (legacy meeting transcripts, deferred), L3 (Automatic Meeting Announcer: `meeting_events`), P3 (activity snapshot and manual `events`/`/upcoming`), and the indexing pipeline.
 
 ## Purpose
 
@@ -196,8 +196,18 @@ Indexes:
 - `events_guild_start_idx` — btree on `(guild_id, start_at)` for `/upcoming events`.
 
 Rules:
-- `/event add` is restricted to organizers with Discord's Manage Events permission.
-- Date and time are entered as strict `YYYY-MM-DD` and `HH:MM` in `Asia/Kolkata`.
+- `/event add` is available to every member. Any member can create an `events`
+  row and a public `#events` record.
+- `/event cancel` is available to every member. The creator can cancel their
+  own event; members with Manage Events can cancel any event. Cancellation sets
+  `status = 'cancelled'` and updates `updated_at`; rows are never deleted.
+- Cancelled events are excluded from `/upcoming events` and `/digest`.
+- The original public `#events` record is never edited or deleted; cancellation
+  posts a new public notice.
+- Date is entered as strict `YYYY-MM-DD`; time accepts 12-hour `h:MM AM/PM`
+  or 24-hour `HH:MM` in `Asia/Kolkata` and normalizes to a timezone-aware
+  instant. All displayed times use 12-hour IST. (12-hour input approved by
+  Khushi on 2026-11-18.)
 - Start must be in the future; `end_at`, when present, must be after `start_at`.
 - No channel scanning: posting in `#events` does not create an event. Only `/event add` writes rows.
 - No recurring events and no reminders for manual events in v1.
@@ -211,7 +221,7 @@ Migration:
 
 ### `search_chunks`
 
-Searchable chunks backing `/ask` and `/digest`. The table is created
+Searchable chunks backing indexing and `/digest`. The table is created
 by `drizzle/migrations/0004_search_chunks.sql` and represented in
 `src/db/schema.ts`. Embeddings and generated full-text vectors are stored here per
 `contracts/search.md`. Existing chunks from meeting transcripts use
@@ -250,7 +260,10 @@ Constraints:
 
 Source: `contracts/search.md` §Chunk format, §Full-text search
 
-### IVFFlat index operations (2026-11-16 audit)
+### Historical IVFFlat index operations (retrieval removed 2026-11-18)
+
+> `/ask` retrieval was removed from active v1. This section is retained as
+> operational history; the chunk/indexing pipeline remains.
 
 Live index metadata:
 
@@ -279,9 +292,10 @@ No index rebuild, replacement, or migration was performed. If one is needed:
 3. For the current ~7.9k rows, a small explicit `lists` value (e.g. 64–100) is
    reasonable; for a much larger corpus follow pgvector guidance (rows/1000 up
    to 1M, `sqrt(rows)` above).
-4. Validate recall against an exact scan with `npm run eval:retrieval` before
-   dropping the old index.
-5. Re-tune `IVFFLAT_PROBES` to cover the new list count.
+4. If retrieval is ever reintroduced, validate recall against an exact scan; the
+   old `eval:retrieval` script was removed with `/ask`.
+5. Re-tune `IVFFLAT_PROBES` only if retrieval is reintroduced and the list count
+   grows.
 
 ### `content_hash` backfill (pending approval)
 
@@ -329,8 +343,9 @@ Re-runs must not create duplicates. Meeting events are idempotent on
 `(guild_id, channel_id, source_message_id)` and reminder delivery is guarded by
 `event_version` plus a conditional claim. Re-detecting the same announcement
 must not create a second event. Manual events are user-created and may be
-repeated intentionally; the organizer can cancel the obsolete row when
-`/event cancel` is added post-v1.
+repeated intentionally. `/event cancel` marks the row `cancelled`; it never
+deletes the row and repeating the cancellation must not post a second public
+notice.
 
 ## What is not in this contract
 

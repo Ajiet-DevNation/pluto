@@ -268,7 +268,7 @@ Integration tests:
 - Restart reconciliation re-schedules a missing job without duplicating.
 - Database failure and Discord failure retry and log safely.
 - Job after start time skips delivery and logs.
-- Existing `/ask` and `/optout` tests remain unaffected.
+- Existing `/optout` and indexing tests remain unaffected.
 
 ### 8.2 Acceptance criteria (MEET-02 MVP)
 
@@ -283,7 +283,7 @@ Integration tests:
 9. One-hour reminders are delivered to `#pluto`.
 10. Duplicate event creation and concurrent delivery are controlled.
 11. Failures are logged safely and recovered where possible.
-12. Existing `/ask` and `/optout` behavior remains unaffected.
+12. Existing `/optout` and indexing behavior remains unaffected.
 13. Unit and integration tests pass.
 
 ---

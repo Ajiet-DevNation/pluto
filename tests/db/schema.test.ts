@@ -24,7 +24,7 @@ describe('database schema', () => {
     assert.ok(schema.issues.updatedAt);
   });
 
-  it('defines the search_chunks table used by /ask', () => {
+  it('defines the search_chunks table used by retrieval', () => {
     assert.ok(schema.searchChunks);
     assert.ok(schema.searchChunks.sourceType);
     assert.ok(schema.searchChunks.sourceId);
