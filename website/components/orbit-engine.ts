@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { frameOffset, spriteConfig, spriteUrl } from "@/lib/sprite-config";
 
 /** Owned by one mounted canvas. Every GPU resource and browser subscription is disposed. */
 export function createOrbit(canvas: HTMLCanvasElement, targetButton: HTMLButtonElement, onReady: (ready: boolean) => void) {
@@ -91,12 +92,12 @@ export function createOrbit(canvas: HTMLCanvasElement, targetButton: HTMLButtonE
     texture.magFilter = texture.minFilter = THREE.NearestFilter;
     texture.generateMipmaps = false;
     texture.colorSpace = THREE.SRGBColorSpace;
-    texture.repeat.set(1 / 9, 1);
+    texture.repeat.set(spriteConfig.frameU, spriteConfig.frameV);
     textures.push(texture);
     return texture;
   }
-  const walk = sheet("/pluto-walk.png");
-  const sit = sheet("/pluto-sit.png");
+  const walk = sheet(spriteUrl("pluto-walk.png"));
+  const sit = sheet(spriteUrl("pluto-sit.png"));
   const spriteMaterial = material(new THREE.SpriteMaterial({ map: walk, transparent: true, fog: false, depthTest: false }));
   const mascot = new THREE.Sprite(spriteMaterial);
   mascot.renderOrder = 10;
@@ -162,9 +163,8 @@ export function createOrbit(canvas: HTMLCanvasElement, targetButton: HTMLButtonE
     const resting = still || idle;
     spriteMaterial.map = resting ? sit : walk;
     const map = spriteMaterial.map;
-    map.offset.x = (still ? 0 : Math.floor(elapsed / (resting ? .17 : .085)) % 9) / 9;
-    map.repeat.x = direction / 9;
-    if (direction < 0) map.offset.x += 1 / 9;
+    map.offset.x = still ? 0 : frameOffset(Math.floor(elapsed / (resting ? spriteConfig.sitFrameMs / 1000 : spriteConfig.walkFrameMs / 1000)), direction);
+    map.repeat.x = direction / spriteConfig.columns;
     mascot.scale.set(1.8 * (resting ? 1.625 : 1), 1.8, 1);
     mascot.getWorldPosition(projected).project(camera);
     const screenX = (projected.x * .5 + .5) * width;

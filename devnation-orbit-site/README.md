@@ -10,7 +10,7 @@ From the repository root:
 python -m http.server 4175 --directory devnation-orbit-site
 ```
 
-Visit <http://localhost:4175>. `index.html` contains the styles, content, scoring demo and scene code. The scene uses pinned Three.js r128 from cdnjs. Fonts are requested from Google Fonts. Without WebGL or the CDN, the content, section navigation, score calculator and CSS starfield still work.
+Visit <http://localhost:4175>. `index.html` contains the styles, content, scoring demo and scene code. The scene uses pinned Three.js r128 from cdnjs. Fonts are requested from Google Fonts. Without WebGL or the CDN, the content, in-page links, score calculator and CSS starfield still work. Sections follow the document's natural height rather than snapping to full-screen stops.
 
 ## Private local mascot
 

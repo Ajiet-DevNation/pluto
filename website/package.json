@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "rm -f out/pluto-walk.png out/pluto-sit.png",
     "lint": "eslint"
   },
   "dependencies": {

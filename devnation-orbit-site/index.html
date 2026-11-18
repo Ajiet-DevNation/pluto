@@ -26,21 +26,19 @@
     .masthead{position:fixed;z-index:12;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:max(18px,env(safe-area-inset-top)) clamp(18px,3.3vw,52px) 22px;background:linear-gradient(var(--void),transparent);pointer-events:none}
     .masthead a{pointer-events:auto;text-decoration:none}.brand{display:flex;align-items:center;gap:.65rem;font:800 1.18rem/1 'Bricolage Grotesque',sans-serif;letter-spacing:-.035em}.brand-orbit{width:22px;height:22px;position:relative;border:1px solid var(--dust);border-radius:50%;transform:rotate(-29deg)}.brand-orbit:after{content:"";position:absolute;inset:7px -5px;border:1px solid var(--blush);border-radius:50%}
     .brand small{font:500 .7rem 'Instrument Sans',sans-serif;letter-spacing:.08em;color:var(--dust);text-transform:uppercase}.masthead-links{display:flex;align-items:center;gap:1.3rem;font-size:.77rem}.masthead-links a:hover{color:var(--blush)}
-    .section-dots{position:fixed;z-index:11;right:clamp(4px,1.1vw,18px);top:50%;transform:translateY(-50%);display:grid}.section-dots a{display:grid;place-items:center;width:37px;height:42px;text-decoration:none}.section-dots a:after{content:"";width:7px;height:7px;border:1px solid var(--dust);border-radius:50%;transition:background .2s,transform .2s}.section-dots a[aria-current="location"]:after{background:var(--blush);border-color:var(--blush);transform:scale(1.35)}.section-dots span{position:absolute;right:38px;white-space:nowrap;background:var(--void);border:1px solid var(--edge);border-radius:5px;padding:.25rem .5rem;font-size:.68rem;opacity:0;pointer-events:none}.section-dots a:focus-visible span{opacity:1}@media(hover:hover){.section-dots a:hover span{opacity:1}}
-    .stop{position:relative;z-index:2;min-height:100svh;display:flex;align-items:center;padding:7rem 8vw;pointer-events:none}.stop:nth-child(even){justify-content:flex-end}.stop.hero{min-height:109svh}.stop.wide{min-height:112svh}.stop.score-stop{min-height:130svh}.stop.final{min-height:95svh}
+    .stop{position:relative;z-index:2;padding:clamp(5rem,11vw,10rem) max(7vw,calc((100vw - 1180px)/2));pointer-events:none}.stop.hero{min-height:min(90svh,820px);display:flex;align-items:center;padding-top:7rem;padding-bottom:5rem}.stop.score-stop{padding-block:clamp(5rem,9vw,8rem)}.stop.final{padding-bottom:clamp(7rem,13vw,11rem)}
     .copy{width:min(100%,32rem);pointer-events:auto;text-shadow:0 0 25px var(--void),0 0 9px var(--void)}.copy.wide-copy{width:min(100%,38rem)}.eyebrow{margin:0 0 1.45rem;color:var(--dust);font-size:.65rem;letter-spacing:.17em;text-transform:uppercase;font-weight:600}.eyebrow .mark{color:var(--blush);margin-right:.65rem}
     h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;letter-spacing:-.035em}h1,h2{margin:0;font-weight:800;line-height:1.03}h1{font-size:clamp(3.1rem,6vw,5.8rem)}h2{font-size:clamp(2.45rem,4.3vw,4rem)}h3{font-size:1.12rem;margin:0}.copy h1 em,.copy h2 em{font-style:normal;color:var(--dust)}.copy>p:not(.eyebrow),.copy li p{color:var(--mute)}.copy>p:not(.eyebrow){margin:1.3rem 0 0;max-width:29rem}
     .button-row{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.9rem}.pill{display:inline-flex;align-items:center;justify-content:center;gap:1.2rem;padding:.75rem 1.35rem;min-height:45px;border-radius:99px;background:var(--ink);color:var(--dusk);text-shadow:none;text-decoration:none;font-size:.86rem;font-weight:600;border:1px solid transparent;transition:transform .2s,background .2s}.pill:hover{transform:translateY(-2px);background:var(--blush)}.pill.secondary{color:var(--ink);background:#1d153858;border-color:#b9a8dc80}.pill.secondary:hover{background:#8b6bff3b}.note{display:block;margin-top:1.7rem;color:var(--dust);font-size:.77rem}.note a{text-underline-offset:4px}
     .scroll-indicator{display:inline-flex;align-items:center;gap:.8rem;margin-top:2.6rem;text-decoration:none;color:var(--dust);font-size:.76rem}.scroll-indicator span{display:grid;place-items:center;width:26px;height:36px;border:1px solid var(--edge);border-radius:20px;color:var(--blush)}
     .feature-lines{margin-top:2rem;display:grid;gap:1.35rem}.feature-lines article{padding-left:1rem;border-left:1px solid #b9a8dc55}.feature-lines h3{font-size:1.06rem;font-weight:600}.feature-lines p{margin:.3rem 0 0;color:var(--mute);font-size:.92rem}
-    .numbered{margin:2rem 0 0;padding:0;list-style:none;display:grid;gap:1.4rem;counter-reset:step}.numbered li{display:grid;grid-template-columns:2rem 1fr;gap:.9rem;counter-increment:step}.numbered li:before{content:'0' counter(step);font:600 .8rem 'Instrument Sans',sans-serif;color:var(--blush);padding-top:.3rem}.numbered p{margin:.3rem 0 0;font-size:.92rem}
+    .steps{margin:2rem 0 0;padding:0;list-style:none;display:grid;gap:1.4rem}.steps li{padding-left:1.1rem;border-left:1px solid #b9a8dc55}.steps p{margin:.3rem 0 0;font-size:.92rem}
     .code-label{font:500 .83rem ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--blush)}
     .scorecard{margin-top:1.6rem;padding:1.35rem;border-radius:20px;border:1px solid #b9a8dc55;background:rgba(18,12,38,.87);backdrop-filter:blur(16px);text-shadow:none;box-shadow:0 20px 65px #08061355}.scorecard>p{margin:.4rem 0 1rem;color:var(--mute);font-size:.83rem}.calculator-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem .8rem}.calculator-fields label{display:grid;gap:.24rem;color:var(--dust);font-size:.76rem}.calculator-fields input{width:100%;border:1px solid #b9a8dc55;border-radius:9px;background:#0d0a1ad9;color:var(--ink);height:39px;padding:.4rem .65rem;appearance:textfield}.calculator-fields input::-webkit-inner-spin-button,.calculator-fields input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.calculator-fields input:focus-visible{border-color:var(--blush)}.calculator-fields .full{grid-column:1/-1}.calc-divider{display:flex;align-items:center;gap:10px;margin:1.2rem 0 .85rem;color:var(--blush);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase}.calc-divider:after{content:"";height:1px;flex:1;background:var(--edge)}.calc-result{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.4rem;margin-top:1.2rem;border-top:1px solid var(--edge);padding-top:1.15rem}.calc-result strong{font:800 clamp(2.2rem,4vw,3.2rem)/1 'Bricolage Grotesque',sans-serif}.calc-result small{color:var(--dust)}.breakdown{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.35rem 1rem;color:var(--mute);font-size:.77rem}.calc-hint{font-size:.72rem;color:var(--dust);margin:.75rem 0 0}.calc-hint.error{color:var(--blush)}.scorecard button{margin-top:1rem;padding:0;border:0;background:none;color:var(--dust);text-decoration:underline;text-underline-offset:4px;font-size:.77rem}
     .stackline{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.7rem}.stackline span{padding:.35rem .72rem;border-radius:99px;border:1px solid var(--edge);background:#1d153855;color:var(--dust);font-size:.75rem}.fine{margin-top:1.4rem;font-size:.75rem;color:var(--dust)}.footer{margin-top:2.5rem;border-top:1px solid var(--edge);padding-top:1rem;color:var(--dust);font-size:.76rem}
     .guide{position:fixed;z-index:3;top:0;left:0;width:120px;height:120px;transform:translate(calc(72vw - 60px),calc(35vh - 60px));background:transparent;border:0;border-radius:25px;padding:0}.guide:hover{filter:drop-shadow(0 0 14px #8b6bff55)}.guide .css-guide{position:relative;display:block;width:86px;height:86px;margin:auto;background:#f4d3d0;border:8px solid #7662bc;border-radius:50%;box-shadow:inset 0 0 0 4px #e7d9fa,0 8px 0 -4px #3b2c74,0 12px 22px #06041388}.guide .css-guide:before{content:"";position:absolute;left:19px;top:28px;width:8px;height:11px;border-radius:50%;background:#221635;box-shadow:22px 0 #221635}.guide .css-guide:after{content:"";position:absolute;left:19px;top:53px;width:36px;height:11px;border-radius:0 0 50% 50%;border-bottom:2px solid #8a6388}.guide.has-sprite .css-guide{opacity:0}.bubble{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:210px;border-radius:11px 11px 11px 2px;background:var(--ink);color:var(--dusk);padding:.6rem .8rem;font-size:.78rem;line-height:1.4;box-shadow:0 6px 32px #08061399}.bubble[hidden]{display:none}
-    .scene-control{position:fixed;z-index:10;left:clamp(18px,3.3vw,52px);bottom:max(16px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:1rem}.scene-control button{min-height:40px;padding:.5rem .82rem;background:#0d0a1ac9;border:1px solid var(--edge);border-radius:99px;color:var(--dust);font-size:.7rem;backdrop-filter:blur(8px)}.scene-control button:hover{color:var(--ink)}.scene-control span{color:var(--dust);font:500 .64rem ui-monospace,monospace;letter-spacing:.09em}
-    @media(max-width:800px){.masthead{padding:15px 19px}.brand{font-size:1rem}.brand small{display:none}.masthead-links{font-size:.72rem;gap:.8rem}.section-dots{right:0}.section-dots a{width:29px;height:39px}.stop,.stop:nth-child(even){justify-content:flex-start;align-items:flex-end;min-height:100svh;padding:36svh 31px 84px 16px}.stop.hero{min-height:104svh}.stop.score-stop{min-height:158svh}.stop.wide{min-height:115svh}.copy,.copy.wide-copy{width:min(100%,34rem);background:#0d0a1ad6;border:1px solid #b9a8dc25;backdrop-filter:blur(10px);padding:1.15rem 1.2rem;border-radius:17px;text-shadow:none}.copy h1{font-size:clamp(2.5rem,9vw,3.65rem)}.copy h2{font-size:clamp(2.12rem,7.7vw,3.25rem)}.copy>p:not(.eyebrow){font-size:.91rem}.eyebrow{font-size:.59rem;margin-bottom:1.1rem}.feature-lines{gap:1rem}.scorecard{padding:1rem;margin-inline:-.3rem}.scene-control{left:auto;right:32px}.scene-control span{display:none}.guide{transform:translate(calc(50vw - 60px),calc(23vh - 60px))}}
-    @media(max-width:420px){.stop.score-stop{min-height:178svh}.calculator-fields{gap:.6rem}.calculator-fields label{font-size:.67rem}.scorecard{padding:.9rem}.copy,.copy.wide-copy{padding:1rem}.masthead-links a:first-child{display:none}}
+    @media(max-width:800px){.masthead{padding:15px 19px}.brand{font-size:1rem}.brand small{display:none}.masthead-links{font-size:.72rem;gap:.8rem}.stop,.stop.score-stop{padding:clamp(10rem,26svh,15rem) 22px 5.5rem}.stop.hero{display:block;min-height:0;padding:clamp(17rem,38svh,23rem) 22px 5rem}.stop.final{padding-bottom:6.5rem}.copy,.copy.wide-copy{width:min(100%,35rem);background:linear-gradient(90deg,#0d0a1ae6,#0d0a1aca 80%,#0d0a1a99);backdrop-filter:blur(6px);text-shadow:none;padding:1rem 0}.copy h1{font-size:clamp(2.5rem,9vw,3.65rem)}.copy h2{font-size:clamp(2.12rem,7.7vw,3.25rem)}.copy>p:not(.eyebrow){font-size:.91rem}.eyebrow{font-size:.59rem;margin-bottom:1.1rem}.feature-lines{gap:1rem}.scorecard{padding:1rem}.guide{transform:translate(calc(50vw - 60px),calc(23vh - 60px))}}
+    @media(max-width:420px){.calculator-fields{gap:.6rem}.calculator-fields label{font-size:.67rem}.scorecard{padding:.9rem}.masthead-links a:first-child{display:none}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
   </style>
 </head>
@@ -51,16 +49,7 @@
     <a class="brand" href="#meet" aria-label="DevNation Orbit, start of page"><span class="brand-orbit" aria-hidden="true"></span>DEVNATION <small>/ ORBIT</small></a>
     <nav class="masthead-links" aria-label="Main links"><a href="https://github.com/Ajiet-DevNation/dn-orbit">The code ↗</a><a href="#" aria-label="Sign in (destination to be added)">Sign in ↗</a><!-- TODO: Supply approved sign-in URL. --></nav>
   </header>
-  <nav class="section-dots" aria-label="Journey sections">
-    <a href="#meet" aria-label="Meet Orbit" aria-current="location"><span>Meet Orbit</span></a>
-    <a href="#activity" aria-label="What it tracks"><span>What it tracks</span></a>
-    <a href="#journey" aria-label="How it works"><span>How it works</span></a>
-    <a href="#scores" aria-label="Explore the scores"><span>Explore the scores</span></a>
-    <a href="#built" aria-label="Under the hood"><span>Under the hood</span></a>
-    <a href="#join" aria-label="Join the journey"><span>Join the journey</span></a>
-  </nav>
   <button class="guide" id="guide" type="button" aria-label="Say hello to Pluto"><span class="css-guide" aria-hidden="true"></span><span class="bubble" id="bubble" aria-hidden="true" hidden></span></button><span class="sr-only" role="status" id="guide-announcement"></span>
-  <div class="scene-control"><button type="button" id="motion" aria-pressed="false" hidden>Ⅱ Pause motion</button><span id="position-label">01 / 06 — Meet Orbit</span></div>
 
   <main id="main">
     <section class="stop hero" id="meet" aria-labelledby="meet-title">
@@ -70,13 +59,13 @@
         <p>Meet DevNation Orbit. Events to show up for, projects to build together, and a leaderboard that follows the work behind the scenes. Pluto will show you around.</p>
         <p class="note">Build. Learn. Connect. Grow.</p>
         <div class="button-row"><a class="pill" href="https://www.devnation.club/">Explore Orbit <span aria-hidden="true">↗</span></a><a class="pill secondary" href="#activity">Follow Pluto <span aria-hidden="true">↓</span></a></div>
-        <a class="scroll-indicator" href="#activity"><span aria-hidden="true">↓</span>Keep scrolling. This is one continuous journey.</a>
+        <a class="scroll-indicator" href="#activity"><span aria-hidden="true">↓</span>See what makes Orbit work.</a>
       </div>
     </section>
 
     <section class="stop" id="activity" aria-labelledby="activity-title">
       <div class="copy">
-        <p class="eyebrow">01 / What lives in Orbit</p>
+        <p class="eyebrow">What lives in Orbit</p>
         <h2 id="activity-title">A club is more<br>than a <em>feed.</em></h2>
         <p>Orbit brings the things DevNation members make and do into one place.</p>
         <div class="feature-lines">
@@ -89,20 +78,20 @@
 
     <section class="stop wide" id="journey" aria-labelledby="journey-title">
       <div class="copy">
-        <p class="eyebrow">02 / How a member finds their feet</p>
+        <p class="eyebrow">How a member finds their feet</p>
         <h2 id="journey-title">Come curious.<br><em>Leave connected.</em></h2>
-        <ol class="numbered">
+        <ul class="steps">
           <li><div><h3>Explore freely.</h3><p>Events, approved projects, members and leaderboard standings are browsable without signing in.</p></div></li>
           <li><div><h3>Join with your GitHub identity.</h3><p>Sign-in is for allowlisted people. Onboarding adds profile details; admins review membership and manage role-based access.</p></div></li>
           <li><div><h3>Make something together.</h3><p>Approved members can propose events and submit projects for review. Event eligibility depends on the audience; approved member registrations and attendance feed the event score.</p></div></li>
-        </ol>
+        </ul>
         <span class="note">The public site remains open. Admin tools are for authorised club roles.</span>
       </div>
     </section>
 
     <section class="stop score-stop" id="scores" aria-labelledby="scores-title">
       <div class="copy wide-copy">
-        <p class="eyebrow">03 / Explore the scoring model</p>
+        <p class="eyebrow">Explore the scoring model</p>
         <h2 id="scores-title">Every contribution<br><em>has its place.</em></h2>
         <p>Try an example. These inputs are hypothetical—not a live member score or a predicted rank.</p>
         <div class="scorecard">
@@ -146,7 +135,7 @@
 
     <section class="stop wide" id="built" aria-labelledby="built-title">
       <div class="copy">
-        <p class="eyebrow">04 / Under the hood</p>
+        <p class="eyebrow">Under the hood</p>
         <h2 id="built-title">Made by builders.<br><em>For builders.</em></h2>
         <p>Orbit is a real club platform, not a score painted on a poster. Its event and project data, member profiles and calculated standings live behind a full-stack application.</p>
         <div class="feature-lines">
@@ -160,7 +149,7 @@
 
     <section class="stop final" id="join" aria-labelledby="join-title">
       <div class="copy">
-        <p class="eyebrow">05 / There’s room in the orbit</p>
+        <p class="eyebrow">There’s room in the orbit</p>
         <h2 id="join-title">Build. Learn.<br><em>Connect. Grow.</em></h2>
         <p>Come see the events, discover what the community is building, and find your people. Pluto will be here when you arrive.</p>
         <div class="button-row"><a class="pill" href="https://www.devnation.club/">Visit DevNation Orbit <span aria-hidden="true">↗</span></a><a class="pill secondary" href="#">Sign in <span aria-hidden="true">↗</span></a><!-- TODO: Replace sign-in destination when approved. --></div>
@@ -173,9 +162,7 @@
     (() => {
       'use strict';
       const sectionIds = ['meet', 'activity', 'journey', 'scores', 'built', 'join'];
-      const labels = ['Meet Orbit', 'What it tracks', 'How it works', 'Explore the scores', 'Under the hood', 'Join the journey'];
       const sections = sectionIds.map(id => document.getElementById(id));
-      const dots = Array.from(document.querySelectorAll('.section-dots a'));
       const reduced = matchMedia('(prefers-reduced-motion: reduce)');
       const guide = document.getElementById('guide');
       const bubble = document.getElementById('bubble');
@@ -261,12 +248,6 @@
         while (i < centers.length - 2 && y >= centers[i + 1]) i++;
         const span = Math.max(1, centers[i + 1] - centers[i]);
         target = Math.max(0, Math.min(1, (i + (y - centers[i]) / span) / (sections.length - 1)));
-        const nearest = Math.round(target * (sections.length - 1));
-        dots.forEach((dot, index) => {
-          if (index === nearest) dot.setAttribute('aria-current', 'location');
-          else dot.removeAttribute('aria-current');
-        });
-        document.getElementById('position-label').textContent = `0${nearest + 1} / 06 — ${labels[nearest]}`;
         frameRequest();
       }
       addEventListener('scroll', updateScroll, { passive: true });
@@ -290,15 +271,6 @@
         sunlight.position.set(-3, 8, 10);
         scene.add(sunlight);
         const world = document.getElementById('world');
-        const motion = document.getElementById('motion');
-        motion.hidden = false;
-        let paused = false;
-        motion.addEventListener('click', () => {
-          paused = !paused;
-          motion.setAttribute('aria-pressed', String(paused));
-          motion.textContent = paused ? '▷ Resume motion' : 'Ⅱ Pause motion';
-          wake();
-        });
         let seed = 1259;
         function random() { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646; }
         function pos(s) { return new T.Vector3(s * 70, 4 * Math.cos(s * 2.5 * Math.PI), 3.5 * Math.sin(s * 2.2 * Math.PI)); }
@@ -381,7 +353,7 @@
         let p = target, raf = 0, lastMove = 0, elapsed = 0, lastFrame = 0, mouseX = 0, mouseY = 0;
         const pointer = matchMedia('(pointer:fine)');
         addEventListener('pointermove', event => {
-          if (!pointer.matches || reduced.matches || paused) return;
+          if (!pointer.matches || reduced.matches) return;
           mouseX = event.clientX / innerWidth - .5;
           mouseY = event.clientY / innerHeight - .5;
         }, { passive: true });
@@ -397,7 +369,7 @@
         function paint(now) {
           raf = 0;
           if (document.hidden) return;
-          const still = paused || reduced.matches;
+          const still = reduced.matches;
           const delta = Math.min((now - (lastFrame || now)) / 1000, .05);
           lastFrame = now;
           if (!still) elapsed += delta;
@@ -415,9 +387,9 @@
           camera.clearViewOffset();
           scene.updateMatrixWorld(true);
           camera.updateMatrixWorld(true);
-          // Shift the view so the guide occupies the open half, opposite the copy.
+          // Keep Pluto in the open part of the viewport alongside the text.
           const w = innerWidth, h = innerHeight;
-          const desiredX = w < 800 ? w * .5 : w * (.5 + .23 * Math.cos(p * 5 * Math.PI));
+          const desiredX = w < 800 ? w * .5 : w * .73;
           const desiredY = w < 800 ? h * .23 : h * .5;
           place.project(camera);
           camera.setViewOffset(w, h, (place.x * .5 + .5) * w - desiredX, (-place.y * .5 + .5) * h - desiredY, w, h);
