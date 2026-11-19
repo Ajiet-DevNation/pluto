@@ -23,6 +23,20 @@ export function createPath(scene: THREE.Scene, track: Track) {
   const line = tube(0.022, 0x493d77, 0.5);
   const travelled = tube(0.037, 0xc0aaff, 0.8);
   const indicesPerSegment = pathSides * 6;
+  // TubeGeometry samples the curve by arc length, not by the input progress.
+  // Convert progress to arc length so the bright segment ends at Pluto.
+  const lengths = curve.getLengths(pathSegments * 2);
+  function indexAt(progress: number) {
+    const offset = Math.max(
+      0,
+      Math.min(lengths.length - 1, ((progress - pathStart) / pathExtent) * (lengths.length - 1)),
+    );
+    const lower = Math.floor(offset);
+    const distance =
+      lengths[lower] +
+      (lengths[Math.min(lower + 1, lengths.length - 1)] - lengths[lower]) * (offset - lower);
+    return Math.round((distance / lengths[lengths.length - 1]) * pathSegments) * indicesPerSegment;
+  }
 
   return {
     update(progress: number, commandFocus = 0) {
@@ -32,11 +46,9 @@ export function createPath(scene: THREE.Scene, track: Track) {
       const reveal = Math.max(0, 1 - progress / 0.1);
       const first = pathStart * reveal + (progress - shortTrail) * (1 - reveal);
       const last = Math.min(pathStart + pathExtent, progress + leadLength);
-      const from =
-        Math.round(((first - pathStart) / pathExtent) * pathSegments) * indicesPerSegment;
-      const to = Math.round(((last - pathStart) / pathExtent) * pathSegments) * indicesPerSegment;
-      const current =
-        Math.round(((progress - pathStart) / pathExtent) * pathSegments) * indicesPerSegment;
+      const from = indexAt(first);
+      const to = indexAt(last);
+      const current = indexAt(progress);
       glow.geometry.setDrawRange(from, Math.max(0, to - from));
       line.geometry.setDrawRange(from, Math.max(0, to - from));
       travelled.geometry.setDrawRange(from, Math.max(0, current - from));
