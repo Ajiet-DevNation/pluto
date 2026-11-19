@@ -93,6 +93,7 @@ export default function OrbitPage() {
           aria-labelledby="how-title"
         >
           <div className={`${styles.copy} ${styles.commandsCopy}`}>
+            <p className={styles.commandEyebrow}>{site.commands.label}</p>
             <h2 id="how-title">{site.commands.title}</h2>
             <p>{site.commands.introduction}</p>
             <div className={styles.commandGroups}>

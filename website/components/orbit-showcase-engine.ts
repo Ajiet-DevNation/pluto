@@ -180,7 +180,9 @@ export function createOrbitShowcase(
     sprite.position.copy(place);
     sprite.position.y += 0.55 + (still ? 0 : Math.sin(elapsed * 1.2) * 0.045);
     const commandFocus = Math.max(0, 1 - Math.abs(progress * (sections.length - 1) - 3));
-    path.update(progress, commandFocus);
+    const commandFrame = Math.min(1, commandFocus * 2);
+    const sectionFocus = Math.min(1, progress * (sections.length - 1));
+    path.update(progress, Math.max(commandFocus, sectionFocus * 0.45));
     camera.position.set(
       place.x + 2.6 + (still ? 0 : mouseX * 0.35),
       place.y + sceneConfig.cameraHeight - (still ? 0 : mouseY * 0.25),
@@ -194,11 +196,13 @@ export function createOrbitShowcase(
     const width = innerWidth;
     const height = innerHeight;
     const desiredX =
-      width < 800 ? width * (0.5 + 0.3 * commandFocus) : width * (0.73 + 0.17 * commandFocus);
+      width < 800
+        ? width * (0.5 + 0.3 * commandFocus)
+        : width * (0.73 + 0.15 * sectionFocus + 0.06 * commandFrame);
     const desiredY =
       width < 800
         ? height * (0.23 - 0.07 * commandFocus)
-        : height * (0.5 - 0.05 * (1 - Math.min(1, progress * 10)));
+        : height * (0.5 - 0.35 * commandFrame - 0.05 * (1 - Math.min(1, progress * 10)));
     place.project(camera);
     camera.setViewOffset(
       width,

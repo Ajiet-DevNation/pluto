@@ -32,6 +32,7 @@ export const site = {
     ],
   },
   commands: {
+    label: "Commands",
     title: "What Pluto can do",
     introduction:
       "Everything Pluto does starts with a slash command, except meeting reminders, which it handles on its own.",
