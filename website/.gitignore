@@ -60,4 +60,4 @@ next-env.d.ts
 /components/space-showcase.tsx
 /components/story.tsx
 /components/trust.tsx
-/content/
+/content/features.ts
