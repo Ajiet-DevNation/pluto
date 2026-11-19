@@ -235,6 +235,7 @@
 .skip:focus { top: var(--space-2); }
 
 @media (max-width: 800px) {
+  .world[data-ready="false"] ~ .guide { display: none; }
   .stop {
     min-height: 0;
     padding-block: clamp(10rem, 26svh, 15rem) var(--space-8);

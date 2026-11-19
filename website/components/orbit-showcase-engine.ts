@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { frameOffset, spriteConfig, spriteUrl } from "@/lib/sprite-config";
+import { positionAt, sceneConfig } from "./scene/config";
+import { createPath } from "./scene/path";
 
 /** Scroll-linked WebGL scene for the Orbit route. Owns every GPU resource and listener it creates. */
 export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButtonElement, onReady: (ready: boolean) => void) {
@@ -16,49 +18,26 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
   const textures: THREE.Texture[] = [];
-  const geometry = <T extends THREE.BufferGeometry>(value: T): T => { geometries.push(value); return value; };
-  const material = <T extends THREE.Material>(value: T): T => { materials.push(value); return value; };
+  const track = <T extends THREE.BufferGeometry | THREE.Material>(value: T): T => {
+    if (value instanceof THREE.BufferGeometry) geometries.push(value);
+    else materials.push(value);
+    return value;
+  };
+  const geometry = track;
+  const material = track;
 
   let seed = 1259;
   const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  const pos = (s: number) => new THREE.Vector3(s * 70, 4 * Math.cos(s * 2.5 * Math.PI), 3.5 * Math.sin(s * 2.2 * Math.PI));
-
-  const start = -.08;
-  const extent = 1.16;
-  const segments = 480;
-  const sides = 8;
-  const points = Array.from({ length: segments + 1 }, (_, index) => pos(start + index / segments * extent));
-  const curve = new THREE.CatmullRomCurve3(points, false, "catmullrom", .05);
-  const tube = (radius: number, color: number, opacity: number) => {
-    const mesh = new THREE.Mesh(
-      geometry(new THREE.TubeGeometry(curve, segments, radius, sides, false)),
-      material(new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false })),
-    );
-    scene.add(mesh);
-    return mesh;
-  };
-  tube(.075, 0x4a6cf7, .09);
-  tube(.022, 0x493d77, .83);
-  const travelled = tube(.037, 0xc0aaff, .9);
-  const startIndex = Math.round((0 - start) / extent * segments) * sides * 6;
-  travelled.geometry.setDrawRange(startIndex, 0);
+  const path = createPath(scene, track);
 
   const sections = [...document.querySelectorAll<HTMLElement>("[data-orbit-stop]")];
-  const stops = Array.from({ length: sections.length }, (_, index) => {
-    const marker = new THREE.Mesh(
-      geometry(new THREE.SphereGeometry(.15, 12, 9)),
-      material(new THREE.MeshBasicMaterial({ color: 0x8b6bff })),
-    );
-    marker.position.copy(pos(index / (sections.length - 1)));
-    scene.add(marker);
-    return marker;
-  });
-
-  const starArray = new Float32Array(1000 * 3);
-  for (let index = 0; index < 1000; index++) starArray.set([-22 + random() * 114, -23 + random() * 46, -28 + random() * 22], index * 3);
+  const textNodes = sections.flatMap(section => [...section.querySelectorAll<HTMLElement>("h1, h2, h3, p, a, button")]);
+  let visibleText: DOMRect[] = [];
+  const starArray = new Float32Array(sceneConfig.starCount * 3);
+  for (let index = 0; index < sceneConfig.starCount; index++) starArray.set([-22 + random() * 114, -23 + random() * 46, -28 + random() * 22], index * 3);
   const starGeometry = geometry(new THREE.BufferGeometry());
   starGeometry.setAttribute("position", new THREE.BufferAttribute(starArray, 3));
-  scene.add(new THREE.Points(starGeometry, material(new THREE.PointsMaterial({ color: 0xd1c9e9, size: .065, opacity: .75, transparent: true, fog: false }))));
+  scene.add(new THREE.Points(starGeometry, material(new THREE.PointsMaterial({ color: 0xd1c9e9, size: .065, opacity: .55, transparent: true, fog: false }))));
 
   const planetMaterials = [0x333055, 0x37345a, 0x2f3b61, 0x413658].map(color => material(new THREE.MeshLambertMaterial({ color, flatShading: true })));
   const planetGeometry = geometry(new THREE.IcosahedronGeometry(1, 2));
@@ -83,9 +62,9 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
 
   const rockGeometry = geometry(new THREE.DodecahedronGeometry(1, 0));
   const rockMaterial = material(new THREE.MeshLambertMaterial({ color: 0x48405f, flatShading: true }));
-  const rocks = Array.from({ length: 45 }, () => {
+  const rocks = Array.from({ length: sceneConfig.rockCount }, () => {
     const scale = random() * 1.14 - .07;
-    const base = pos(scale);
+    const base = positionAt(scale, new THREE.Vector3());
     const mesh = new THREE.Mesh(rockGeometry, rockMaterial);
     mesh.position.set(base.x + (random() - .5) * 5, base.y + (random() - .5) * 7, base.z - 2 - random() * 9);
     mesh.scale.setScalar(.06 + random() * .18);
@@ -144,6 +123,7 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
   sprite.visible = false;
   scene.add(sprite);
   const projected = new THREE.Vector3();
+  const place = new THREE.Vector3();
 
   function measure() {
     centers = sections.map(section => section.offsetTop + section.offsetHeight / 2 - innerHeight / 2);
@@ -151,6 +131,9 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
   }
   function updateScroll() {
     if (centers.length < 2) return;
+    visibleText = innerWidth < 800
+      ? textNodes.map(node => node.getBoundingClientRect()).filter(rect => rect.bottom > 0 && rect.top < innerHeight)
+      : [];
     const y = scrollY;
     if (Math.abs(y - previousScroll) > 1) direction = y > previousScroll ? 1 : -1;
     previousScroll = y;
@@ -168,7 +151,7 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
   function resize() {
     const width = innerWidth;
     const height = innerHeight;
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, sceneConfig.maxPixelRatio));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -178,6 +161,8 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
   function paint(now: number) {
     frame = 0;
     if (disposed || lost || document.hidden) return;
+    if (lastFrame && now - lastFrame < sceneConfig.frameInterval) { wake(); return; }
+    if (renderer.getPixelRatio() !== Math.min(devicePixelRatio || 1, sceneConfig.maxPixelRatio)) resize();
     const still = reduced.matches;
     const delta = Math.min((now - (lastFrame || now)) / 1000, .05);
     lastFrame = now;
@@ -186,12 +171,11 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
     const moving = !still && Math.abs(destination - progress) > .0004;
     if (moving) lastMove = now;
     const sitting = still || now - lastMove > 900;
-    const place = pos(progress);
+    positionAt(progress, place);
     sprite.position.copy(place);
-    sprite.position.y += .85 + (still ? 0 : Math.sin(elapsed * 1.2) * .045);
-    const reach = Math.round(((progress - start) / extent) * segments) * sides * 6;
-    travelled.geometry.setDrawRange(startIndex, Math.max(0, reach - startIndex));
-    camera.position.set(place.x + 2.6 + (still ? 0 : mouseX * .35), place.y + 2.7 - (still ? 0 : mouseY * .25), place.z + 11);
+    sprite.position.y += .55 + (still ? 0 : Math.sin(elapsed * 1.2) * .045);
+    path.update(progress);
+    camera.position.set(place.x + 2.6 + (still ? 0 : mouseX * .35), place.y + sceneConfig.cameraHeight - (still ? 0 : mouseY * .25), place.z + sceneConfig.cameraDistance);
     camera.lookAt(place.x, place.y, place.z - .7);
     camera.clearViewOffset();
     scene.updateMatrixWorld(true);
@@ -199,8 +183,9 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
 
     const width = innerWidth;
     const height = innerHeight;
-    const desiredX = width < 800 ? width * .5 : width * .73;
-    const desiredY = width < 800 ? height * .23 : height * .5;
+    const askFocus = Math.max(0, 1 - Math.abs(progress * (sections.length - 1) - 3));
+    const desiredX = width < 800 ? width * (.5 + .3 * askFocus) : width * (.73 + .11 * askFocus);
+    const desiredY = width < 800 ? height * (.23 - .07 * askFocus) : height * .5;
     place.project(camera);
     camera.setViewOffset(width, height, (place.x * .5 + .5) * width - desiredX, (-place.y * .5 + .5) * height - desiredY, width, height);
 
@@ -213,7 +198,13 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
     sprite.getWorldPosition(projected).project(camera);
     const screenX = (projected.x * .5 + .5) * width;
     const screenY = (-projected.y * .5 + .5) * height;
-    guide.style.transform = `translate(${Math.round(screenX - 60)}px,${Math.round(screenY - 60)}px)`;
+    const textCollision = width < 800 && visibleText.some(rect =>
+      rect.left < screenX + 56 && rect.right > screenX - 56 &&
+      rect.top < screenY + 56 && rect.bottom > screenY - 56,
+    );
+    sprite.visible = spritesReady === 2 && !spritesFailed && !textCollision;
+    guide.style.visibility = textCollision ? "hidden" : "visible";
+    guide.style.transform = `translate(${Math.round(Math.max(0, Math.min(width - 120, screenX - 60)))}px,${Math.round(Math.max(0, Math.min(height - 120, screenY - 60)))}px)`;
 
     if (!still) {
       planets.forEach((planet, index) => { planet.rotation.y += delta * (.035 + index * .01); });
@@ -222,11 +213,6 @@ export function createOrbitShowcase(canvas: HTMLCanvasElement, guide: HTMLButton
         mesh.rotation.y += delta * .045 * (index % 3 + 1);
       });
     }
-    const active = Math.round(progress * (stops.length - 1));
-    stops.forEach((marker, index) => {
-      marker.material.color.setHex(index === active ? 0xf2a7a0 : 0x8b6bff);
-      marker.scale.setScalar(index === active ? 1.55 + (still ? 0 : Math.sin(elapsed * 2) * .12) : 1);
-    });
     renderer.render(scene, camera);
     if (!notified) { notified = true; onReady(true); }
     if (!still) wake();
