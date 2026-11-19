@@ -1,4 +1,4 @@
-// Copy for both / and /orbit. The command replies below are examples, not live data.
+// Copy for both / and /orbit.
 export const site = {
   title: "Pluto — DevNation's knowledge companion",
   description:
@@ -31,10 +31,52 @@ export const site = {
       },
     ],
   },
-  preview: {
-    title: "Ask Pluto a question.",
-    greeting: "Hi, I'm Pluto. Try one of these.",
-    disclaimer: "This is a preview. It doesn't connect to Discord or change anything.",
+  commands: {
+    title: "What Pluto can do",
+    introduction:
+      "Everything Pluto does starts with a slash command, except meeting reminders, which it handles on its own.",
+    groups: [
+      {
+        group: "Catch up",
+        commands: [
+          {
+            command: "/digest",
+            description: "A summary of recent club activity, with counts and links.",
+            options: "days (1 to 30, default 7)",
+          },
+          {
+            command: "/upcoming meetings",
+            description: "Meetings coming up, picked up from announcements in #meeting-plans.",
+          },
+          { command: "/upcoming events", description: "Club events that are scheduled." },
+        ],
+      },
+      {
+        group: "Events",
+        commands: [
+          {
+            command: "/event add",
+            description: "Add a club event. Anyone can add one.",
+            options: "title, date (YYYY-MM-DD), time (IST); end and description are optional",
+          },
+          {
+            command: "/event cancel",
+            description:
+              "Cancel an event by its ID. You can cancel your own, and people with Manage Events can cancel any.",
+            options: "event ID",
+          },
+        ],
+      },
+      {
+        group: "Other",
+        commands: [
+          { command: "/help", description: "Lists the commands with examples." },
+          { command: "/optout", description: "Stops Pluto from indexing your Discord messages." },
+        ],
+      },
+    ],
+    reminder:
+      "Meeting reminders need no command. When a meeting is announced in #meeting-plans, Pluto posts one reminder in #pluto an hour before it starts.",
   },
   privacy: {
     title: "What Pluto can see",
@@ -57,37 +99,3 @@ export const site = {
     description: "Pluto is an open-source project built by students at AJIET for the club.",
   },
 } as const;
-
-export const commandExamples = [
-  {
-    label: "/digest",
-    question: "/digest days:14",
-    answer:
-      "In the last 14 days: 3 new GitHub issues, 12 club messages and 2 decisions. One meeting and one event are coming up.",
-  },
-  {
-    label: "/upcoming meetings",
-    question: "/upcoming meetings",
-    answer: "Next club sync: Friday at 6:00 PM IST.",
-  },
-  {
-    label: "/upcoming events",
-    question: "/upcoming events",
-    answer: "Next workshop: Sunday at 10:00 AM IST.",
-  },
-  {
-    label: "/event add",
-    question: "/event add title:Workshop date:YYYY-MM-DD time:10:00 AM end:5:00 PM",
-    answer: "Workshop added for Sunday at 10:00 AM IST.",
-  },
-  {
-    label: "/event cancel",
-    question: "/event cancel id:42",
-    answer: "Workshop cancelled. A notice was posted in #events.",
-  },
-  {
-    label: "/optout",
-    question: "/optout",
-    answer: "Your messages will be left out from now on. Anything already saved will be removed.",
-  },
-] as const;

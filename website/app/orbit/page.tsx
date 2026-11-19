@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { CommandDemo } from "@/components/command-demo";
 import { OrbitShowcase } from "@/components/orbit-showcase";
 import { site } from "@/content/site";
 import styles from "./orbit.module.css";
@@ -88,14 +87,33 @@ export default function OrbitPage() {
         </section>
 
         <section
-          className={`${styles.stop} ${styles.scoreStop}`}
+          className={`${styles.stop} ${styles.commandsStop}`}
           id="how-it-works"
           data-orbit-stop
           aria-labelledby="how-title"
         >
-          <div className={`${styles.copy} ${styles.wideCopy}`}>
-            <h2 id="how-title">{site.preview.title}</h2>
-            <CommandDemo />
+          <div className={`${styles.copy} ${styles.commandsCopy}`}>
+            <h2 id="how-title">{site.commands.title}</h2>
+            <p>{site.commands.introduction}</p>
+            <div className={styles.commandGroups}>
+              {site.commands.groups.map((group) => (
+                <div key={group.group} className={styles.commandGroup}>
+                  <h3>{group.group}</h3>
+                  <dl className={styles.commandList}>
+                    {group.commands.map((item) => (
+                      <div className={styles.commandRow} key={item.command}>
+                        <dt>{item.command}</dt>
+                        <dd>
+                          <span>{item.description}</span>
+                          {"options" in item && <small>{item.options}</small>}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </div>
+            <p className={styles.commandReminder}>{site.commands.reminder}</p>
           </div>
         </section>
 

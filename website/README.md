@@ -26,7 +26,7 @@ Deploy the contents of `out/`. `npm run format` formats the active source files.
 - `content/site.ts`: visible page copy and illustrative command replies.
 - `app/globals.css`: colors, font sizes, spacing, corner radii and chat preview styles.
 - `app/orbit/orbit.module.css`: page composition, responsive styles and CSS mascot fallback.
-- `components/command-demo.tsx`: local interactive preview.
+- `content/site.ts`: page copy and the static commands list.
 - `components/orbit-showcase.tsx`: client-side WebGL loader, mascot button and fallback.
 - `components/orbit-showcase-engine.ts` and `components/scene/`: the camera, scroll mapping, path and rendering resources.
 - `app/layout.tsx`: metadata and font preloads.
@@ -37,4 +37,4 @@ Set `NEXT_PUBLIC_SITE_URL=https://YOUR_SITE_DOMAIN` when building for a public d
 
 The original `pluto-walk.png` and `pluto-sit.png` sprites are local-only artwork excluded by `.gitignore`. The static export deliberately removes them with `postbuild`; visitors see the CSS mascot fallback instead. To publish the original pixel-art mascot, first secure permission to distribute its artwork, then update the asset policy, remove that export step and build with `NEXT_PUBLIC_PLUTO_SPRITES=true`. Do not commit those private local files by accident.
 
-Pluto's current v1 commands include `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel` and `/optout`. `/ask` is **not** an active command; the question-themed section on the landing page is an illustrative preview of the commands. Miro support requires configuration and the shared workspace has not been verified in production. The command replies on this site are made-up examples, never live club data.
+Pluto's current v1 commands include `/digest`, `/upcoming meetings`, `/upcoming events`, `/event add`, `/event cancel`, `/help` and `/optout`. The landing page lists these commands and describes the automatic meeting reminder. Miro support requires configuration and the shared workspace has not been verified in production.

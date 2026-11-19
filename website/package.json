@@ -7,8 +7,8 @@
     "build": "next build",
     "postbuild": "rm -f out/pluto-walk.png out/pluto-sit.png",
     "lint": "eslint",
-    "format": "prettier --write app components/command-demo.tsx components/orbit-showcase.tsx components/orbit-showcase-engine.ts components/scene content/site.ts lib next.config.ts tsconfig.json",
-    "format:check": "prettier --check app components/command-demo.tsx components/orbit-showcase.tsx components/orbit-showcase-engine.ts components/scene content/site.ts lib next.config.ts tsconfig.json"
+    "format": "prettier --write app components/orbit-showcase.tsx components/orbit-showcase-engine.ts components/scene content/site.ts lib next.config.ts tsconfig.json",
+    "format:check": "prettier --check app components/orbit-showcase.tsx components/orbit-showcase-engine.ts components/scene content/site.ts lib next.config.ts tsconfig.json"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
