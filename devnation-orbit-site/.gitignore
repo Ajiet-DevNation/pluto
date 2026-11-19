@@ -1,0 +1,6 @@
+# Keep local reference artwork private as requested.
+# Keep copies here for local viewing only. A site deployed without these files
+# uses the built-in CSS guide instead of the reference animation.
+/assets/pluto-walk.png
+/assets/pluto-sit.png
+/assets/pluto-sheet.png

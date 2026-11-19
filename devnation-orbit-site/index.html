@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0a1a">
+  <meta name="description" content="Meet DevNation Orbit: events, member projects and a fairer way to see the work behind the leaderboard. Pluto shows you around.">
+  <title>DevNation Orbit — Build. Learn. Connect. Grow.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:dark;--void:#0d0a1a;--dusk:#1d1538;--dust:#b9a8dc;--ink:#ece7f8;--blue:#4a6cf7;--glow:#8b6bff;--blush:#f2a7a0;--mute:#bcb6cc;--edge:rgba(185,168,220,.2)}
+    *{box-sizing:border-box}
+    html{background:var(--void);scroll-behavior:smooth;scroll-padding-top:5rem}
+    body{margin:0;min-width:280px;background:var(--void);color:var(--ink);font:400 1.025rem/1.63 'Instrument Sans',system-ui,sans-serif}
+    button,input{font:inherit}button{cursor:pointer}a{color:inherit}button,a,input{touch-action:manipulation}
+    ::selection{background:#8b6bff77;color:#fff}
+    :focus-visible{outline:2px solid var(--blush);outline-offset:4px}
+    .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .skip{position:fixed;z-index:30;left:1rem;top:-5rem;background:var(--ink);color:var(--void);padding:.6rem .85rem;border-radius:8px}.skip:focus{top:1rem}
+    .world{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at 52% 60%,#17102b 0%,var(--void) 65%)}
+    .world:before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 19% 20%,#dcd5f490 1px,transparent 1.5px),radial-gradient(circle at 70% 71%,#cec3ee80 1px,transparent 1.5px),radial-gradient(circle at 48% 52%,#cec3ee70 1px,transparent 1.5px);background-size:211px 223px,283px 269px,331px 347px;opacity:.5}
+    #scene{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .6s}
+    .world.ready #scene{opacity:1}
+    .masthead{position:fixed;z-index:12;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:max(18px,env(safe-area-inset-top)) clamp(18px,3.3vw,52px) 22px;background:linear-gradient(var(--void),transparent);pointer-events:none}
+    .masthead a{pointer-events:auto;text-decoration:none}.brand{display:flex;align-items:center;gap:.65rem;font:800 1.18rem/1 'Bricolage Grotesque',sans-serif;letter-spacing:-.035em}.brand-orbit{width:22px;height:22px;position:relative;border:1px solid var(--dust);border-radius:50%;transform:rotate(-29deg)}.brand-orbit:after{content:"";position:absolute;inset:7px -5px;border:1px solid var(--blush);border-radius:50%}
+    .brand small{font:500 .7rem 'Instrument Sans',sans-serif;letter-spacing:.08em;color:var(--dust);text-transform:uppercase}.masthead-links{display:flex;align-items:center;gap:1.3rem;font-size:.77rem}.masthead-links a:hover{color:var(--blush)}
+    .stop{position:relative;z-index:2;padding:clamp(5rem,11vw,10rem) max(7vw,calc((100vw - 1180px)/2));pointer-events:none}.stop.hero{min-height:min(90svh,820px);display:flex;align-items:center;padding-top:7rem;padding-bottom:5rem}.stop.score-stop{padding-block:clamp(5rem,9vw,8rem)}.stop.final{padding-bottom:clamp(7rem,13vw,11rem)}
+    .copy{width:min(100%,32rem);pointer-events:auto;text-shadow:0 0 25px var(--void),0 0 9px var(--void)}.copy.wide-copy{width:min(100%,38rem)}.eyebrow{margin:0 0 1.45rem;color:var(--dust);font-size:.65rem;letter-spacing:.17em;text-transform:uppercase;font-weight:600}.eyebrow .mark{color:var(--blush);margin-right:.65rem}
+    h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;letter-spacing:-.035em}h1,h2{margin:0;font-weight:800;line-height:1.03}h1{font-size:clamp(3.1rem,6vw,5.8rem)}h2{font-size:clamp(2.45rem,4.3vw,4rem)}h3{font-size:1.12rem;margin:0}.copy h1 em,.copy h2 em{font-style:normal;color:var(--dust)}.copy>p:not(.eyebrow),.copy li p{color:var(--mute)}.copy>p:not(.eyebrow){margin:1.3rem 0 0;max-width:29rem}
+    .button-row{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.9rem}.pill{display:inline-flex;align-items:center;justify-content:center;gap:1.2rem;padding:.75rem 1.35rem;min-height:45px;border-radius:99px;background:var(--ink);color:var(--dusk);text-shadow:none;text-decoration:none;font-size:.86rem;font-weight:600;border:1px solid transparent;transition:transform .2s,background .2s}.pill:hover{transform:translateY(-2px);background:var(--blush)}.pill.secondary{color:var(--ink);background:#1d153858;border-color:#b9a8dc80}.pill.secondary:hover{background:#8b6bff3b}.note{display:block;margin-top:1.7rem;color:var(--dust);font-size:.77rem}.note a{text-underline-offset:4px}
+    .scroll-indicator{display:inline-flex;align-items:center;gap:.8rem;margin-top:2.6rem;text-decoration:none;color:var(--dust);font-size:.76rem}.scroll-indicator span{display:grid;place-items:center;width:26px;height:36px;border:1px solid var(--edge);border-radius:20px;color:var(--blush)}
+    .feature-lines{margin-top:2rem;display:grid;gap:1.35rem}.feature-lines article{padding-left:1rem;border-left:1px solid #b9a8dc55}.feature-lines h3{font-size:1.06rem;font-weight:600}.feature-lines p{margin:.3rem 0 0;color:var(--mute);font-size:.92rem}
+    .steps{margin:2rem 0 0;padding:0;list-style:none;display:grid;gap:1.4rem}.steps li{padding-left:1.1rem;border-left:1px solid #b9a8dc55}.steps p{margin:.3rem 0 0;font-size:.92rem}
+    .code-label{font:500 .83rem ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--blush)}
+    .scorecard{margin-top:1.6rem;padding:1.35rem;border-radius:20px;border:1px solid #b9a8dc55;background:rgba(18,12,38,.87);backdrop-filter:blur(16px);text-shadow:none;box-shadow:0 20px 65px #08061355}.scorecard>p{margin:.4rem 0 1rem;color:var(--mute);font-size:.83rem}.calculator-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem .8rem}.calculator-fields label{display:grid;gap:.24rem;color:var(--dust);font-size:.76rem}.calculator-fields input{width:100%;border:1px solid #b9a8dc55;border-radius:9px;background:#0d0a1ad9;color:var(--ink);height:39px;padding:.4rem .65rem;appearance:textfield}.calculator-fields input::-webkit-inner-spin-button,.calculator-fields input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.calculator-fields input:focus-visible{border-color:var(--blush)}.calculator-fields .full{grid-column:1/-1}.calc-divider{display:flex;align-items:center;gap:10px;margin:1.2rem 0 .85rem;color:var(--blush);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase}.calc-divider:after{content:"";height:1px;flex:1;background:var(--edge)}.calc-result{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.4rem;margin-top:1.2rem;border-top:1px solid var(--edge);padding-top:1.15rem}.calc-result strong{font:800 clamp(2.2rem,4vw,3.2rem)/1 'Bricolage Grotesque',sans-serif}.calc-result small{color:var(--dust)}.breakdown{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.35rem 1rem;color:var(--mute);font-size:.77rem}.calc-hint{font-size:.72rem;color:var(--dust);margin:.75rem 0 0}.calc-hint.error{color:var(--blush)}.scorecard button{margin-top:1rem;padding:0;border:0;background:none;color:var(--dust);text-decoration:underline;text-underline-offset:4px;font-size:.77rem}
+    .stackline{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.7rem}.stackline span{padding:.35rem .72rem;border-radius:99px;border:1px solid var(--edge);background:#1d153855;color:var(--dust);font-size:.75rem}.fine{margin-top:1.4rem;font-size:.75rem;color:var(--dust)}.footer{margin-top:2.5rem;border-top:1px solid var(--edge);padding-top:1rem;color:var(--dust);font-size:.76rem}
+    .guide{position:fixed;z-index:3;top:0;left:0;width:120px;height:120px;transform:translate(calc(72vw - 60px),calc(35vh - 60px));background:transparent;border:0;border-radius:25px;padding:0}.guide:hover{filter:drop-shadow(0 0 14px #8b6bff55)}.guide .css-guide{position:relative;display:block;width:86px;height:86px;margin:auto;background:#f4d3d0;border:8px solid #7662bc;border-radius:50%;box-shadow:inset 0 0 0 4px #e7d9fa,0 8px 0 -4px #3b2c74,0 12px 22px #06041388}.guide .css-guide:before{content:"";position:absolute;left:19px;top:28px;width:8px;height:11px;border-radius:50%;background:#221635;box-shadow:22px 0 #221635}.guide .css-guide:after{content:"";position:absolute;left:19px;top:53px;width:36px;height:11px;border-radius:0 0 50% 50%;border-bottom:2px solid #8a6388}.guide.has-sprite .css-guide{opacity:0}.bubble{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:210px;border-radius:11px 11px 11px 2px;background:var(--ink);color:var(--dusk);padding:.6rem .8rem;font-size:.78rem;line-height:1.4;box-shadow:0 6px 32px #08061399}.bubble[hidden]{display:none}
+    @media(max-width:800px){.masthead{padding:15px 19px}.brand{font-size:1rem}.brand small{display:none}.masthead-links{font-size:.72rem;gap:.8rem}.stop,.stop.score-stop{padding:clamp(10rem,26svh,15rem) 22px 5.5rem}.stop.hero{display:block;min-height:0;padding:clamp(17rem,38svh,23rem) 22px 5rem}.stop.final{padding-bottom:6.5rem}.copy,.copy.wide-copy{width:min(100%,35rem);background:linear-gradient(90deg,#0d0a1ae6,#0d0a1aca 80%,#0d0a1a99);backdrop-filter:blur(6px);text-shadow:none;padding:1rem 0}.copy h1{font-size:clamp(2.5rem,9vw,3.65rem)}.copy h2{font-size:clamp(2.12rem,7.7vw,3.25rem)}.copy>p:not(.eyebrow){font-size:.91rem}.eyebrow{font-size:.59rem;margin-bottom:1.1rem}.feature-lines{gap:1rem}.scorecard{padding:1rem}.guide{transform:translate(calc(50vw - 60px),calc(23vh - 60px))}}
+    @media(max-width:420px){.calculator-fields{gap:.6rem}.calculator-fields label{font-size:.67rem}.scorecard{padding:.9rem}.masthead-links a:first-child{display:none}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="world" id="world" aria-hidden="true"><canvas id="scene"></canvas></div>
+  <header class="masthead">
+    <a class="brand" href="#meet" aria-label="DevNation Orbit, start of page"><span class="brand-orbit" aria-hidden="true"></span>DEVNATION <small>/ ORBIT</small></a>
+    <nav class="masthead-links" aria-label="Main links"><a href="https://github.com/Ajiet-DevNation/dn-orbit">The code ↗</a><a href="#" aria-label="Sign in (destination to be added)">Sign in ↗</a><!-- TODO: Supply approved sign-in URL. --></nav>
+  </header>
+  <button class="guide" id="guide" type="button" aria-label="Say hello to Pluto"><span class="css-guide" aria-hidden="true"></span><span class="bubble" id="bubble" aria-hidden="true" hidden></span></button><span class="sr-only" role="status" id="guide-announcement"></span>
+
+  <main id="main">
+    <section class="stop hero" id="meet" aria-labelledby="meet-title">
+      <div class="copy">
+        <p class="eyebrow"><span class="mark">✦</span>DevNation / the place where we grow</p>
+        <h1 id="meet-title">A place to<br>find your <em>orbit.</em></h1>
+        <p>Meet DevNation Orbit. Events to show up for, projects to build together, and a leaderboard that follows the work behind the scenes. Pluto will show you around.</p>
+        <p class="note">Build. Learn. Connect. Grow.</p>
+        <div class="button-row"><a class="pill" href="https://www.devnation.club/">Explore Orbit <span aria-hidden="true">↗</span></a><a class="pill secondary" href="#activity">Follow Pluto <span aria-hidden="true">↓</span></a></div>
+        <a class="scroll-indicator" href="#activity"><span aria-hidden="true">↓</span>See what makes Orbit work.</a>
+      </div>
+    </section>
+
+    <section class="stop" id="activity" aria-labelledby="activity-title">
+      <div class="copy">
+        <p class="eyebrow">What lives in Orbit</p>
+        <h2 id="activity-title">A club is more<br>than a <em>feed.</em></h2>
+        <p>Orbit brings the things DevNation members make and do into one place.</p>
+        <div class="feature-lines">
+          <article><h3>Events you can actually join.</h3><p>Browse approved, published events. Registration respects audience, deadlines and available seats; organisers can review attendance and feedback.</p></article>
+          <article><h3>Projects with a story.</h3><p>Members submit their builds and track milestones. Approved submissions and approved GitHub-org imports appear in the public showcase.</p></article>
+          <article><h3>People behind the work.</h3><p>Explore the public member directory and a leaderboard built from coding activity and attended events.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="stop wide" id="journey" aria-labelledby="journey-title">
+      <div class="copy">
+        <p class="eyebrow">How a member finds their feet</p>
+        <h2 id="journey-title">Come curious.<br><em>Leave connected.</em></h2>
+        <ul class="steps">
+          <li><div><h3>Explore freely.</h3><p>Events, approved projects, members and leaderboard standings are browsable without signing in.</p></div></li>
+          <li><div><h3>Join with your GitHub identity.</h3><p>Sign-in is for allowlisted people. Onboarding adds profile details; admins review membership and manage role-based access.</p></div></li>
+          <li><div><h3>Make something together.</h3><p>Approved members can propose events and submit projects for review. Event eligibility depends on the audience; approved member registrations and attendance feed the event score.</p></div></li>
+        </ul>
+        <span class="note">The public site remains open. Admin tools are for authorised club roles.</span>
+      </div>
+    </section>
+
+    <section class="stop score-stop" id="scores" aria-labelledby="scores-title">
+      <div class="copy wide-copy">
+        <p class="eyebrow">Explore the scoring model</p>
+        <h2 id="scores-title">Every contribution<br><em>has its place.</em></h2>
+        <p>Try an example. These inputs are hypothetical—not a live member score or a predicted rank.</p>
+        <div class="scorecard">
+          <h3>Build a sample score</h3>
+          <p>Enter activity and example cohort leaders to see how the real formulas combine them.</p>
+          <form id="calculator" novalidate>
+            <div class="calc-divider">LeetCode · easy × 1, medium × 3, hard × 5</div>
+            <div class="calculator-fields">
+              <label>Easy solved<input name="easy" type="number" min="0" max="1000000" step="1" value="80" inputmode="numeric"></label>
+              <label>Medium solved<input name="medium" type="number" min="0" max="1000000" step="1" value="30" inputmode="numeric"></label>
+              <label>Hard solved<input name="hard" type="number" min="0" max="1000000" step="1" value="8" inputmode="numeric"></label>
+              <label>Cohort’s highest LC raw<input name="bestLc" type="number" min="0" max="10000000" step="1" value="420" inputmode="numeric"></label>
+            </div>
+            <div class="calc-divider">GitHub · commits + PRs × 2 + stars + external PRs × points</div>
+            <div class="calculator-fields">
+              <label>Commits<input name="commits" type="number" min="0" max="1000000" step="1" value="55" inputmode="numeric"></label>
+              <label>Merged PRs<input name="prs" type="number" min="0" max="1000000" step="1" value="12" inputmode="numeric"></label>
+              <label>Stars<input name="stars" type="number" min="0" max="1000000" step="1" value="18" inputmode="numeric"></label>
+              <label>Qualifying external PRs<input name="external" type="number" min="0" max="1000000" step="1" value="2" inputmode="numeric"></label>
+              <label>Points per external PR<input name="points" type="number" min="0" max="1000" step="1" value="10" inputmode="numeric"></label>
+              <label>Cohort’s highest GH raw<input name="bestGh" type="number" min="0" max="10000000" step="1" value="360" inputmode="numeric"></label>
+            </div>
+            <div class="calc-divider">Events · attended ÷ eligible past events × 100</div>
+            <div class="calculator-fields">
+              <label>Events attended<input name="attended" type="number" min="0" max="1000000" step="1" value="3" inputmode="numeric"></label>
+              <label>Approved, published past events<input name="events" type="number" min="0" max="1000000" step="1" value="8" inputmode="numeric"></label>
+            </div>
+            <div class="calc-divider">Weights · admin-configurable · sum to 100%</div>
+            <div class="calculator-fields">
+              <label>LeetCode %<input name="lcWeight" type="number" min="0" max="100" step="1" value="33" inputmode="numeric"></label>
+              <label>GitHub %<input name="ghWeight" type="number" min="0" max="100" step="1" value="33" inputmode="numeric"></label>
+              <label>Events %<input name="eventWeight" type="number" min="0" max="100" step="1" value="34" inputmode="numeric"></label>
+            </div>
+            <div class="calc-result" aria-live="polite"><small>Illustrative total / 100</small><strong id="total-score">—</strong><div class="breakdown" id="breakdown">Enter activity to explore the score.</div></div>
+            <p class="calc-hint" id="calc-hint">GitHub and LeetCode are square-root-normalised against the cohort leader. External PRs must be merged into public repos you do not own, with at least the admin-set minimum stars (default 10).</p>
+            <button type="reset">Reset example inputs</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="stop wide" id="built" aria-labelledby="built-title">
+      <div class="copy">
+        <p class="eyebrow">Under the hood</p>
+        <h2 id="built-title">Made by builders.<br><em>For builders.</em></h2>
+        <p>Orbit is a real club platform, not a score painted on a poster. Its event and project data, member profiles and calculated standings live behind a full-stack application.</p>
+        <div class="feature-lines">
+          <article><h3>A board that moves with the work.</h3><p>Page visits drain small batches of stale GitHub and LeetCode stats. A GitHub webhook can put new activity first in the queue; scores are recalculated when data changes.</p></article>
+          <article><h3>Moderation where it matters.</h3><p>Admins manage approval, visibility and scoring weights. Public project and event listings only include reviewed content.</p></article>
+        </div>
+        <div class="stackline" aria-label="Technology stack"><span>Next.js</span><span>React</span><span>TypeScript</span><span>Prisma</span><span>Neon PostgreSQL</span><span>GitHub OAuth</span><span>Vercel</span></div>
+        <p class="fine">The calculator above is a standalone example, not connected to Orbit’s database or account system.</p>
+      </div>
+    </section>
+
+    <section class="stop final" id="join" aria-labelledby="join-title">
+      <div class="copy">
+        <p class="eyebrow">There’s room in the orbit</p>
+        <h2 id="join-title">Build. Learn.<br><em>Connect. Grow.</em></h2>
+        <p>Come see the events, discover what the community is building, and find your people. Pluto will be here when you arrive.</p>
+        <div class="button-row"><a class="pill" href="https://www.devnation.club/">Visit DevNation Orbit <span aria-hidden="true">↗</span></a><a class="pill secondary" href="#">Sign in <span aria-hidden="true">↗</span></a><!-- TODO: Replace sign-in destination when approved. --></div>
+        <footer class="footer">An open-source project by DevNation at AJIET. <a href="https://github.com/Ajiet-DevNation/dn-orbit">Explore the repository ↗</a></footer>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <script>
+    (() => {
+      'use strict';
+      const sectionIds = ['meet', 'activity', 'journey', 'scores', 'built', 'join'];
+      const sections = sectionIds.map(id => document.getElementById(id));
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+      const guide = document.getElementById('guide');
+      const bubble = document.getElementById('bubble');
+      let bubbleTimer;
+      let greetingIndex = 0;
+      const greetings = ["Hi, I’m Pluto. Welcome to Orbit!", "Keep going. There’s more around the bend.", "Let’s build together!", "See you out there, DevNation."];
+      guide.addEventListener('click', () => {
+        const line = greetings[greetingIndex++ % greetings.length];
+        bubble.textContent = line;
+        document.getElementById('guide-announcement').textContent = line;
+        bubble.hidden = false;
+        clearTimeout(bubbleTimer);
+        bubbleTimer = setTimeout(() => { bubble.hidden = true; }, 3200);
+      });
+
+      // The calculator is entirely local. Denominators include the sample user,
+      // since a cohort maximum cannot be lower than one of its own members.
+      const form = document.getElementById('calculator');
+      const total = document.getElementById('total-score');
+      const breakdown = document.getElementById('breakdown');
+      const hint = document.getElementById('calc-hint');
+      const help = hint.textContent;
+      const formatter = n => n.toFixed(1);
+      function calculate() {
+        const inputs = Array.from(form.querySelectorAll('input'));
+        if (inputs.some(input => !input.validity.valid || input.value.trim() === '' || !Number.isSafeInteger(Number(input.value)))) {
+          total.textContent = '—';
+          breakdown.textContent = 'Enter whole numbers within each field’s range.';
+          hint.textContent = 'Please use non-negative whole numbers within the displayed limits.';
+          hint.classList.add('error');
+          return;
+        }
+        const data = Object.fromEntries(inputs.map(input => [input.name, Number(input.value)]));
+        if (data.attended > data.events) {
+          total.textContent = '—';
+          breakdown.textContent = 'Attendance cannot exceed the number of eligible past events.';
+          hint.textContent = 'Reduce events attended or increase the number of eligible past events.';
+          hint.classList.add('error');
+          return;
+        }
+        if (data.lcWeight + data.ghWeight + data.eventWeight !== 100) {
+          total.textContent = '—';
+          breakdown.textContent = 'Weights must add up to 100%.';
+          hint.textContent = 'Adjust the three weights so their sum is exactly 100%.';
+          hint.classList.add('error');
+          return;
+        }
+        hint.textContent = help;
+        hint.classList.remove('error');
+        const lcRaw = data.easy + data.medium * 3 + data.hard * 5;
+        const ghRaw = data.commits + data.prs * 2 + data.stars + data.external * data.points;
+        const lc = Math.sqrt(lcRaw) / Math.max(1, Math.sqrt(Math.max(lcRaw, data.bestLc))) * 100;
+        const gh = Math.sqrt(ghRaw) / Math.max(1, Math.sqrt(Math.max(ghRaw, data.bestGh))) * 100;
+        const event = data.events ? Math.min(100, data.attended / data.events * 100) : 0;
+        const score = lc * data.lcWeight / 100 + gh * data.ghWeight / 100 + event * data.eventWeight / 100;
+        total.textContent = formatter(score);
+        breakdown.replaceChildren(...[
+          `LC ${formatter(lc)} / 100 · raw ${lcRaw}`,
+          `GH ${formatter(gh)} / 100 · raw ${ghRaw}`,
+          `Events ${formatter(event)} / 100`
+        ].map(text => { const item = document.createElement('span'); item.textContent = text; return item; }));
+      }
+      form.addEventListener('input', calculate);
+      form.addEventListener('submit', event => event.preventDefault());
+      form.addEventListener('reset', () => setTimeout(calculate, 0));
+      calculate();
+
+      let centers = [];
+      let target = 0;
+      let scrollDirection = 1;
+      let lastY = scrollY;
+      let frameRequest = () => {};
+      function measure() {
+        centers = sections.map(section => section.offsetTop + section.offsetHeight / 2 - innerHeight / 2);
+        updateScroll();
+      }
+      function updateScroll() {
+        if (centers.length < 2) return;
+        const y = scrollY;
+        if (Math.abs(y - lastY) > 1) scrollDirection = y > lastY ? 1 : -1;
+        lastY = y;
+        let i = 0;
+        while (i < centers.length - 2 && y >= centers[i + 1]) i++;
+        const span = Math.max(1, centers[i + 1] - centers[i]);
+        target = Math.max(0, Math.min(1, (i + (y - centers[i]) / span) / (sections.length - 1)));
+        frameRequest();
+      }
+      addEventListener('scroll', updateScroll, { passive: true });
+      addEventListener('resize', measure);
+      new ResizeObserver(measure).observe(document.getElementById('main'));
+      measure();
+
+      function installScene() {
+        if (!window.THREE) return; // CDN unavailable: static story + calculator remain.
+        const T = window.THREE;
+        const canvas = document.getElementById('scene');
+        let renderer;
+        try { renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' }); }
+        catch { return; }
+        renderer.setClearColor(0x0d0a1a, 0);
+        const scene = new T.Scene();
+        scene.fog = new T.Fog(0x0d0a1a, 19, 53);
+        const camera = new T.PerspectiveCamera(45, 1, .1, 110);
+        scene.add(new T.AmbientLight(0xb4a8e0, .7));
+        const sunlight = new T.DirectionalLight(0xddd1ff, .8);
+        sunlight.position.set(-3, 8, 10);
+        scene.add(sunlight);
+        const world = document.getElementById('world');
+        let seed = 1259;
+        function random() { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646; }
+        function pos(s) { return new T.Vector3(s * 70, 4 * Math.cos(s * 2.5 * Math.PI), 3.5 * Math.sin(s * 2.2 * Math.PI)); }
+        const start = -.08, extent = 1.16, segments = 480, sides = 8;
+        const points = Array.from({ length: segments + 1 }, (_, i) => pos(start + i / segments * extent));
+        const curve = new T.CatmullRomCurve3(points, false, 'catmullrom', .05);
+        function tube(radius, color, opacity) {
+          const geo = new T.TubeGeometry(curve, segments, radius, sides, false);
+          const mesh = new T.Mesh(geo, new T.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false }));
+          scene.add(mesh);
+          return mesh;
+        }
+        tube(.075, 0x4a6cf7, .09); // blue halo, intentionally restrained
+        tube(.022, 0x493d77, .83);
+        const travelled = tube(.037, 0xc0aaff, .9);
+        const startIndex = Math.round((0 - start) / extent * segments) * sides * 6;
+        travelled.geometry.setDrawRange(startIndex, 0);
+
+        const stops = Array.from({ length: sections.length }, (_, i) => {
+          const marker = new T.Mesh(new T.SphereGeometry(.15, 12, 9), new T.MeshBasicMaterial({ color: 0x8b6bff }));
+          marker.position.copy(pos(i / (sections.length - 1)));
+          scene.add(marker);
+          return marker;
+        });
+        const starArray = new Float32Array(1000 * 3);
+        for (let i = 0; i < 1000; i++) starArray.set([-22 + random() * 114, -23 + random() * 46, -28 + random() * 22], i * 3);
+        const starGeometry = new T.BufferGeometry();
+        starGeometry.setAttribute('position', new T.BufferAttribute(starArray, 3));
+        scene.add(new T.Points(starGeometry, new T.PointsMaterial({ color: 0xd1c9e9, size: .065, opacity: .75, transparent: true, fog: false })));
+        const planetMaterial = [0x333055, 0x37345a, 0x2f3b61, 0x413658].map(color => new T.MeshLambertMaterial({ color, flatShading: true }));
+        const planetGeometry = new T.IcosahedronGeometry(1, 2);
+        const planetSettings = [[10, 9, -13, 1.15], [28, -8, -15, 1.75], [47, 9, -12, 1.1], [65, -7, -14, 1.4]];
+        const planets = planetSettings.map(([x, y, z, size], i) => {
+          const planet = new T.Mesh(planetGeometry, planetMaterial[i]);
+          planet.position.set(x, y, z); planet.scale.setScalar(size); scene.add(planet);
+          if (i === 1) {
+            const ring = new T.Mesh(new T.TorusGeometry(size * 1.6, .04, 6, 80), new T.MeshBasicMaterial({ color: 0x77689f, opacity: .45, transparent: true }));
+            ring.position.copy(planet.position); ring.rotation.x = 1.2; ring.rotation.y = .25; scene.add(ring);
+          }
+          return planet;
+        });
+        const rockGeometry = new T.DodecahedronGeometry(1, 0);
+        const rockMaterial = new T.MeshLambertMaterial({ color: 0x48405f, flatShading: true });
+        const rocks = Array.from({ length: 45 }, () => {
+          const s = random() * 1.14 - .07;
+          const base = pos(s);
+          const mesh = new T.Mesh(rockGeometry, rockMaterial);
+          mesh.position.set(base.x + (random() - .5) * 5, base.y + (random() - .5) * 7, base.z - 2 - random() * 9);
+          mesh.scale.setScalar(.06 + random() * .18);
+          mesh.rotation.set(random() * 3, random() * 3, random() * 3);
+          scene.add(mesh);
+          return { mesh, baseY: mesh.position.y, phase: random() * 6.28 };
+        });
+
+        let spriteReady = 0;
+        let spritesFailed = false;
+        const loader = new T.TextureLoader();
+        function sheet(url) {
+          const tex = loader.load(url, () => {
+            spriteReady++;
+            if (spriteReady === 2 && !spritesFailed) {
+              guide.classList.add('has-sprite');
+              sprite.visible = true;
+            }
+            wake();
+          }, undefined, () => { spritesFailed = true; sprite.visible = false; guide.classList.remove('has-sprite'); });
+          tex.magFilter = tex.minFilter = T.NearestFilter;
+          tex.generateMipmaps = false;
+          tex.repeat.set(1 / 9, 1);
+          return tex;
+        }
+        const walk = sheet('./assets/pluto-walk.png');
+        const sit = sheet('./assets/pluto-sit.png');
+        const spriteMaterial = new T.SpriteMaterial({ map: walk, transparent: true, depthTest: false, fog: false });
+        const sprite = new T.Sprite(spriteMaterial);
+        sprite.renderOrder = 10;
+        sprite.visible = false;
+        scene.add(sprite);
+        const projected = new T.Vector3();
+        let p = target, raf = 0, lastMove = 0, elapsed = 0, lastFrame = 0, mouseX = 0, mouseY = 0;
+        const pointer = matchMedia('(pointer:fine)');
+        addEventListener('pointermove', event => {
+          if (!pointer.matches || reduced.matches) return;
+          mouseX = event.clientX / innerWidth - .5;
+          mouseY = event.clientY / innerHeight - .5;
+        }, { passive: true });
+        function resize() {
+          const w = innerWidth, h = innerHeight;
+          renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+          renderer.setSize(w, h, false);
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          wake();
+        }
+        addEventListener('resize', resize);
+        function paint(now) {
+          raf = 0;
+          if (document.hidden) return;
+          const still = reduced.matches;
+          const delta = Math.min((now - (lastFrame || now)) / 1000, .05);
+          lastFrame = now;
+          if (!still) elapsed += delta;
+          p = still ? target : p + (target - p) * .075;
+          const moving = !still && Math.abs(target - p) > .0004;
+          if (moving) lastMove = now;
+          const sitting = still || now - lastMove > 900;
+          const place = pos(p);
+          sprite.position.copy(place);
+          sprite.position.y += .85 + (still ? 0 : Math.sin(elapsed * 1.2) * .045);
+          const reach = Math.round(((p - start) / extent) * segments) * sides * 6;
+          travelled.geometry.setDrawRange(startIndex, Math.max(0, reach - startIndex));
+          camera.position.set(place.x + 2.6 + (still ? 0 : mouseX * .35), place.y + 2.7 - (still ? 0 : mouseY * .25), place.z + 11);
+          camera.lookAt(place.x, place.y, place.z - .7);
+          camera.clearViewOffset();
+          scene.updateMatrixWorld(true);
+          camera.updateMatrixWorld(true);
+          // Keep Pluto in the open part of the viewport alongside the text.
+          const w = innerWidth, h = innerHeight;
+          const desiredX = w < 800 ? w * .5 : w * .73;
+          const desiredY = w < 800 ? h * .23 : h * .5;
+          place.project(camera);
+          camera.setViewOffset(w, h, (place.x * .5 + .5) * w - desiredX, (-place.y * .5 + .5) * h - desiredY, w, h);
+          spriteMaterial.map = sitting ? sit : walk;
+          const tex = spriteMaterial.map;
+          tex.repeat.x = scrollDirection / 9;
+          tex.offset.x = (still ? 0 : Math.floor(elapsed / (sitting ? .17 : .085)) % 9) / 9 + (scrollDirection < 0 ? 1 / 9 : 0);
+          const mascotHeight = w < 800 ? 1.4 : 1.7;
+          sprite.scale.set(mascotHeight * (sitting ? 1.625 : 1), mascotHeight, 1);
+          sprite.getWorldPosition(projected).project(camera);
+          const sx = (projected.x * .5 + .5) * w, sy = (-projected.y * .5 + .5) * h;
+          guide.style.transform = `translate(${Math.round(sx - 60)}px,${Math.round(sy - 60)}px)`;
+          if (!still) {
+            planets.forEach((planet, i) => { planet.rotation.y += delta * (.035 + i * .01); });
+            rocks.forEach(({ mesh, baseY, phase }, i) => {
+              mesh.position.y = baseY + Math.sin(elapsed * .3 + phase) * .14;
+              mesh.rotation.y += delta * .045 * (i % 3 + 1);
+            });
+          }
+          const active = Math.round(p * (stops.length - 1));
+          stops.forEach((marker, i) => {
+            marker.material.color.setHex(i === active ? 0xf2a7a0 : 0x8b6bff);
+            marker.scale.setScalar(i === active ? 1.55 + (still ? 0 : Math.sin(elapsed * 2) * .12) : 1);
+          });
+          renderer.render(scene, camera);
+          world.classList.add('ready');
+          if (!still) wake();
+        }
+        function wake() { if (!raf && !document.hidden) raf = requestAnimationFrame(paint); }
+        frameRequest = wake;
+        function visibility() { cancelAnimationFrame(raf); raf = 0; lastFrame = 0; wake(); }
+        document.addEventListener('visibilitychange', visibility);
+        reduced.addEventListener('change', wake);
+        canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); cancelAnimationFrame(raf); raf = 0; world.classList.remove('ready'); });
+        canvas.addEventListener('webglcontextrestored', wake);
+        resize();
+      }
+      addEventListener('DOMContentLoaded', installScene, { once: true });
+    })();
+  </script>
+</body>
+</html>

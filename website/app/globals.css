@@ -1,0 +1,73 @@
+:root {
+  color-scheme: dark;
+  --void: #0d0a1a;
+  --ink: #ece7f8;
+  --muted: #c9c2db;
+  --dust: #b9a8dc;
+  --glow: #8b6bff;
+  --font-sans: "Instrument Sans Variable", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --type-display: clamp(2.75rem, 5vw, 4.75rem);
+  --type-heading: clamp(2rem, 3.5vw, 2.75rem);
+  --type-body: 1.0625rem;
+  --type-ui: 0.875rem;
+  --type-caption: 0.75rem;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --page-gutter: clamp(22px, 7vw, 112px);
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 64px;
+  background: var(--void);
+}
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--void);
+  font: 400 var(--type-body)/1.6 var(--font-sans);
+}
+button {
+  font: inherit;
+  cursor: pointer;
+}
+a {
+  color: inherit;
+}
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+::selection {
+  color: var(--void);
+  background: var(--dust);
+}
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
