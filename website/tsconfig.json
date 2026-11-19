@@ -24,11 +24,17 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/command-demo.tsx",
+    "components/orbit-showcase.tsx",
+    "components/orbit-showcase-engine.ts",
+    "components/scene/**/*.ts",
+    "content/site.ts",
+    "lib/sprite-config.ts",
+    "lib/site-url.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
