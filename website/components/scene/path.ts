@@ -25,8 +25,12 @@ export function createPath(scene: THREE.Scene, track: Track) {
   const indicesPerSegment = pathSides * 6;
 
   return {
-    update(progress: number) {
-      const first = Math.max(pathStart, progress - trailLength);
+    update(progress: number, commandFocus = 0) {
+      const shortTrail = trailLength * (1 - 0.72 * commandFocus);
+      // Reveal the full off-screen entrance at the hero, then return to the
+      // normal short trail before the next orbit station.
+      const reveal = Math.max(0, 1 - progress / 0.1);
+      const first = pathStart * reveal + (progress - shortTrail) * (1 - reveal);
       const last = Math.min(pathStart + pathExtent, progress + leadLength);
       const from =
         Math.round(((first - pathStart) / pathExtent) * pathSegments) * indicesPerSegment;
