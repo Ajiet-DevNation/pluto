@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import styles from "./orbit.module.css";
 import { OrbitShowcase } from "@/components/orbit-showcase";
 import { CommandDemo } from "@/components/command-demo";
-import { CommunityLinks } from "@/components/community-links";
 
 export const metadata: Metadata = {
   title: "Pluto — DevNation's knowledge companion",
-  description: "Meet Pluto, DevNation's read-only Discord knowledge assistant: indexed club records, deterministic activity digests, upcoming meetings and events, and an automatic meeting announcer.",
+  description: "Pluto helps DevNation members find updates, meeting details, and project context from Discord, GitHub, and Miro.",
 };
 
 export default function OrbitPage() {
@@ -24,97 +23,95 @@ export default function OrbitPage() {
       </header>
 
       <main id="main">
-        {/* Section 1: Introduction + Problem */}
+        {/* Section 1: Introduction */}
         <section className={`${styles.stop} ${styles.hero}`} id="meet" data-orbit-stop aria-labelledby="meet-title">
           <div className={styles.copy}>
-            <p className={styles.eyebrow}><span className={styles.mark}>✦</span>Read-only knowledge assistant</p>
-            <h1 id="meet-title">Meet Pluto.<br />DevNation's<br /><em>knowledge companion.</em></h1>
-            <p>Pluto brings together information from the club's Discord channels, public GitHub repositories, and Miro boards into one read-only record. It helps members stay informed about club activity, upcoming meetings, and events.</p>
-            <p className={styles.note}>Not a general-purpose chatbot. Every output is grounded in indexed community records.</p>
+            <h1 id="meet-title">Meet Pluto.<br />DevNation&apos;s<br /><em>knowledge companion.</em></h1>
+            <p>Pluto reads the club&apos;s Discord, GitHub and Miro so you don&apos;t have to dig. Ask it what&apos;s happening, when the next meeting is, or what a project is about.</p>
+            <p className={styles.note}>It only answers from what the club has actually shared.</p>
             <div className={styles.buttonRow}>
               <a className={styles.pill} href="https://github.com/Ajiet-DevNation/pluto">Explore Pluto <span aria-hidden="true">↗</span></a>
               <a className={`${styles.pill} ${styles.secondary}`} href="#knowledge">See what Pluto knows <span aria-hidden="true">↓</span></a>
             </div>
-            <a className={styles.scrollIndicator} href="#knowledge"><span aria-hidden="true">↓</span>See the problem Pluto solves.</a>
           </div>
         </section>
 
-        {/* Section 2: Problem + Knowledge Indexing */}
+        {/* Section 2: Where Pluto gets its answers */}
         <section className={styles.stop} id="knowledge" data-orbit-stop aria-labelledby="knowledge-title">
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>The problem Pluto solves</p>
-            <h2 id="knowledge-title">Club knowledge is scattered.<br /><em>Pluto makes it findable.</em></h2>
-            <p>Important information gets buried in Discord conversations. Project updates live across GitHub repositories. Meeting announcements are easy to miss. Pluto keeps an approved, read-only index of the places the club already works.</p>
+            <p className={styles.eyebrow}>Where Pluto gets its answers</p>
+            <h2 id="knowledge-title">Find the club&apos;s<br /><em>updates.</em></h2>
+            <p>Club updates live in conversations, project files, and meeting notes. Pluto helps you find them.</p>
             <div className={styles.featureLines}>
-              <article><h3>Discord, on an allowlist.</h3><p>Five configured channels. New-message intake and startup backfill. Only explicitly allowed channels are indexed. Private channels, bot messages, and voice are excluded.</p></article>
-              <article><h3>GitHub, public only.</h3><p>Public DevNation repositories. READMEs, issues, pull requests, commit messages, contributors, and eligible source files.</p></article>
-              <article><h3>Miro, when configured.</h3><p>Read-only board items and connectors. Supported when a token and board access are configured. Shared workspace and live verification are pending.</p></article>
+              <article><h3>Discord</h3><p>Find club conversations and updates without searching through old messages.</p></article>
+              <article><h3>GitHub</h3><p>See what a project is about and follow the work behind it.</p></article>
+              <article><h3>Miro</h3><p>Find shared boards and notes when the club has made them available.</p></article>
             </div>
-            <p className={styles.fine}>Pluto never indexes private repositories, private channels, bot messages, or voice channels. Miro live verification is pending.</p>
+            <p className={styles.fine}>Pluto only uses information the club has chosen to share.</p>
           </div>
         </section>
 
-        {/* Section 3: Activity Digest + Upcoming Meetings/Events */}
+        {/* Section 3: Things you can ask Pluto */}
         <section className={styles.stop} id="journey" data-orbit-stop aria-labelledby="journey-title">
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>Everyday awareness</p>
-            <h2 id="journey-title">Catch up.<br /><em>Stay ahead.</em></h2>
-            <p>Pluto turns approved records into a few deterministic views. No AI-written narratives.</p>
+            <p className={styles.eyebrow}>Things you can ask Pluto</p>
+            <h2 id="journey-title">What do you need<br /><em>to know?</em></h2>
+            <p>Ask Pluto about the things you would otherwise have to piece together yourself.</p>
             <ul className={styles.steps}>
-              <li><div><h3>An honest activity snapshot.</h3><p><code>/digest</code> covers 1–30 days (default 7) and shows deterministic counts and links for GitHub issues, indexed Discord messages, a <code>#decisions</code> subset, and upcoming meetings and events. No AI summary. PRs and commits are not counted.</p></div></li>
-              <li><div><h3>Meetings and events in one place.</h3><p><code>/upcoming meetings</code> lists confirmed future meetings. <code>/upcoming events</code> lists scheduled club events. Any member can add one with <code>/event add</code> and cancel by ID with <code>/event cancel</code>. Times use Asia/Kolkata and display in 12-hour IST.</p></div></li>
-              <li><div><h3>A reminder before the meeting.</h3><p>The announcer watches only <code>#meeting-plans</code>. A human announcement with <code>@everyone</code> or <code>@here</code>, meeting language, and a clear future time becomes one durable reminder in <code>#pluto</code> one hour before. It never repeats the mass mention.</p></div></li>
+              <li><div><h3>What happened recently?</h3><p>Get a quick look at recent club activity and project updates.</p></div></li>
+              <li><div><h3>When is the next meeting?</h3><p>See upcoming meetings and events in one place.</p></div></li>
+              <li><div><h3>What is this project about?</h3><p>Get the context you need before joining the conversation.</p></div></li>
             </ul>
-            <span className={styles.note}>Meeting detection and reminders passed test-guild checks; production deployment acceptance is pending.</span>
+            <span className={styles.note}>The answer comes from what the club has shared.</span>
           </div>
         </section>
 
-        {/* Section 4: Commands + Announcer Details */}
+        {/* Section 4: Try a question */}
         <section className={`${styles.stop} ${styles.scoreStop}`} id="how-it-works" data-orbit-stop aria-labelledby="how-title">
           <div className={`${styles.copy} ${styles.wideCopy}`}>
-            <p className={styles.eyebrow}>Discord commands</p>
-            <h2 id="how-title">Less digging.<br /><em>More doing.</em></h2>
-            <p>Pick a command to see an illustrative reply. This preview doesn't connect to Discord.</p>
+            <p className={styles.eyebrow}>Try a question</p>
+            <h2 id="how-title">Ask Pluto<br /><em>a question.</em></h2>
+            <p>Here are a few examples. The preview is not connected to Discord.</p>
             <CommandDemo />
             <div className={styles.featureLines}>
-              <article><h3>Automatic meeting announcer</h3><p>Monitors <code>#meeting-plans</code>. Requires a human author, an actual <code>@everyone</code>/<code>@here</code>, meeting language, and a parseable future time in Asia/Kolkata. Schedules a durable pg-boss reminder for one hour before. Posts only in <code>#pluto</code>. Never repeats the mass mention. Test-guild verified; production acceptance pending.</p></article>
-              <article><h3>Command reference</h3><p><code>/digest [days]</code> — activity snapshot (1–30 days, default 7). <code>/upcoming meetings</code> — confirmed meetings. <code>/upcoming events</code> — scheduled events. <code>/event add</code> — any member adds an event. <code>/event cancel</code> — creator or Manage Events. <code>/optout</code> — exclude from indexing. <code>/help</code> — list commands.</p></article>
+              <article><h3>Ask about the club</h3><p>Find out what happened, what is coming up, or what a project is about.</p></article>
+              <article><h3>Find it in one place</h3><p>You do not need to search through old conversations yourself.</p></article>
             </div>
           </div>
         </section>
 
-        {/* Section 5: Privacy + Read-Only + How it Works */}
+        {/* Section 5: What Pluto can see */}
         <section className={styles.stop} id="built" data-orbit-stop aria-labelledby="built-title">
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>Privacy & read-only behaviour</p>
-            <h2 id="built-title">Useful.<br /><em>Never intrusive.</em></h2>
-            <p>Pluto does not modify the information it indexes.</p>
+            <p className={styles.eyebrow}>What Pluto can see</p>
+            <h2 id="built-title">It only uses<br /><em>shared information.</em></h2>
+            <p>Pluto can use information the club has shared with it. It cannot change the club&apos;s work.</p>
             <dl className={styles.featureLines}>
-              <div><dt>Read-only external sources.</dt><dd>GET-only clients and read-only credentials. No GitHub writes, Discord history edits/deletions, or Miro writes. Posting new Discord messages is permitted.</dd></div>
-              <div><dt>Selected channels. Public repositories.</dt><dd>Five-channel allowlist. <code>#pluto</code> and <code>#events</code> are never indexed. No private repos, private channels, bot messages, or voice recording.</dd></div>
-              <div><dt>You can opt out.</dt><dd><code>/optout</code> excludes future indexing and removes existing indexed records. One-way in v1.</dd></div>
+              <div><dt>Only shared information.</dt><dd>Pluto uses the places and information the club has chosen to make available.</dd></div>
+              <div><dt>No changes to your work.</dt><dd>Pluto does not edit projects, boards, or past conversations.</dd></div>
+              <div><dt>You can opt out.</dt><dd>Members can ask for their messages to be left out.</dd></div>
             </dl>
-            <p className={styles.fine}><code>/ask</code> is not part of active v1. <code>/decisions</code> and transcript workflows are deferred. Pluto never cites its own output channel.</p>
-            <p className={styles.eyebrow} style={{marginTop:'2rem'}}>How Pluto works</p>
+            <p className={styles.fine}>Pluto only answers from information it can actually see.</p>
+            <p className={styles.eyebrow} style={{marginTop:'2rem'}}>In simple terms</p>
             <ol className={styles.steps}>
-              <li><div><h3>Collect.</h3><p>Approved information from Discord, GitHub, and configured Miro boards.</p></div></li>
-              <li><div><h3>Index.</h3><p>Process and store searchable community knowledge.</p></div></li>
-              <li><div><h3>Monitor & deliver.</h3><p>Watch meeting announcements, generate digests on demand, schedule reminders.</p></div></li>
+              <li><div><h3>Read.</h3><p>Pluto looks at the club&apos;s shared information.</p></div></li>
+              <li><div><h3>Understand.</h3><p>It connects the details that help answer your question.</p></div></li>
+              <li><div><h3>Reply.</h3><p>It gives you the useful answer in Discord.</p></div></li>
             </ol>
           </div>
         </section>
 
-        {/* Section 6: Examples + About DevNation */}
+        {/* Section 6: About the project */}
         <section className={`${styles.stop} ${styles.final}`} id="join" data-orbit-stop aria-labelledby="join-title">
           <div className={styles.copy}>
-            <p className={styles.eyebrow}>Examples & about DevNation</p>
-            <h2 id="join-title">See Pluto in action.<br /><em>Built at AJIET.</em></h2>
-            <p>Pluto is an initiative developed by DevNation, the Student Development Club at AJIET. It organises shared knowledge, improves visibility into community activity, and makes meeting communication easier.</p>
+            <p className={styles.eyebrow}>About the project</p>
+            <h2 id="join-title">A project from<br /><em>DevNation.</em></h2>
+            <p>Pluto is made by students at AJIET for DevNation. It helps members find the things the club has already talked about.</p>
             <dl className={styles.featureLines}>
-              <article><h3>Illustrative examples</h3><p><code>/digest 7</code> → weekly activity snapshot with issue counts, message counts, decisions, upcoming meetings/events.<br /><code>/upcoming meetings</code> → confirmed meetings from announcer.<br /><code>/upcoming events</code> → scheduled club events.<br /><code>/event add</code> → event created with ephemeral confirmation and public <code>#events</code> record.<br /><code>/optout</code> → privacy exclusion explained.</p></article>
-              <article><h3>Open source</h3><p>Pluto is built by student developers at AJIET. TypeScript, Node.js, Discord.js, Neon Postgres, pg-boss, Cloudflare Workers AI. The code is open source.</p></article>
+              <article><h3>Open source</h3><p>The code is open for the community to explore and improve.</p></article>
+              <article><h3>Want to see more?</h3><p>Explore Pluto or visit DevNation to learn about the club.</p></article>
             </dl>
-            <div className={styles.stackline} aria-label="Technology stack"><span>TypeScript</span><span>Node.js 22</span><span>Discord.js</span><span>Neon Postgres</span><span>pgvector</span><span>Drizzle</span><span>pg-boss</span><span>Cloudflare Workers AI</span><span>GitHub App</span><span>Miro REST v2</span></div>
+            <div className={styles.stackline} aria-label="Places Pluto helps with"><span>Discord</span><span>GitHub</span><span>Miro</span><span>Meetings</span><span>Projects</span></div>
             <div className={styles.buttonRow}>
               <a className={styles.pill} href="https://www.devnation.club/">DevNation ↗</a>
               <a className={`${styles.pill} ${styles.secondary}`} href="https://github.com/Ajiet-DevNation/pluto">Pluto on GitHub ↗</a>

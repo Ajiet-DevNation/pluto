@@ -6,10 +6,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Pluto — DevNation’s knowledge companion",
-  description: "Meet Pluto, DevNation’s read-only Discord knowledge assistant: indexed club records, deterministic activity digests, upcoming meetings and events, and an automatic meeting announcer.",
+  description: "Pluto helps DevNation members find updates, meeting details, and project context from Discord, GitHub, and Miro.",
   openGraph: {
     title: "Pluto — DevNation’s knowledge companion",
-    description: "Club knowledge from Discord, GitHub and Miro—indexed read-only, with activity digests, meeting reminders and event awareness.",
+    description: "Find DevNation updates, meeting details, and project context from Discord, GitHub, and Miro.",
     type: "website",
   },
 };
