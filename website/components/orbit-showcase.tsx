@@ -23,6 +23,7 @@ export function OrbitShowcase() {
     let disposed = false;
     let timeout: number | undefined;
     const start = () => {
+      if (!canvas.current?.getContext("webgl2")) return;
       import("./orbit-showcase-engine")
         .then(({ createOrbitShowcase }) => {
           if (disposed || !canvas.current || !guide.current) return;
