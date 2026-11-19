@@ -21,19 +21,35 @@ export function OrbitShowcase() {
 
   useEffect(() => {
     let disposed = false;
-    import("./orbit-showcase-engine").then(({ createOrbitShowcase }) => {
-      if (disposed || !canvas.current || !guide.current) return;
-      try {
-        controller.current = createOrbitShowcase(canvas.current, guide.current, value => {
-          if (!disposed) setReady(value);
+    let timeout: number | undefined;
+    const start = () => {
+      import("./orbit-showcase-engine")
+        .then(({ createOrbitShowcase }) => {
+          if (disposed || !canvas.current || !guide.current) return;
+          try {
+            controller.current = createOrbitShowcase(canvas.current, guide.current, (value) => {
+              if (!disposed) setReady(value);
+            });
+          } catch {
+            // The CSS starfield and guide remain available without WebGL.
+          }
+        })
+        .catch(() => {
+          // Keep the static scene if the chunk is unavailable.
         });
-      } catch {
-        // Without WebGL the CSS starfield and guide remain usable.
-      }
-    }).catch(() => { /* Keep the static fallback on chunk failure. */ });
+    };
+    if (typeof requestIdleCallback === "function") {
+      timeout = requestIdleCallback(start, { timeout: 1500 });
+    } else {
+      timeout = window.setTimeout(start, 0);
+    }
 
     return () => {
       disposed = true;
+      if (timeout !== undefined) {
+        if (typeof cancelIdleCallback === "function") cancelIdleCallback(timeout);
+        else clearTimeout(timeout);
+      }
       controller.current?.dispose();
       controller.current = null;
       if (timer.current) clearTimeout(timer.current);
@@ -51,11 +67,23 @@ export function OrbitShowcase() {
       <div className={styles.world} data-ready={ready} aria-hidden="true">
         <canvas ref={canvas} className={styles.scene} />
       </div>
-      <button ref={guide} className={styles.guide} type="button" onClick={sayHello} aria-label="Say hello to Pluto">
+      <button
+        ref={guide}
+        className={styles.guide}
+        type="button"
+        onClick={sayHello}
+        aria-label="Say hello to Pluto"
+      >
         <span className={styles.cssGuide} aria-hidden="true" />
-        {bubble && <span className={styles.bubble} aria-hidden="true">{bubble}</span>}
+        {bubble && (
+          <span className={styles.bubble} aria-hidden="true">
+            {bubble}
+          </span>
+        )}
       </button>
-      <span className={styles.srOnly} role="status">{bubble}</span>
+      <span className={styles.srOnly} role="status">
+        {bubble}
+      </span>
     </>
   );
 }

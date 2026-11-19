@@ -1,12 +1,12 @@
 import * as THREE from "three";
 
 export const sceneConfig = {
-  pathStart: -.08,
+  pathStart: -0.08,
   pathExtent: 1.16,
   pathSegments: 240,
   pathSides: 6,
-  trailLength: .035,
-  leadLength: .12,
+  trailLength: 0.025,
+  leadLength: 0.12,
   cameraHeight: 2.7,
   cameraDistance: 11,
   starCount: 420,
